@@ -1,0 +1,10 @@
+data/
+.venv/
+__pycache__/
+.env
+.env.*
+!.env.example
+.pytest_cache/
+node_modules/
+dist/
+*.log
