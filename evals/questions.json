@@ -11,7 +11,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16530#discussioncomment-19047914",
       "answer": "Use `app.state.public_openapi_schema` for this cache; you don't need to move it outside the app or use `functools`. [#16518](https://github.com/fastapi/fastapi/pull/16518) removed the unused `**extra` kwargs from `FastAPI()`, but FastAPI 0.149.0 still [initializes `app.state` as an application-wide `State` object](https://github.com/fastapi/fastapi/blob/4001c90dad1924b6d10624c7523d7264f4bf9f97/fastapi/applications.py#L947-L963).\n\nKeep your `iter_public_routes()` and imports, add `from typing import Any`, and replace the app initialization and endpoint with:\n\n```python\napp = FastAPI(title='Test')\napp.state.public_openapi_schema = None\n\n\n@app.get('/openapi.public.json', response_model=dict[str, Any], include_in_schema=False)\ndef public_openapi() -> dict:\n    if app.state.public_openapi_schema is None:\n        app.state.public_openapi_schema = get_openapi(\n            title=f'{app.title} [public interface]',\n            description=app.description,\n            version=app.version,\n            routes=list(iter_public_routes(app.routes)),\n        )\n    return app.state.public_openapi_schema\n\n```\n\nI ran this with your route-filtering function on FastAPI 0.149.0, Python 3.12.3/Linux, with one public route and one `APIKeyHeader`-secured route:\n\n```text\nsame cached object: True\npublic schema paths: ['/public']\nGET /openapi.public.json: 200\nnormal OpenAPI still contains /private: True\n```\n\nI didn't run Python 3.15 or your full application. To confirm the migration, check that `/openapi.public.json` returns your filtered schema and `/openapi.json` retains the regular schema.\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "tagged_by": "human",
+      "why": ""
     },
     {
       "id": 16489,
@@ -22,7 +25,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16489#discussioncomment-18975152",
       "answer": "Thanks! This should be handled here https://github.com/fastapi/fastapi/pull/16509 , it will be available in FastAPI 0.143.3 released in the next few hours. :rocket: ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "tagged_by": "human",
+      "why": ""
     },
     {
       "id": 16486,
@@ -33,7 +39,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16486#discussioncomment-18925987",
       "answer": "Thanks!\r\n\r\nI think we should wait for that rework Sebastian is planning.\r\n\r\nLet's document here a workaround people can use now:\r\n\r\n```py\r\nfrom fastapi import FastAPI\r\nfrom fastapi.openapi.docs import get_redoc_html\r\nfrom fastapi.responses import HTMLResponse\r\n\r\napp = FastAPI(redoc_url=None)\r\n\r\n\r\n@app.get(\"/redoc\", include_in_schema=False)\r\nasync def redoc():\r\n    response = get_redoc_html(\r\n        openapi_url=app.openapi_url,\r\n        title=f\"{app.title} - ReDoc\",\r\n        redoc_js_url=\"https://cdn.jsdelivr.net/npm/redoc@3/bundles/redoc.standalone.js\",\r\n    )\r\n    html = response.body.decode(\"utf-8\")\r\n    html = html.replace(\"<script src=\", '<script type=\"module\" src=', 1)\r\n\r\n    return HTMLResponse(html)\r\n\r\n\r\n@app.get(\"/items/{item_id}\")\r\nasync def read_item(item_id: int):\r\n    return {\"item_id\": item_id}\r\n```",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "tagged_by": "human",
+      "why": ""
     },
     {
       "id": 16473,
@@ -44,7 +53,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16473#discussioncomment-18815780",
       "answer": "Thank you for the report and the clear explanation @ananthsub ! :raised_hands: \r\n\r\nI fixed/refactored it here: https://github.com/fastapi/fastapi/pull/16476\r\n\r\nNow exporters are not automatically configured. So, it is opt-in, not opt-out. It can be enabled with the config `auto_configure` or with the env var `FASTAPI_OTEL_AUTO_CONFIGURE=true`. This is available in FastAPI 0.143.0, just released. :rocket: ",
       "docs_links": [],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "advanced/opentelemetry.md"
+      ],
+      "tagged_by": "human",
+      "why": ""
     },
     {
       "id": 16466,
@@ -55,7 +69,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16466#discussioncomment-18801951",
       "answer": "Thanks! This should be handled by [#16470](https://github.com/fastapi/fastapi/pull/16470), released in FastAPI 0.142.4 🚀",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "tagged_by": "human",
+      "why": ""
     },
     {
       "id": 16460,
@@ -66,7 +83,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16460#discussioncomment-18800626",
       "answer": "Thanks! This should be handled by https://github.com/fastapi/fastapi/pull/16468 , released in FastAPI 0.142.3 :rocket: ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "tagged_by": "human",
+      "why": ""
     },
     {
       "id": 16413,
@@ -77,7 +97,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16413#discussioncomment-18676141",
       "answer": "Thanks for the report!\r\n\r\nI'm checking into this and will release a fix in the next few hours.\r\n\r\nBut still, let me convert this to an issue for visibility.\r\n\r\n---\r\n\r\nThis should be fixed by https://github.com/fastapi/fastapi/pull/16418, available in FastAPI 0.142.2, just released. 🎉 ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "tagged_by": "human",
+      "why": ""
     },
     {
       "id": 16404,
@@ -88,7 +111,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16404#discussioncomment-18615786",
       "answer": "It's said on that page that it's only valid for the specific range of FastAPI versions:\r\n\r\n> This FastAPI support for pydantic.v1 models was added in FastAPI 0.119.0 and removed in FastAPI 0.128.0. It was meant to be a temporary aid for the migration to Pydantic v2.\r\n> In current versions of FastAPI, using a pydantic.v1 model in your app will raise an error.\r\n> The rest of this section describes the temporary support available only in those older versions.\r\n\r\nI think it still makes sense to keep it so that users who use older FastAPI versions with Pydantic V1 could migrate their code bases",
       "docs_links": [],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "how-to/migrate-from-pydantic-v1-to-pydantic-v2.md"
+      ],
+      "tagged_by": "human",
+      "why": ""
     },
     {
       "id": 16395,
@@ -99,7 +127,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16395#discussioncomment-18562488",
       "answer": "The dynamic endpoint removal (while the server is running) is not officially supported by FastAPI.\r\nIf you have a real-life use case where it would be useful, please open a new discussion and explain your use case. We will treat it as feature request",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "tagged_by": "human",
+      "why": ""
     },
     {
       "id": 16376,
@@ -112,7 +143,12 @@
       "docs_links": [
         "https://fastapi.tiangolo.com/how-to/extending-openapi/#cache-the-openapi-schema"
       ],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "how-to/extending-openapi.md"
+      ],
+      "tagged_by": "human",
+      "why": ""
     },
     {
       "id": 16344,
@@ -123,7 +159,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16344#discussioncomment-18388736",
       "answer": "Hello! You have a typo in `header`, change it for `headers`",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "tagged_by": "human",
+      "why": ""
     },
     {
       "id": 16331,
@@ -134,7 +173,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16331#discussioncomment-18344900",
       "answer": "Hello!\r\n\r\nThe direct mutation of `APIRouter.routes` at run time is not documented and therefore not officially supported by FastAPI.\r\nIf you need such feature, please open a [discussion](https://github.com/fastapi/fastapi/discussions/new?category=questions), describe the use case and we will treat it as feature request.",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Internal router cache; answer says runtime route mutation is not supported",
+      "tagged_by": "draft"
     },
     {
       "id": 16297,
@@ -145,7 +187,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16297#discussioncomment-18276979",
       "answer": "For a 2-minute video processing job, I wouldn’t use `BackgroundTasks` in production.\r\n\r\n`BackgroundTasks` runs inside the FastAPI process. That’s fine for small, non-critical work, but if the process restarts, crashes, or gets killed, the task is gone. It also isn’t a good place for CPU-heavy work.\r\n\r\nFor something like video processing or batch PDF generation, I’d put the job in a real worker queue:\r\n\r\n* **ARQ + Redis** if you want something lightweight and async-friendly.\r\n* **Celery + Redis/RabbitMQ** if you need a more mature ecosystem with things like retries, scheduling, and more complex workflows.\r\n\r\nSo I’d think about it less in terms of “how many seconds is too long?” and more in terms of **durability and resource usage**.\r\n\r\nIf losing the job is acceptable → `BackgroundTasks`.\r\n\r\nIf the job needs retries, survives deployments/restarts, or is resource-intensive → use a task queue.\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "tutorial/background-tasks.md"
+      ],
+      "why": "Docs say heavy background work should use bigger tools like Celery",
+      "tagged_by": "draft"
     },
     {
       "id": 16247,
@@ -156,7 +203,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16247#discussioncomment-18923971",
       "answer": "Thanks for the report! This should be handled by https://github.com/fastapi/fastapi/pull/16484 , which will be included in FastAPI 0.143.1 in the next few hours. :rocket: ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #16484",
+      "tagged_by": "draft"
     },
     {
       "id": 16214,
@@ -167,7 +217,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16214#discussioncomment-18034120",
       "answer": "https://github.com/fastapi/fastapi/discussions/15839",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Answer is only a link to another discussion",
+      "tagged_by": "draft"
     },
     {
       "id": 16213,
@@ -178,7 +231,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16213#discussioncomment-18949976",
       "answer": "Thanks for the report! This should be handled here: https://github.com/fastapi/fastapi/pull/16503, it will be available in FastAPI 0.143.2, released in the next hours. :coffee: ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #16503",
+      "tagged_by": "draft"
     },
     {
       "id": 16194,
@@ -189,7 +245,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16194#discussioncomment-18017753",
       "answer": "Thanks for reporting this.\r\n\r\nThese `.agents/skills/...` files are included intentionally. They are part of the [Library Skills](https://library-skills.io/) convention, where a library ships versioned agent skills inside the package so external tools can discover and install them.\r\n\r\nThe goal is for the skills to stay aligned with the installed FastAPI version, so shipping them with the published package is the point.\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "tutorial/index.md"
+      ],
+      "why": "Docs section \"AI Agent Skills\" says the skill is bundled with the package on purpose",
+      "tagged_by": "draft"
     },
     {
       "id": 16169,
@@ -200,7 +261,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16169#discussioncomment-17948973",
       "answer": "Ran the exact tutorial003_py310.py on fastapi 0.140.0 / pydantic 2.13.4 / py3.12 and it just works: item1 returns the car, item2 the plane with size, both 200, and the OpenAPI response schema comes out as anyOf of the two models. So the note is outdated. On 3.10+ `PlaneItem | CarItem` evaluates to a `types.UnionType` at runtime (PEP 604), which is exactly why passing it as the `response_model` value works.\n\nThe \"must use Union, `|` would error\" line is really pre-3.10 behavior, where `SomeClass | OtherClass` raises `TypeError: unsupported operand type(s) for |` (confirmed on 3.9.6). The example file itself got switched to the `|` form in the 3.10 typing-syntax upgrade, but the surrounding text stayed, so they disagree now. Updating the prose to match the example looks like the right PR.\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Docs at 0.150.0 still say Union is required; the answer says that note is outdated, so the docs give the wrong answer",
+      "tagged_by": "draft"
     },
     {
       "id": 16140,
@@ -211,7 +275,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16140#discussioncomment-17894794",
       "answer": "Thanks!\r\n\r\nThe badge is broken because of the size of the report - it exceeds the 50 MB limit of [smokeshow](https://github.com/samuelcolvin/smokeshow).\r\nWe know the solution, but can't apply it right now. We will resolve this soon",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "About the repo coverage badge, not about using FastAPI",
+      "tagged_by": "draft"
     },
     {
       "id": 16139,
@@ -224,7 +291,12 @@
       "docs_links": [
         "https://fastapi.tiangolo.com/tutorial/query-params-str-validations/#query-as-the-default-value-or-in-annotated"
       ],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "tutorial/query-params-str-validations.md"
+      ],
+      "why": "Answer links this page section on Query default vs Annotated",
+      "tagged_by": "draft"
     },
     {
       "id": 16124,
@@ -235,7 +307,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16124#discussioncomment-17882854",
       "answer": "`AliasChoices` for Query \\ Form \\ Header \\ Cookie parameters is not currently supported due to limitation of OpenaAPI standard - as far as I know, there is no way to declare aliases for request parameters in OpenAPI\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "AliasChoices for query params not supported; not in docs",
+      "tagged_by": "draft"
     },
     {
       "id": 16085,
@@ -246,7 +321,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16085#discussioncomment-17811011",
       "answer": "Your reading of the code is right. Numbers below are from your exact versions — FastAPI 0.140.7, Pydantic 2.13.4, Python 3.13.\n\n**1 and 2 — intentional, and yes you can rely on generics**\n\nAny return annotation FastAPI can build a `TypeAdapter` for produces a response field, generics included:\n\n```\nroute annotation                  response_field  response_class  fast path\n-> (none)                         none            default         False\n-> dict[str, Any]                 yes             default         True\n-> list[dict[str, Any]]           yes             default         True\n-> list[Any]                      yes             default         True\n-> Any                            yes             default         True\n-> MyModel                        yes             default         True\n-> dict[str, Any] + ORJSONResponse yes            ORJSON          False\n-> (none) + ORJSONResponse        none            ORJSON          False\n```\n\nEven bare `-> Any` gets one. The only ways to end up on the `jsonable_encoder` branch are to omit the annotation or to return a `Response` object yourself.\n\n**3 — prefer the return type, and don't set both**\n\nThis is the part worth knowing. From `fastapi/routing.py` in 0.140.7:\n\n```python\n# Use the fast path (dump_json) when no custom response\n# class was set and a response field with a TypeAdapter\n# exists. Serializes directly to JSON bytes via Pydantic's\n# Rust core, skipping the intermediate Python dict +\n# json.dumps() step.\nuse_dump_json = response_field is not None and isinstance(\n    response_class, DefaultPlaceholder\n)\n```\n\nPassing `response_class=ORJSONResponse` means `response_class` is no longer a `DefaultPlaceholder`, so `use_dump_json` is `False` — you keep the response field but drop to `field.serialize` → Python objects → `ORJSONResponse.render()`. Setting both is the *slowest* of the three arrangements, not the fastest. (Both `ORJSONResponse` and `UJSONResponse` carry `@deprecated` in `fastapi/responses.py`, so the warning you hit is real, not advisory folklore.)\n\n**4 — a model is faster than `dict[str, Any]`, and both beat the encoder path badly**\n\nSerialization only, 20,000 iterations, best of 3, 20-key flat dict with one nested value:\n\n```\n 4.9 us   -> MyModel                        serialize_json  (fast path)\n 6.1 us   -> dict[str, Any]                 serialize_json  (fast path)\n13.3 us   -> dict[str, Any]                 serialize + json.dumps\n48.4 us   no annotation + ORJSONResponse    jsonable_encoder + orjson.dumps\n53.8 us   no annotation                     jsonable_encoder + json.dumps\n 0.8 us   orjson.dumps(payload)             raw, for reference\n```\n\nThe model wins by roughly 25% because `Any` has no static schema — pydantic-core has to infer each value's type at runtime, while a declared model compiles a specialized serializer.\n\nThe bigger point is the ~8x gap to the encoder rows, and it explains the deprecation: the expensive part was never `json.dumps` vs `orjson.dumps`, it was `jsonable_encoder` walking the object graph in Python. That's also why `ORJSONResponse` only ever bought ~10% here — it optimized the cheap half of the work. Absolute numbers scale with payload size and shape; the ratios held across runs.\n\n**5 — agreed, worth documenting**\n\n\"return type or response model\" is accurate but reads as if it means Pydantic models specifically. Two additions would have saved you the source dive: that *any* return annotation qualifies, `dict[str, Any]` included, and that setting a custom `response_class` silently opts you out of the fast path. The second one is the surprising half — it's easy to assume the two optimizations stack. Happy to open a docs PR if a maintainer wants it.\n</content>",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Docs mention Pydantic JSON bytes for return types but not whether dict[str, Any] gets the fast path; borderline",
+      "tagged_by": "draft"
     },
     {
       "id": 16034,
@@ -257,7 +335,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16034#discussioncomment-17883393",
       "answer": "I think this is an incompatibility issue between Pydantic and FreezGun and it should be reported\\addressed there.\r\n\r\nI found 2 related discussions (there are more):\r\n* https://github.com/spulec/freezegun/issues/551\r\n* https://github.com/pydantic/pydantic/discussions/9343\r\n\r\nIn the comments people recommend switching to time-machine. Have you considered this?",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "freezegun and Pydantic incompatibility",
+      "tagged_by": "draft"
     },
     {
       "id": 16029,
@@ -268,7 +349,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16029#discussioncomment-17705054",
       "answer": "Thanks for your intrest!\r\n\r\nLet's track it in more general existing discussion: https://github.com/fastapi/fastapi/discussions/15961",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "jsonable_encoder bug, tracked in another discussion",
+      "tagged_by": "draft"
     },
     {
       "id": 16028,
@@ -279,7 +363,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/16028#discussioncomment-17704875",
       "answer": "You can make FastAPI return response that follows your schema by adding an exception handler:\r\n\r\n```py\r\nfrom typing import Literal\r\n\r\nfrom fastapi import FastAPI, HTTPException\r\nfrom fastapi.responses import JSONResponse\r\nfrom fastapi.testclient import TestClient\r\nfrom pydantic import BaseModel, Field\r\n\r\napp = FastAPI()\r\n\r\n\r\n@app.exception_handler(404)\r\nasync def not_found_handler(request, exc: HTTPException):\r\n    return JSONResponse(\r\n        status_code=404,\r\n        content={\"code\": exc.detail.get(\"code\"), \"message\": exc.detail.get(\"message\")},\r\n    )\r\n\r\n\r\n# custom error pydantic model that populate \"detail\" prop of (FastApi) HTTPException\r\n# NOTE: this is a base class that need to be extended\r\nclass HttpExpectedError(BaseModel):\r\n    code: str = Field(..., description=\"Error code like PLAYLIST_NOT_FOUND\")\r\n    message: str = Field(..., description=\"Error message for human\")\r\n\r\n    def toFastApiJson(self):\r\n        return self.model_dump()\r\n\r\n\r\n# concret error pydantic model for one route (that extends HttpExpectedError)\r\nclass HttpError_PlaylistNotFound(HttpExpectedError):\r\n    code: Literal[\"PLAYLIST_NOT_FOUND\"] = \"PLAYLIST_NOT_FOUND\"\r\n\r\n\r\n# route\r\n@app.get(\r\n    path=\"/playlists/{playlist_id}\",\r\n    responses={404: {\"model\": HttpError_PlaylistNotFound}},\r\n)\r\nasync def getOne(playlist_id: str):\r\n    playlist = None\r\n\r\n    if not playlist:\r\n        raise HTTPException(\r\n            status_code=404,\r\n            detail=HttpError_PlaylistNotFound(\r\n                message=f\"Playlist {playlist_id} not found\"\r\n            ).toFastApiJson(),\r\n        )\r\n\r\n\r\ndef test_404():\r\n    client = TestClient(app)\r\n\r\n    response = client.get(\"/playlists/123\")\r\n    assert response.status_code == 404\r\n    assert response.json() == {\r\n        \"code\": \"PLAYLIST_NOT_FOUND\",\r\n        \"message\": \"Playlist 123 not found\",\r\n    }\r\n```\r\n\r\nOr use generic response wrapper to add `detail` property to the schema in openapi:\r\n\r\n```py\r\nclass ErrorResponse(BaseModel, Generic[ErrorT]):\r\n    detail: ErrorT\r\n\r\n\r\n# route\r\n@app.get(\r\n    path=\"/playlists/{playlist_id}\",\r\n    responses={404: {\"model\": ErrorResponse[HttpError_PlaylistNotFound]}},\r\n)\r\nasync def getOne(playlist_id: str):\r\n    playlist = None\r\n\r\n    if not playlist:\r\n        raise HTTPException(\r\n            status_code=404,\r\n            detail=HttpError_PlaylistNotFound(\r\n                message=f\"Playlist {playlist_id} not found\"\r\n            ).toFastApiJson(),\r\n        )\r\n\r\n```\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "tutorial/handling-errors.md"
+      ],
+      "why": "Answer uses a custom exception handler, which this page covers",
+      "tagged_by": "draft"
     },
     {
       "id": 15989,
@@ -290,7 +379,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15989#discussioncomment-17629547",
       "answer": "The contact.url only gets validated when the OpenAPI model is built, at `OpenAPI(**output)` at the end of openapi/utils.py. FastAPI() stores it as a raw dict at construction and builds the schema lazily on the first /openapi.json or /docs hit, then caches it, so nothing else trips over it first.\n\nWant it to fail at startup? call app.openapi() once right after you construct the app. Same ValidationError on info.contact.url, just where the typo actually is. Checked on 0.115.0, unchanged on master.\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Answer comes from reading openapi/utils.py; not in docs",
+      "tagged_by": "draft"
     },
     {
       "id": 15979,
@@ -301,7 +393,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15979#discussioncomment-17659115",
       "answer": "Thank you for the clear report!\r\n\r\nIndeed, this should be fixed. I'm tracking it here in this issue for completeness: https://github.com/fastapi/fastapi/issues/16010 , and fix PR here: https://github.com/fastapi/fastapi/pull/16011",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #16011",
+      "tagged_by": "draft"
     },
     {
       "id": 15973,
@@ -312,7 +407,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15973#discussioncomment-17611019",
       "answer": "Thanks for confirming this Sergei @yudin-s, and for the fix. Moving `__enter__` out of the `try` fixes the first issue cleanly (and it also stops `__exit__` swallowing the `__enter__` exception when it returned `True`, which the old `except` block used to do).\r\n\r\nI kept digging and found two more deviations from PEP 343 that the fix alone does not cover.\r\n\r\n**2. `except Exception` skips `BaseException`**\r\n\r\nThe guard catches `Exception` but not `BaseException`. So `KeyboardInterrupt`, `SystemExit`, and `asyncio.CancelledError` raised in the body never reach `__exit__`. A standard `with` calls `__exit__` for all of these:\r\n\r\n```python\r\nclass T:\r\n    def __enter__(self): return self\r\n    def __exit__(self, *a):\r\n        print(\"exit called\", a[0])\r\n        return False\r\n\r\ntry:\r\n    with T():\r\n        raise KeyboardInterrupt()\r\nexcept KeyboardInterrupt:\r\n    pass\r\n# standard with: exit runs, receives KeyboardInterrupt\r\n# contextmanager_in_threadpool: exit never runs\r\n```\r\n\r\nSo the guard needs to be `except BaseException`.\r\n\r\n**3. Real anyio cancellation never reaches `__exit__`**\r\n\r\nThis one is sneakier. Even with `except BaseException`, a real task cancellation (via `cancel_scope.cancel()`) still does not run `__exit__`. The `await anyio.to_thread.run_sync(...)` call is itself a checkpoint: anyio sees the scope is still cancelled and re-raises `CancelledError` before the worker thread starts.\r\n\r\nI confirmed this by canceling a task group child parked inside the context:\r\n\r\n```python\r\nasync with anyio.create_task_group() as tg:\r\n    async def child():\r\n        async with contextmanager_in_threadpool(cm):\r\n            await anyio.sleep(10)\r\n    tg.start_soon(child)\r\n    await anyio.sleep(0.1)\r\n    tg.cancel_scope.cancel()\r\n# cm.exit_called == False\r\n```\r\n\r\nThat is the worst case for cleanup: cancellation is exactly when you want `__exit__` to run, and it is exactly when it gets skipped.\r\n\r\n**4. The else (normal exit) branch has the same hole**\r\n\r\nThe `else` branch runs `__exit__(None, None, None)` after a body that completed without raising. Its `await anyio.to_thread.run_sync(...)` is a checkpoint too. If a cancel lands in the window between a checkpoint-free body returning and that await, `__exit__` is skipped while `__enter__` already ran - a straight resource leak. Reproducible:\r\n\r\n```python\r\nasync with anyio.create_task_group() as tg:\r\n    async def child():\r\n        async with contextmanager_in_threadpool(cm):\r\n            entered.set()   # body has no other await\r\n    tg.start_soon(child)\r\n    await entered.wait()\r\n    tg.cancel_scope.cancel()\r\n# without a shield on the else branch: cm.exit_called == False\r\n# enter ran, exit did not\r\n```\r\n\r\nThat window is narrow, but it is real. For a cleanup callback it should not exist at all.\r\n\r\n**Fix: shield every `__exit__` thread call**\r\n\r\n```python\r\nexit_limiter = CapacityLimiter(1)\r\nvalue = await run_in_threadpool(cm.__enter__)\r\ntry:\r\n    yield value\r\nexcept BaseException as e:\r\n    with anyio.CancelScope(shield=True):\r\n        ok = bool(\r\n            await anyio.to_thread.run_sync(\r\n                cm.__exit__, type(e), e, e.__traceback__, limiter=exit_limiter\r\n            )\r\n        )\r\n    if not ok:\r\n        raise\r\nelse:\r\n    with anyio.CancelScope(shield=True):\r\n        await anyio.to_thread.run_sync(\r\n            cm.__exit__, None, None, None, limiter=exit_limiter\r\n        )\r\n```\r\n\r\nBoth `__exit__` calls are now shielded. The mental model is simple: once `__enter__` has run, `__exit__` always runs to completion, cancellation or not. This mirrors what a synchronous `with` already does: `__exit__` is a sync call, you cannot cancel it mid-flight.\r\n\r\nHere are the tests that pin each of the cases above, so it is not just a claim. All run on both asyncio and trio (`@pytest.mark.anyio`), so the asyncio and trio variants are separate test items.\r\n\r\n```python\r\nclass EnterFailsCM:\r\n    def __init__(self, exit_return: bool | None = False) -> None:\r\n        self.exit_called = False\r\n        self.exit_return = exit_return\r\n\r\n    def __enter__(self) -> str:\r\n        raise ValueError(\"setup failed\")\r\n\r\n    def __exit__(self, exc_type, exc_val, exc_tb) -> bool | None:\r\n        self.exit_called = True\r\n        return self.exit_return\r\n\r\n\r\n@pytest.mark.anyio\r\nasync def test_enter_failure_does_not_call_exit() -> None:\r\n    cm = EnterFailsCM()\r\n    with pytest.raises(ValueError, match=\"setup failed\"):\r\n        async with contextmanager_in_threadpool(cm):\r\n            pass\r\n    assert not cm.exit_called\r\n\r\n\r\n@pytest.mark.anyio\r\nasync def test_enter_failure_propagates_even_if_exit_would_suppress() -> None:\r\n    # old code: __exit__(True) would swallow the __enter__ ValueError\r\n    cm = EnterFailsCM(exit_return=True)\r\n    with pytest.raises(ValueError, match=\"setup failed\"):\r\n        async with contextmanager_in_threadpool(cm):\r\n            pass\r\n    assert not cm.exit_called\r\n\r\n\r\nclass ExitTrackingCM:\r\n    def __init__(self) -> None:\r\n        self.exit_called = False\r\n        self.exit_args: tuple = ()\r\n\r\n    def __enter__(self) -> str:\r\n        return \"value\"\r\n\r\n    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:\r\n        self.exit_called = True\r\n        self.exit_args = (exc_type, exc_val, exc_tb)\r\n        return False\r\n\r\n\r\n@pytest.mark.anyio\r\nasync def test_keyboard_interrupt_in_body_calls_exit() -> None:\r\n    cm = ExitTrackingCM()\r\n    with pytest.raises(KeyboardInterrupt, match=\"boom\"):\r\n        async with contextmanager_in_threadpool(cm):\r\n            raise KeyboardInterrupt(\"boom\")\r\n    assert cm.exit_called\r\n    assert cm.exit_args[0] is KeyboardInterrupt\r\n\r\n\r\n# SystemExit and manual asyncio.CancelledError are covered by two more tests\r\n# of the same shape (test_system_exit_in_body_calls_exit,\r\n# test_cancelled_error_in_body_calls_exit).\r\n\r\n\r\nclass SlowExitTrackingCM:\r\n    def __init__(self) -> None:\r\n        self.exit_called = False\r\n\r\n    def __enter__(self) -> str:\r\n        return \"value\"\r\n\r\n    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:\r\n        self.exit_called = True\r\n        return False\r\n\r\n\r\n@pytest.mark.anyio\r\nasync def test_real_cancellation_still_calls_exit() -> None:\r\n    import anyio\r\n\r\n    cm = SlowExitTrackingCM()\r\n\r\n    async with anyio.create_task_group() as tg:\r\n        async def child() -> None:\r\n            async with contextmanager_in_threadpool(cm):\r\n                await anyio.sleep(10)\r\n\r\n        tg.start_soon(child)\r\n        await anyio.sleep(0.1)\r\n        tg.cancel_scope.cancel()\r\n\r\n    assert cm.exit_called\r\n\r\n\r\n@pytest.mark.anyio\r\nasync def test_cancellation_after_normal_body_still_calls_exit() -> None:\r\n    import anyio\r\n\r\n    cm = SlowExitTrackingCM()\r\n    entered = anyio.Event()\r\n\r\n    async with anyio.create_task_group() as tg:\r\n        async def child() -> None:\r\n            async with contextmanager_in_threadpool(cm):\r\n                entered.set()\r\n\r\n        tg.start_soon(child)\r\n        await entered.wait()\r\n        tg.cancel_scope.cancel()\r\n\r\n    assert cm.exit_called\r\n```\r\n\r\nThe last test is the one that made me add the shield on the else branch too: without it, `assert cm.exit_called` fails on the asyncio backend (enter ran, exit did not). With the shield, it passes on both backends.\r\n\r\nI have a full set of tests covering these cases locally. An earlier version went up as a PR but got closed/rejected, so I reworked it: the enter-out-of-try, the `BaseException` guard, and the shields on both branches are all pinned by tests now, on both asyncio and trio.\r\n\r\nOne tradeoff to flag: if `__exit__` blocks (rollback to a dead DB), cancellation cannot interrupt it until `__exit__` returns. That is the same constraint as a plain `with`, but it is worth being explicit about it.",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "contextmanager_in_threadpool PEP 343 bug, code fix",
+      "tagged_by": "draft"
     },
     {
       "id": 15936,
@@ -323,7 +421,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15936#discussioncomment-17538193",
       "answer": "HTMLResponse is defined in Starlette, not FastAPI, so the `__html__` support would need to live there. FastAPI's `HTMLResponse` is just a re-export of `starlette.responses.HTMLResponse`.\n\nThe current implementation passes `content` directly to the `Response` body, which calls `.encode()` and expects a string or bytes. There is no protocol hook for arbitrary objects.\n\nFor now the explicit workaround is to call `__html__` yourself at the call site:\n\n```python\n@app.get(\"/\")\ndef root():\n    return HTMLResponse(CustomHTML().__html__())\n```\n\nIf you want to avoid spelling that out on every route, a thin subclass works:\n\n```python\nfrom fastapi.responses import HTMLResponse\n\nclass SmartHTMLResponse(HTMLResponse):\n    def __init__(self, content=None, **kwargs):\n        if content is not None and not isinstance(content, (str, bytes)) and hasattr(content, \"__html__\"):\n            content = content.__html__()\n        super().__init__(content=content, **kwargs)\n```\n\nUse `SmartHTMLResponse` as your `response_class` and it transparently handles objects that implement `__html__`.\n\nFor upstreaming the feature, I would open the discussion or PR in the Starlette repo rather than FastAPI. The `__html__` protocol is well established in the Python web ecosystem (Jinja2, MarkupSafe, Django's `mark_safe`) so it has a reasonable case for first-class support, but the change belongs in Starlette's `Response.__init__` where the content encoding actually happens.",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "HTMLResponse is Starlette's class",
+      "tagged_by": "draft"
     },
     {
       "id": 15914,
@@ -334,7 +435,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15914#discussioncomment-17663102",
       "answer": "This is quite an interesting edge case! Thanks for the report.\r\n\r\nIt should solved here: https://github.com/fastapi/fastapi/pull/16013\r\n\r\nThe issue should be mostly harmless, as it would mainly apply in threaded parallel test runs (rare). But still, I thought it would be worth solving.\r\n\r\nFor the warnings, it's also pretty much harmless and that will be refactored either way so it should be fine. It is now released as 0.139.2 :tada: ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #16013",
+      "tagged_by": "draft"
     },
     {
       "id": 15847,
@@ -345,7 +449,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15847#discussioncomment-17443766",
       "answer": "Turns out to be some issue with WSL networking, i moved to a VM and it works fine shrug",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "WSL networking problem",
+      "tagged_by": "draft"
     },
     {
       "id": 15846,
@@ -358,7 +465,12 @@
       "docs_links": [
         "https://fastapi.tiangolo.com/tutorial/dependencies/dependencies-with-yield/"
       ],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "tutorial/dependencies/dependencies-with-yield.md"
+      ],
+      "why": "Answer links this page",
+      "tagged_by": "draft"
     },
     {
       "id": 15843,
@@ -369,7 +481,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15843#discussioncomment-17438440",
       "answer": "Open project that uses FastAPI as dependency, and run `uvx library-skills`. It will suggest installing this skill. And it will be always up to date with the version of FastAPI installed. \r\n\r\nSee https://library-skills.io/",
       "docs_links": [],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "tutorial/index.md"
+      ],
+      "why": "Docs section \"AI Agent Skills\" explains the bundled skill and uvx library-skills",
+      "tagged_by": "draft"
     },
     {
       "id": 15819,
@@ -380,7 +497,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15819#discussioncomment-17381993",
       "answer": "Look at the path in your  faulthandler output:\r\n\r\n```\r\n/Users/philip/.local/share/uv/python/cpython-3.14.0a6-macos-x86_64-none/lib/python3.14/...\r\n```\r\n\r\nThat's not Python 3.14.0 final... it's **3.14.0 alpha 6** (`a6`). Even though your `.python-version` says `3.14.0` and `uv python install` ran without complaint, uv resolved to a stale alpha build it had cached from earlier in the 3.14 beta cycle, rather than downloading the actual final release. This is a known uv quirk. There are several open uv issues describing exactly this (astral-sh/uv#13361, #18414): a previously installed pre release CPython build gets reused/resolved instead of the version you asked for.\r\n\r\nThat fully explains the segfault. CPython alpha/beta builds are **not ABI-stable**... internal struct layouts can and do change between alpha6 and the final 3.14.0 release. `pydantic-core` (and friends like `uvloop`/`watchfiles`) ship compiled wheels built against the final 3.14 ABI. Load one of those into an alpha6 interpreter and you get a silent, traceback less SEGV - which is exactly what you saw, and exactly why it crashes deep inside `pydantic-core`'s class-creation code for `Secret` (that's the kind of code that touches CPython internals most directly).\r\n\r\n**Fix:**\r\n\r\n```bash\r\nuv python list                      # confirm you have a stray cpython-3.14.0a6-... entry\r\nuv python uninstall 3.14.0a6        # remove the alpha build\r\nrm -rf .venv\r\nuv python install 3.14.0            # explicit, full final version\r\nuv run python -c \"import sys; print(sys.version)\"   # confirm it says 3.14.0, NOT 3.14.0a6\r\nuv sync\r\nuv run fastapi dev\r\n```\r\n\r\nIf `uv python list` still offers the alpha as the resolved match for `3.14.0`, that's a uv bug worth reporting on astral-sh/uv directly... but it isn't a FastAPI or Pydantic bug.",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "uv picked a CPython alpha build",
+      "tagged_by": "draft"
     },
     {
       "id": 15791,
@@ -391,7 +511,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15791#discussioncomment-17348825",
       "answer": "Please, see https://github.com/fastapi/fastapi/discussions/15782 and PR https://github.com/fastapi/fastapi/pull/15785\r\n\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Answer points to PR #15785",
+      "tagged_by": "draft"
     },
     {
       "id": 15782,
@@ -402,7 +525,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15782#discussioncomment-17342401",
       "answer": "Thank for the report @davidbrochart and everyone here. :coffee: \r\n\r\nWould this work for you all? https://github.com/fastapi/fastapi/pull/15785\r\n\r\nFor example:\r\n\r\n```python\r\nfrom fastapi.routing import iter_route_contexts\r\n\r\nfor route_context in iter_route_contexts(router.routes):\r\n    print(route_context.path)\r\n```\r\n\r\nCheck the tests in the PR, they show the equivalent use cases.\r\n\r\nIt would be great to get feedback before merging and releasing.",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "iter_route_contexts comes from a PR and is not in the docs",
+      "tagged_by": "draft"
     },
     {
       "id": 15768,
@@ -413,7 +539,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15768#discussioncomment-17310078",
       "answer": "I think you can workaround this using Middleware that fixes the `Content-Type`:\r\n\r\n```py\r\nfrom fastapi import FastAPI, Form\r\n\r\napp = FastAPI()\r\n\r\n\r\nclass FixContentTypeMiddleware:\r\n    def __init__(self, app):\r\n        self.app = app\r\n\r\n    async def __call__(self, scope, receive, send):\r\n        if scope[\"type\"] == \"http\" and scope[\"path\"] == \"/Action\":\r\n            headers = [\r\n                (name, value)\r\n                for name, value in scope[\"headers\"]\r\n                if name != b\"content-type\"\r\n            ]\r\n            headers.append((b\"content-type\", b\"application/x-www-form-urlencoded\"))\r\n            scope = dict(scope, headers=headers)\r\n        await self.app(scope, receive, send)\r\n\r\n\r\napp.add_middleware(FixContentTypeMiddleware)\r\n\r\n\r\n@app.post(\"/Action\")\r\nasync def process(Source: str = Form(...)):\r\n    return {\"Source\": Source}\r\n\r\n```",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Workaround is a custom ASGI middleware; docs do not cover form data sent as text/html",
+      "tagged_by": "draft"
     },
     {
       "id": 15767,
@@ -424,7 +553,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15767#discussioncomment-17308741",
       "answer": "Thanks for reporting! 🙏\r\n\r\nSeems that this is a duplicate of https://github.com/fastapi/fastapi/discussions/15066\r\n\r\nAnd there are already 2 PRs:\r\n* https://github.com/fastapi/fastapi/pull/15077\r\n* https://github.com/fastapi/fastapi/pull/15445",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Duplicate with open PRs",
+      "tagged_by": "draft"
     },
     {
       "id": 15750,
@@ -435,7 +567,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15750#discussioncomment-17307482",
       "answer": "This should be fixed in https://github.com/fastapi/fastapi/pull/15763 , available in FastAPI 0.137.1, just released. 🚀 ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #15763",
+      "tagged_by": "draft"
     },
     {
       "id": 15749,
@@ -446,7 +581,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15749#discussioncomment-17307484",
       "answer": "This should be fixed in https://github.com/fastapi/fastapi/pull/15765 , available in FastAPI 0.137.1, just released :rocket: ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #15765",
+      "tagged_by": "draft"
     },
     {
       "id": 15743,
@@ -457,7 +595,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15743#discussioncomment-17287355",
       "answer": "Because HTML browsers submit empty form inputs as an empty string (`\"\"`) rather than omitting them or sending `null`, Pydantic attempts to validate `\"\"` against your `EmailStr` and `min_length` constraints, resulting in a validation error.\r\n\r\nThe best solution is to use Pydantic's `BeforeValidator` to intercept the data *before* standard validation runs, converting any empty string into `None`.\r\n\r\nIf you apply constraints like `min_length` at the top level of the `Annotated` type (e.g. `Field(min_length=6)`), Pydantic will attempt to apply the constraint to `None` values as well. This leads to a `TypeError` (e.g., `object of type 'NoneType' has no len()`).\r\n\r\nTo prevent this, the constraint should be nested inside the `EmailStr` member of the Union type. This ensures that the length constraint is only evaluated when the value is a string.\r\n\r\n### Solution using a nested reusable `Annotated` type\r\n\r\nYou can create a reusable pre-validator function and combine it with `Annotated` to define a custom type. This keeps your models clean and allows you to reuse the logic across multiple optional form fields.\r\n\r\n```python\r\nimport sys\r\nfrom typing import Annotated\r\nimport pytest\r\nfrom fastapi import FastAPI, Form\r\nfrom fastapi.testclient import TestClient\r\nfrom pydantic import BaseModel, BeforeValidator, EmailStr, Field\r\n\r\n\r\n# 1. Create a reusable function to transform empty strings to None\r\ndef empty_to_none(v: any) -> any:\r\n    return None if v == \"\" else v\r\n\r\n\r\n# 2. Define a reusable Annotated type\r\n# The min_length constraint is nested specifically inside the EmailStr type definition\r\nOptionalEmail = Annotated[\r\n    Annotated[EmailStr, Field(min_length=6)] | None, BeforeValidator(empty_to_none)\r\n]\r\n\r\n\r\nclass Ce(BaseModel):\r\n    # Use your clean, reusable type here\r\n    x: OptionalEmail = None\r\n\r\n\r\napp = FastAPI()\r\n\r\n\r\n# FastAPI automatically parses incoming form fields into the Pydantic model\r\n@app.post(\"/post\")\r\nasync def post(ce: Ce = Form()):\r\n    return ce\r\n\r\n\r\n# --- Test Suite ---\r\n\r\nclient = TestClient(app)\r\n\r\n\r\ndef test_write_noneok():\r\n    # Case 1: Field is entirely absent from the form submission\r\n    response = client.post(\"/post\", data={})\r\n    assert response.status_code == 200\r\n    assert response.json() == {\"x\": None}\r\n\r\n\r\ndef test_write_emptyok():\r\n    # Case 2: Field is present but empty (browser default behavior)\r\n    response = client.post(\"/post\", data={\"x\": \"\"})\r\n    assert response.status_code == 200\r\n    assert response.json() == {\"x\": None}\r\n\r\n\r\ndef test_write_valid_email():\r\n    # Case 3: Field has valid data\r\n    response = client.post(\"/post\", data={\"x\": \"user@example.com\"})\r\n    assert response.status_code == 200\r\n    assert response.json() == {\"x\": \"user@example.com\"}\r\n\r\n\r\ndef test_write_invalid_email():\r\n    # Case 4: Field has invalid data (fails min_length or EmailStr)\r\n    response = client.post(\"/post\", data={\"x\": \"a@b\"})\r\n    assert response.status_code == 422  # Validation Error\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    sys.exit(pytest.main([__file__]))\r\n```",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Pydantic BeforeValidator and EmailStr",
+      "tagged_by": "draft"
     },
     {
       "id": 15742,
@@ -468,7 +609,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15742#discussioncomment-17283531",
       "answer": "You just need to add `httpx2` to your project dependencies",
       "docs_links": [],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "index.md"
+      ],
+      "why": "Docs list httpx2 as the package used by TestClient",
+      "tagged_by": "draft"
     },
     {
       "id": 15707,
@@ -479,7 +625,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15707#discussioncomment-17248611",
       "answer": "I would keep `exclude=True` as serialization-only and avoid putting server-populated values in the request schema.\n\nFor the use case you described, two patterns work pretty well.\n\nIf the field is part of your internal DTO/domain object, use a small input model and build the internal model in the route:\n\n```python\nfrom typing import Annotated\nfrom fastapi import Body, Depends\nfrom pydantic import BaseModel, Field\n\nclass TestFormIn(BaseModel):\n    public_field: Annotated[str, Field(min_length=3)]\n\nclass TestFormInternal(TestFormIn):\n    hidden_field: str\n\n@app.post(\"/\")\nasync def testing(\n    form: Annotated[TestFormIn, Body()],\n    user_id: str = Depends(get_current_user_id),\n):\n    dto = TestFormInternal.model_validate({\n        **form.model_dump(),\n        \"hidden_field\": user_id,\n    })\n    return dto.model_dump()\n```\n\nIf the value is only route/runtime context and should never be validated or serialized as model data, use a Pydantic private attribute instead:\n\n```python\nfrom typing import Annotated\nfrom fastapi import Body\nfrom pydantic import BaseModel, PrivateAttr\n\nclass TestForm(BaseModel):\n    public_field: str\n    _hidden_field: str | None = PrivateAttr(default=None)\n\n@app.post(\"/\")\nasync def testing(form: Annotated[TestForm, Body()]):\n    form._hidden_field = \"set in route\"\n    return form.model_dump()\n```\n\nThat keeps Swagger honest: fields shown in the request body are fields the client can actually send. I think changing `Field(exclude=True)` to mean \"not part of input\" only when used with `Body()` would make the same model behave differently depending on context, which is probably why the current behavior is confusing but consistent.",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Pydantic exclude and PrivateAttr",
+      "tagged_by": "draft"
     },
     {
       "id": 15704,
@@ -490,7 +639,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15704#discussioncomment-17209980",
       "answer": "There is already a PR that should fix this (https://github.com/fastapi/fastapi/pull/11323). Could you please check it out?",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Existing PR #11323",
+      "tagged_by": "draft"
     },
     {
       "id": 15701,
@@ -501,7 +653,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15701#discussioncomment-17220087",
       "answer": "Thanks for reporting this!\r\n\r\nI think this might be treated as feature request, but I wouldn't expect it to be implemented any time soon as it's not something important\\urgent and we have other priorities at the moment.\r\n\r\nYou already mentioned that you can annotate the parameter with `Body` to achieve what you need.\r\nSo, just do it)",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Feature request, not planned",
+      "tagged_by": "draft"
     },
     {
       "id": 15648,
@@ -512,7 +667,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15648#discussioncomment-17705560",
       "answer": "@hemanthvnp, thanks for your patience!\r\n\r\n`format_sse_event` is not documented, therefore it should be considered as internal utility function.\r\nThe only one place where it's used with `id` and `event` parameters passed into it is\r\nhttps://github.com/fastapi/fastapi/blob/afe41126f624af30038cc8e17b2aaf60ebd4b838/fastapi/routing.py#L518-L538\r\n\r\n.. and the values of `item.event` and `item.id` are already validated as they come from the instance of `ServerSentEvent`.\r\n\r\nSo, adding this validation to `format_sse_event` would be redundant.",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "format_sse_event is an internal function",
+      "tagged_by": "draft"
     },
     {
       "id": 15639,
@@ -523,7 +681,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15639#discussioncomment-17101807",
       "answer": "This is expected from how FastAPI combines router metadata. Tags from the parent router and the child router both end up on the nested operation, and Swagger UI shows an operation under every tag it has. So your item route is not duplicated as a route, it is displayed in both tag groups.\n\nThere is not a clean switch that means \"inherit the parent prefix but not the parent tags\" for only the nested router. The usual workaround is to split the prefix-only grouping router from the tagged routers:\n\n```python\nfrom fastapi import APIRouter, FastAPI\n\napp = FastAPI()\n\n# Prefix-only router. No tags here.\nusers_prefix = APIRouter(prefix=\"/users\")\n\nusers_router = APIRouter(tags=[\"users\"])\n\n@users_router.get(\"/{user_id}\")\ndef read_user(user_id: str):\n    return {\"user_id\": user_id}\n\nitems_router = APIRouter(prefix=\"/{user_id}/items\", tags=[\"items\"])\n\n@items_router.get(\"/{id}\")\ndef read_item(user_id: str, id: str):\n    return {\"user_id\": user_id, \"id\": id}\n\nusers_prefix.include_router(users_router)\nusers_prefix.include_router(items_router)\n\napp.include_router(users_prefix)\n```\n\nThat keeps the URL nesting but prevents the `items` endpoints from inheriting the `users` tag. If most routes under `/users` should be tagged `users`, then tagging individual direct user endpoints is the more explicit option.\n\nIf this solves it, please mark this comment as the answer so other people can find it faster.",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Docs say router tags apply to included operations but not how Swagger shows nested tags; borderline",
+      "tagged_by": "draft"
     },
     {
       "id": 15637,
@@ -534,7 +695,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15637#discussioncomment-17101060",
       "answer": "Thanks for reporting!\r\n\r\nThis is a duplicate of https://github.com/fastapi/fastapi/discussions/14975\r\nAnd there is already PR https://github.com/fastapi/fastapi/pull/15069\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Duplicate with PR #15069",
+      "tagged_by": "draft"
     },
     {
       "id": 15611,
@@ -545,7 +709,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15611#discussioncomment-17063343",
       "answer": "Thanks for the comment!\r\n\r\nAbout the false positive from Amazon, more of the context is here: https://github.com/ossf/malicious-packages/issues/1274 , it seems it was an automated AI scan that reported a vulnerability, got accepted, created a CVE, etc. without ever even attempting to contact us. :smiling_face_with_tear:  But they are withdrawing it now.\r\n\r\nAbout single-maintainer dependencies, that's how most of the entire open source ecosystem works, in most cases works fine, and in most cases there's one specific person (or a very small few) leading a project, that's not really an issue. The fact that it's under a person's username also doesn't limit permissions to maintain, they could add extra people. Same with an org, the fact that it's an org doesn't necessarily change things, it could still be a single person leading.\r\n\r\nAbout the default `standard` dependencies, your option C is what already is in place, sadly, the automated detection didn't even check that.\r\n\r\nAbout how to explain what is installed and done, we do that profusely, it's in the docs, sadly there's no easy way to explain more than that. We don't have a direct channel with users, not even telemetry. Sentry is installed for the cloud CLI for when there are errors deploying, but that's not activated when running the regular FastAPI commands. It would be very useful to know what things people use and what not, to be able to deprecate things, but we don't do that as that would raise concerns, it's only for cloud users.\r\n\r\nThe current decision to make those things part of `standard` is that that is the standard experience I would think users could get by default:\r\n\r\n* It is designed to be the default, official, and simplest way to deploy FastAPI to the cloud. Anyone can deploy it to any other platform, but that is the one made by and for FastAPI.\r\n* The default is made to be the one with the lowest friction, if a user needs to perform a bunch of additional steps just to get the recommended experience of deploying, then it's not as straightforward as it should it, which is also the spirit of FastAPI in general, to have good defaults on. Important in particular to newcomers to FastAPI and Python.\r\n* It is already opt-in, people have to install `\"fastapi[standard]\"` to get that plus the other things (e.g. uvloop and httptools for high performance). But if they simply install `fastapi`, they won't get any of that.\r\n* FastAPI Cloud is also our way of sustainability for the open source projects, and it's quite aligned with them, as the more effectively people can use Python and the open source tools, more potential clients down the line for the company, so it's aligned even if it was independent of me.\r\n\r\n## What needs attention and fixing: automated AI reports\r\n\r\nNow, I want to raise an important issue that is not discussed in the original post, that should probably get attention, and I don't know the right way to solve it.\r\n\r\nAI automated tools from organizations with access to create CVEs directly should not go and create them based on an AI hunch. \r\n\r\nFirst, these things should be responsibly disclosed to the projects, in private, allowing handling of the vulnerability properly, not reporting via a third party, and then us getting to know about a \"vulnerability in FastAPI\" via users complaining. That's quite wrong.\r\n\r\nSecond, if they flag something, that should be reviewed by human researchers before reporting.\r\n\r\nThird, the combination of giving some AI authorization to automatically create CVEs seems quite dangerous to me. That should definitely have a human review.\r\n\r\nI use AI a lot, I appreciate how much it helps, but that's the wrong way to use it.\r\n\r\nAnyway, I don't have a way to solve that, I don't expect you would, but I wanted to highlight an important factor in this situation that causes a lot of friction and I don't think should simply go unnoticed.",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Packaging policy discussion, no usable answer",
+      "tagged_by": "draft"
     },
     {
       "id": 15593,
@@ -556,7 +723,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15593#discussioncomment-17040357",
       "answer": "Hi @ftnext — your analysis is correct.\r\nSince FastAPI delegates all Request / request.url handling to Starlette, any FastAPI application running on Starlette ≤ 1.0.0 is exposed to the same issue described in GHSA-86qp-5c8j-p5mr (CVE-2026-48710).\r\nRoot cause (from the advisory): Affected versions reconstruct request.url by concatenating http://{host}{path} and re-parsing the result. When the Host header contains characters invalid per RFC 9112 §3.2 — such as /, ?, or # — the re-parsing shifts the path/query boundaries. This means request.url.path can return a different value than the path the router actually dispatched to. Your example reproduces this exactly: the request is routed to /foo, but request.url.path reflects /abc from the malformed header.\r\nWho is at risk: Any FastAPI application that uses request.url.path (or request.url) for security-sensitive decisions — such as middleware enforcing path-based authorization — may be bypassed by an attacker sending a crafted Host header. Deployments behind a proxy that strips or normalizes malformed Host headers are partially mitigated, but you cannot rely on this unless it is explicitly guaranteed.\r\nRecommended action: Upgrade Starlette to 1.0.1 or higher. The fix validates the Host header against RFC 9112 §3.2 / RFC 3986 §3.2.2 and falls back to scope[\"server\"] for malformed values, so request.url.path will always reflect the actual routed path regardless of what the client sends in the Host header.\r\nYou can verify your environment with:\r\npip show starlette | grep Version\r\nFastAPI 0.115.x and later should pull Starlette 1.0.1+ automatically, but pinned or transitive dependency setups may not — so an explicit check is worthwhile.\r\nThank you for the clear write-up and for confirming the reproduction!",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Starlette security advisory",
+      "tagged_by": "draft"
     },
     {
       "id": 15547,
@@ -567,7 +737,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15547#discussioncomment-16957183",
       "answer": "Hey there, these conversations should all start as discussions, let me move it over there and we can continue the conversation there.\r\n\r\n---\r\n\r\nOkay, so, here's the thing, in the current version of the code, I never expected people to subclass and modify the constructor of the `APIRoute`, modifying the constructor is not something done and explained in the docs, so it's not really currently a supported behavior or feature.\r\n\r\nNevertheless, I'm planning on a future refactor that might allow things like this, just not yet.\r\n\r\nBut I see that you figured out the situation with your current code, so that should probably solve it. Thanks for the interest here! :coffee: ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Custom APIRoute constructors are not supported",
+      "tagged_by": "draft"
     },
     {
       "id": 15500,
@@ -578,7 +751,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15500#discussioncomment-16915856",
       "answer": "PR up: fastapi/fastapi#15515 — fix + 8 unit tests, full `tests/test_sse.py` green (26 passed).",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #15515",
+      "tagged_by": "draft"
     },
     {
       "id": 15498,
@@ -589,7 +765,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15498#discussioncomment-17047066",
       "answer": "I think all these flags that modify endpoint output making it different from what is declared in OpenAPI schema is bad idea and we shouldn't add more such flags.\r\nThere is already way to achieve this - by returning Response explicitly (as it's shown in the discussion)",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Feature request declined",
+      "tagged_by": "draft"
     },
     {
       "id": 15494,
@@ -600,7 +779,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15494#discussioncomment-16868871",
       "answer": "Glad the suggestions landed. Your call to skip the client-disconnect test is reasonable for the sync TestClient path, the race window really is too tight to assert anything meaningful. If you ever want to cover it later, the async route works: `httpx.AsyncClient` plus an explicit `aclose()` call mid-stream, then assert the cleanup sentinel ran exactly once. Lower priority though, the four tests you added cover the load-bearing cases.\r\n\r\nGood luck with the PR. Happy to look at the diff if you open one.",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Discussion about contributing tests",
+      "tagged_by": "draft"
     },
     {
       "id": 15361,
@@ -611,7 +793,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15361#discussioncomment-16602163",
       "answer": "@Shahab Rashidian Dezfuly\n\nThank you for taking the time to review my proposal and sharing your valuable experience with class-based patterns in FastAPI production environments. Your insights about the relationship between dependency injection and class instantiation are indeed a crucial discussion point in the FastAPI community.\n \nRegarding your concerns, I'd like to clarify a few points about CBX's design philosophy:\n \nCBX is a lightweight, non-invasive wrapper.\nCBX doesn't reimplement or bypass FastAPI's routing and DI system. It simply provides a minimal mechanism for binding class methods to routes. All actual routing, parameter parsing, dependency resolution, async handling, etc., remain delegated to FastAPI's native machinery. Therefore, once properly bound, features like OpenAPI generation, hot reload, and async support should behave identically to standard function-based routes.\n \nDesign focus: Class-based routing for simple scenarios\nCBX targets straightforward use cases where developers prefer class-based organization without complex dependency injection needs. We intentionally leave initialization control entirely to the user—they decide when and how to instantiate (e.g., at app startup, or via a factory per request). This maintains flexibility while avoiding overlap with FastAPI's built-in Depends() system.\nAs you correctly noted, mixing Depends() in init would conflict with FastAPI's request-scoped DI. CBX's approach is to stay out of that territory, serving as a lightweight complement to the official DI patterns, focused purely on expressive routing.\n \nTesting and compatibility\nYour points about test coverage and compatibility are well-taken. I've already added comprehensive tests locally (async methods, OpenAPI schema, path/query params, etc.) and will continue improving them. If the FastAPI team considers it valuable, I'm happy to integrate these tests into the official CI pipeline to ensure ongoing compatibility.\n \nCBX isn't meant to replace existing DI patterns. Rather, it offers an alternative for developers who prefer class-based views in simple scenarios—rapid prototyping, internal tools, or migrating existing class structures to FastAPI. Its value lies in minimal API surface and near-zero learning curve.\n \nThanks again for your thoughtful feedback—it genuinely helps improve the proposal. I welcome any further suggestions or edge cases you might identify.\n \nBest regards",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Feature proposal for a third-party package",
+      "tagged_by": "draft"
     },
     {
       "id": 15330,
@@ -622,7 +807,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15330#discussioncomment-16545206",
       "answer": "Answer in order as asked\r\n\r\n> Confirm that you have a module containing a FastAPI app instance at src/main.py? That's just a sanity check for myself, looking at your deployments right now.\r\n\r\nYes, app instance in src/main.py\r\n\r\n>Unset the Application Directory setting in the FastAPI Cloud Dashboard. It's currently set to src for your project, which should not be needed.\r\n\r\nOkay, after applying changes I tried redeploying app again and it worked. thanks! @YuriiMotov \r\n\r\nFollow up for point 2\r\nBut can I ask why this as on dashboard it says `Path to your FastAPI app directory (e.g., \"backend\"). Leave empty if at repository root.`\r\n\r\n>Try to deploy your app again with debug logging enabled: FASTAPI_CLOUD_DEBUG=1 fastapi cloud deploy and share the logs with us\r\n\r\nSure, here it is. Have masked few logs 😃 hopes it's okay!\r\n\r\n```\r\nDEBUG    Deploy command started                                                                                                                                             \r\nDEBUG    Deploy path: None, skip_wait: False, app_id: ********-1fae-45fa-af06-************\r\n   FastAPI   Starting deployment\r\n \r\nDEBUG    Deploying from path: /Users/user/workspace/Ne****                                                                                                       \r\n             Deploying to app ********-1fae-45fa-af06-************\r\n \r\nDEBUG    Checking app with ID: ********-1fae-45fa-af06-************                                                                                                         \r\nDEBUG    Creating archive for deployment                                                                                                                                    \r\nDEBUG    Starting archive creation for path: /Users/user/workspace/Ne****                                                                                        \r\nDEBUG    Archive will be created at: /var/folders/x6/s8s9wt6x7fb51qxh28k9y5sw0000gn/T/tmpp4lxujdu/archive.tar                                                               \r\nDEBUG    Adding migrations/script.py.mako to archive                                                                                                                        \r\nDEBUG    Adding migrations/env.py to archive                                                                                                                                \r\nDEBUG    Adding migrations/versions/c78d32e62bd3_entity_updated.py to archive                                                                              \r\nDEBUG    Adding migrations/versions/__init__.py to archive                                                                                                                  \r\nDEBUG    Adding migrations/versions/31ac703e3ee9_initial_migration_for_application.py to archive                                                                            \r\nDEBUG    Adding migrations/__init__.py to archive                                                                                                                           \r\nDEBUG    Adding migrations/README to archive                                                                                                                                \r\nDEBUG    Adding requirements.txt to archive                                                                                                                                 \r\nDEBUG    Adding uv.lock to archive                                                                                                                                          \r\nDEBUG    Adding alembic.ini to archive                                                                                                                                      \r\nDEBUG    Adding Dockerfile to archive                                                                                                                                       \r\nDEBUG    Adding pyproject.toml to archive                                                                                                                                   \r\nDEBUG    Adding README.md to archive                                                                                                                                        \r\nDEBUG    Adding .python-version to archive                                                                                                                                  \r\nDEBUG    Adding docker-compose.yml to archive                                                                                                                               \r\nDEBUG    Adding main.py to archive                                                                                                                                          \r\nDEBUG    Adding .idea/dataSources.xml to archive                                                                                                                            \r\nDEBUG    Adding .idea/inspectionProfiles/Project_Default.xml to archive                                                                                                     \r\nDEBUG    Adding .idea/Nexora.iml to archive                                                                                                                                 \r\nDEBUG    Adding .idea/modules.xml to archive                                                                                                                                \r\nDEBUG    Adding .idea/misc.xml to archive                                                                                                                                   \r\nDEBUG    Adding src/app/core/**.py to archive                                                                                                                               \r\nDEBUG    Adding src/app/core/__init__.py to archive                                                                                                                         \r\nDEBUG    Adding src/app/__init__.py to archive                                                                                                                              \r\nDEBUG    Adding src/app/utils/**.py to archive                                                                                                                            \r\nDEBUG    Adding src/app/utils/__init__.py to archive                                                                                                                        \r\nDEBUG    Adding src/app/repositories/**.py to archive                                                                                                               \r\nDEBUG    Adding src/app/repositories/**.py to archive                                                                                                         \r\nDEBUG    Adding src/app/repositories/__init__.py to archive                                                                                                                 \r\nDEBUG    Adding src/app/repositories/**.py to archive                                                                                                            \r\nDEBUG    Adding src/app/models/__init__.py to archive                                                                                                                       \r\nDEBUG    Adding src/app/models/api.py to archive                                                                                                                            \r\nDEBUG    Adding src/app/models/**.py to archive                                                                                                                           \r\nDEBUG    Adding src/app/storage/**.py to archive                                                                                                                            \r\nDEBUG    Adding src/app/storage/**.py to archive                                                                                                                         \r\nDEBUG    Adding src/app/storage/__init__.py to archive                                                                                                                      \r\nDEBUG    Adding src/app/api/__init__.py to archive                                                                                                                          \r\nDEBUG    Adding src/app/api/v2/__init__.py to archive                                                                                                                       \r\nDEBUG    Adding src/app/api/v2/**.py to archive                                                                                                                           \r\nDEBUG    Adding src/app/api/base/**.py to archive                                                                                                                         \r\nDEBUG    Adding src/app/api/base/system.py to archive                                                                                                                       \r\nDEBUG    Adding src/app/api/base/__init__.py to archive                                                                                                                     \r\nDEBUG    Adding src/app/services/system_service.py to archive                                                                                                               \r\nDEBUG    Adding src/app/services/__init__.py to archive                                                                                                                     \r\nDEBUG    Adding src/app/services/**.py to archive                                                                                                                 \r\nDEBUG    Adding src/__init__.py to archive                                                                                                                                  \r\nDEBUG    Adding src/main.py to archive                                                                                                                                      \r\nDEBUG    Archive created successfully with 47 files                                                                                                                         \r\nDEBUG    Creating deployment for app: ********-1fae-45fa-af06-************                                                                                                  \r\n          🐓 Creating deploymentDEBUG    Starting deployment upload for deployment: ********-6d56-4607-a0ab-************                                                                                    \r\nDEBUG    Archive path: /var/folders/x6/s8s9wt6x7fb51qxh28k9y5sw0000gn/T/tmpp4lxujdu/archive.tar, size: 107136 bytes                                                         \r\n          🐔 Uploading deployment (104.62 KB)...DEBUG    Requesting upload URL from API                                                                                                                                     \r\n          🐤 Uploading deployment (104.62 KB)...DEBUG    Received upload URL: https://fastapicloud-deployments-production-*******.s3.amazonaws.com/                                                                         \r\nDEBUG    Starting file upload to S3                                                                                                                                         \r\n          🐔 Uploading deployment (104.62 KB of 104.62 KB)...DEBUG    File upload completed successfully                                                                                                                                 \r\nDEBUG    Notifying API that upload is complete                                                                                                                              \r\n          🐥 Uploading deployment (104.62 KB of 104.62 KB)...DEBUG    Upload notification sent successfully                                                                                                                              \r\n          📦 Deployment uploaded successfully!\r\n \r\nDEBUG    Waiting for deployment to complete                                                                                                                                 \r\n     cloud   Checking the status of your deployment 👀\r\n \r\n          🚀 Build complete!                                                                      \r\n                                                                                                  \r\n             Source unchanged! Reusing image from deployment ********-4d7f-4962-82e8-************.\r\n \r\n          ✅ Ready the chicken! 🐔 Your app is ready at https://ne****.fastapicloud.dev\r\n```",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "FastAPI Cloud account and dashboard setting",
+      "tagged_by": "draft"
     },
     {
       "id": 15328,
@@ -635,7 +823,10 @@
       "docs_links": [
         "https://fastapi.tiangolo.com/how-to/extending-openapi/"
       ],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Known OpenAPI 3.1 issue; only the workaround is in docs",
+      "tagged_by": "draft"
     },
     {
       "id": 15302,
@@ -646,7 +837,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15302#discussioncomment-16452833",
       "answer": "As for 2nd - you don't specify response model in that endpoint, so response validation logic doesn't work at all. Try specifying response model",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Vague question, short answer",
+      "tagged_by": "draft"
     },
     {
       "id": 15289,
@@ -657,7 +851,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15289#discussioncomment-16438270",
       "answer": "Regarding your first point:\r\n\r\nThe current behavior is validated by Pydantic, and there is no equivalence between `None` and an empty string. This convention may be useful for your specific use case, but it could be completely inappropriate in other contexts.\r\n\r\nRegarding the second point:\r\n\r\nIf the current example is not detailed enough to represent your issue, please provide a more complete one.\r\nIn any case, you can keep the current logic:\r\n\r\n```python\r\n@app.get(path=\"/items\", response_model=FilterParams, response_model_exclude_unset=True)\r\ndef get_example(filter_query: Annotated[FilterParams, Query()]) -> dict:\r\n    return filter_query.model_dump(exclude_unset=True)\r\n```\r\n\r\nAlternatively, you can omit both the parameters and the response model entirely from the route decorator.",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Two mixed questions; borderline",
+      "tagged_by": "draft"
     },
     {
       "id": 15278,
@@ -668,7 +865,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15278#discussioncomment-16482125",
       "answer": "@NouhJama, we managed to reproduce the issue. It's essentially happening when WSL is used, and the app's source code is stored in the Windows file system (i.e., in Linux, your code is mounted somewhere under the `/mnt` path).\r\n\r\nWe're working on a fix for this! A temporary workaround would be to move your code anywhere else inside Linux except for the `/mnt` directory (somewhere in `/home/yourusername` would be a good choice).\r\n\r\nUPDATE: A fix has been released. Make sure you update your project dependency to get the latest `fastapi-cloud-cli` version",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "fastapi-cloud-cli bug under WSL",
+      "tagged_by": "draft"
     },
     {
       "id": 15266,
@@ -679,7 +879,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15266#discussioncomment-16391321",
       "answer": "No, `Depends` will not work when you instantiate `House` manually. And there is no official way to achieve this (to make it resolve dependencies automatically).\r\nIn this case you need to pass the value for `kitchen` parameter explicitly",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Depends does not work on manual instantiation; not in docs",
+      "tagged_by": "draft"
     },
     {
       "id": 15264,
@@ -690,7 +893,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15264#discussioncomment-16391282",
       "answer": "The problem with openapi I mentioned before is:\r\n\r\nImagine your ControllerXX dependencies have required Query parameters\r\n\r\n```\r\nclass Controller1:\r\n    def __init__(self, limit: int):\r\n        ...\r\n\r\nclass Controller2:\r\n    def __init__(self, count: int):\r\n        ...\r\n```\r\n\r\nIn your case there probably no need to add request parameters, but in general dependencies allow this and we will need to handle this.\r\n\r\nNow you want to choose one of these controllers depending on payload.\r\nCurrently both, `limit` and `count` will be required. But you probably expect only one of them to be required depending on the payload. But it's currently impossible to declare such schema (with conditional Query parameters) in openapi.\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Feature limitation discussion",
+      "tagged_by": "draft"
     },
     {
       "id": 15211,
@@ -701,7 +907,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15211#discussioncomment-16322118",
       "answer": "Have you solved it?\r\n\r\nJust to exclude misunderstanding. After `pip install \"fastapi[standard]\"` you should do:\r\n\r\n```\r\n$ deactivate\r\n$ source .venv/bin/activate\r\n```",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Virtualenv not reactivated",
+      "tagged_by": "draft"
     },
     {
       "id": 15204,
@@ -712,7 +921,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15204#discussioncomment-16277225",
       "answer": "`Dependant` is not a part of public API. It's not documented in docs.\r\n\r\nFor now FastAPI doesn't have public API for integrations with other libs.\r\nWe have this in our plan, but for now you should pin FastAPI version and test before upgrading to newer version to prevent breaking your integration",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Dependant is not public API",
+      "tagged_by": "draft"
     },
     {
       "id": 15198,
@@ -723,7 +935,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15198#discussioncomment-16271573",
       "answer": "The OP is probably using the old API that was deprecated some years ago, and it was removed in 1.0.",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Starlette 1.0 removed the old TemplateResponse API",
+      "tagged_by": "draft"
     },
     {
       "id": 15147,
@@ -734,7 +949,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15147#discussioncomment-16204267",
       "answer": "Finally I came with this solution:\r\n\r\n```python\r\n    if not other_superusers:\r\n        raise DataConflictException(fields(UserUpdate).superuser, \"Cannot demote the last superuser\")\r\n```\r\n\r\nwhere exception is just derived from HTTPException:\r\n\r\n```python\r\nclass DataConflictException(HTTPException):\r\n    def __init__(self, field: str, msg: str, error_type: str = \"data conflict\"):\r\n        self.detail = [{\r\n            \"loc\": [\r\n                \"body\",\r\n                field\r\n            ],\r\n            \"msg\": msg,\r\n            \"type\": error_type\r\n        }]\r\n        self.status_code = status.HTTP_409_CONFLICT\r\n```\r\n\r\nAnd field name helper is taken from [this discussion](https://github.com/pydantic/pydantic/discussions/8600):\r\n\r\n```python\r\n@dataclass(frozen=True)\r\nclass _GetFields:\r\n    _model: type[BaseModel]\r\n\r\n    def __getattr__(self, item: str) -> Any:\r\n        if item in self._model.model_fields:\r\n            return item\r\n\r\n        return getattr(self._model, item)\r\n\r\n\r\nTModel = TypeVar(\"TModel\", bound=type[BaseModel])\r\n\r\n\r\ndef fields(model: TModel, /) -> TModel:\r\n    return cast(TModel, _GetFields(model))\r\n\r\n\r\nif not TYPE_CHECKING:\r\n    fields = lru_cache(maxsize=256)(fields)\r\n```",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Asker's own workaround, not a docs answer",
+      "tagged_by": "draft"
     },
     {
       "id": 15133,
@@ -745,7 +963,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15133#discussioncomment-16175125",
       "answer": "Try watching longer and you will likely notice that it reduces (I checked and it worked for me on Ubuntu).\r\n\r\nGarbage collector doesn't free the memory immediately. I think this is the reason",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "No real answer, garbage collector guess",
+      "tagged_by": "draft"
     },
     {
       "id": 15132,
@@ -756,7 +977,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15132#discussioncomment-16172897",
       "answer": "> Passing the `root_path` to FastAPI would be the equivalent of passing the `--root-path` command line option to Uvicorn or Hypercorn.\r\n\r\nThis statement in docs is not correct.\r\nIn fact, you should:\r\n* use `--root-path` when you run app behind a proxy which **strips** part of the path\r\n* use `root_path` parameter in the `FastAPI` constructor when you run app behind a proxy that **doesn't strip** part of the path\r\n\r\nI opened PR to fix docs: https://github.com/fastapi/fastapi/pull/14238",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Outdated: FastAPI(root_path=) is deprecated in 0.150.0",
+      "tagged_by": "draft"
     },
     {
       "id": 15098,
@@ -767,7 +991,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15098#discussioncomment-16097579",
       "answer": "Declaring file upload fields using Pydantic model is not officially supported ([see comment to closed PR](https://github.com/fastapi/fastapi/pull/14343#issuecomment-3600534954)).\r\n\r\nTo make your example work, you need to add `File()` annotation to `file` field:\r\n\r\n```py\r\nclass UploadForm(BaseModel):\r\n    name: str\r\n    file: Annotated[bytes, File()]\r\n```\r\n\r\nAnd specify `media_type=\"application/x-www-form-urlencoded\"` as follows to make schema correct:\r\n\r\n```py\r\n@app.post(\"/upload/\")\r\nasync def upload(data: Annotated[UploadForm, Form(media_type=\"application/x-www-form-urlencoded\")]):\r\n    return {\"name\": data.name, \"size\": len(data.file)}\r\n```\r\n\r\nOne more time: this is not officially supported. You can use it on your own risk)\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "File fields in Pydantic form models not officially supported",
+      "tagged_by": "draft"
     },
     {
       "id": 15092,
@@ -778,7 +1005,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15092#discussioncomment-16080476",
       "answer": "Yes!\r\n\r\nTwo conditions should be met:\r\n* Specify `response_model` (by specifying return type annotation or by setting `response_model`)\r\n* don't specify `response_class` and `default_response_class`",
       "docs_links": [],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "advanced/custom-response.md"
+      ],
+      "why": "Docs say a response model or return type is serialized to JSON directly",
+      "tagged_by": "draft"
     },
     {
       "id": 15089,
@@ -789,7 +1021,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15089#discussioncomment-16080428",
       "answer": "Opened PR to fix this: https://github.com/fastapi/fastapi/pull/15093/changes",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "PR #15093 opened",
+      "tagged_by": "draft"
     },
     {
       "id": 15084,
@@ -802,7 +1037,12 @@
       "docs_links": [
         "https://fastapi.tiangolo.com/advanced/behind-a-proxy/#testing-locally-with-traefik"
       ],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "advanced/behind-a-proxy.md"
+      ],
+      "why": "Answer links this page; --root-path assumes a proxy that strips the prefix",
+      "tagged_by": "draft"
     },
     {
       "id": 15066,
@@ -813,7 +1053,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15066#discussioncomment-16034947",
       "answer": "I hit the same thing and I believe the root cause is `include_router()`. Same endpoint, different schema depending on how it's registered:\n\n```python\nfrom collections.abc import AsyncIterable\n\nfrom fastapi import APIRouter, FastAPI\nfrom fastapi.sse import EventSourceResponse\nfrom pydantic import BaseModel\n\n\nclass ExampleEvent(BaseModel):\n    message: str\n    id: int\n\napp = FastAPI()\nsse_router = APIRouter()\n\n@app.post(\"/direct\", response_class=EventSourceResponse)\nasync def direct() -> AsyncIterable[ExampleEvent]:\n    for i in range(10):\n        yield ExampleEvent(message=f\"Hello {i}\", id=i)\n\n@sse_router.post(\"/routed\", response_class=EventSourceResponse)\nasync def routed() -> AsyncIterable[ExampleEvent]:\n    for i in range(10):\n        yield ExampleEvent(message=f\"Hello {i}\", id=i)\n\napp.include_router(sse_router)\n```\n\n`/direct` generates the correct `itemSchema` -- `data` has `contentMediaType` and `contentSchema` with the `$ref`:\n\n```json\n\"itemSchema\": {\n  \"type\": \"object\",\n  \"properties\": {\n    \"data\": {\n      \"type\": \"string\",\n      \"contentMediaType\": \"application/json\",\n      \"contentSchema\": { \"$ref\": \"#/components/schemas/ExampleEvent\" }\n    },\n    \"event\": { \"type\": \"string\" },\n    \"id\": { \"type\": \"string\" },\n    \"retry\": { \"type\": \"integer\", \"minimum\": 0 }\n  },\n  \"required\": [\"data\"]\n}\n```\n\n`/routed` loses the item type -- `contentMediaType`, `contentSchema`, and `required` are all dropped:\n\n```json\n\"itemSchema\": {\n  \"type\": \"object\",\n  \"properties\": {\n    \"data\": { \"type\": \"string\" },\n    \"event\": { \"type\": \"string\" },\n    \"id\": { \"type\": \"string\" },\n    \"retry\": { \"type\": \"integer\", \"minimum\": 0 }\n  }\n}\n```\n\nSo the missing schema is likely not an orval issue -- it looks like FastAPI itself generates an incomplete `itemSchema` when the endpoint goes through a router. FastAPI 0.135.1, Python 3.13.",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "OpenAPI schema lost through include_router",
+      "tagged_by": "draft"
     },
     {
       "id": 15060,
@@ -824,7 +1067,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15060#discussioncomment-16011966",
       "answer": "Thanks for reporting!\r\n\r\nDuplicate of https://github.com/fastapi/fastapi/discussions/14975",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Duplicate of #14975",
+      "tagged_by": "draft"
     },
     {
       "id": 15059,
@@ -835,7 +1081,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15059#discussioncomment-16413819",
       "answer": "Context vars can be difficult to deal with, they can be complex and hard to debug, depending on how you use them. But given you already have some complex code, they are probably right for your use case.\r\n\r\nHere are the caveats:\r\n\r\nIn FastAPI, you need to set them in an `async` dependency function or path operation, or an async middleware. If the function is non-async, FastAPI will run it on a thread worker. And if the context var is set on a thread worker, that is, let's say, a \"child\" context, so the value will **not** be propagated upwards.\r\n\r\nSo, you need to set the context in an async function.\r\n\r\nNow, if the code that gets the data to be set is non-async blocking code (e.g. calling a DB), and if you run it directly on the async function, it will block the event loop, blocking any other operation.\r\n\r\nSo, you will likely need to set the context var in an async function to some container (e.g. a dict) and then in the non-async blocking function that gets the data and sets the actual value (e.g. a user object), you can get the container value from the context var, and set the user inside of that container. This way, the blocking function is never really setting the value in the context var, it's only accessing it (the container), and modifying that container.\r\n\r\nSo, you will probably need something like this:\r\n\r\n```Python\r\nfrom contextvars import ContextVar\r\nfrom typing import Annotated\r\n\r\nfrom fastapi import Depends, FastAPI\r\n\r\napp = FastAPI()\r\n\r\n# The context var holds a container (dict), not the final value directly\r\nrequest_context: ContextVar[dict] = ContextVar(\"request_context\")\r\n\r\n\r\nasync def set_context():\r\n    \"\"\"Async dependency that initializes the context var with a container.\r\n\r\n    Must be async so the context var is set in the main async task,\r\n    not in a thread worker.\r\n    \"\"\"\r\n    ctx: dict = {}\r\n    token = request_context.set(ctx)\r\n    yield ctx\r\n    request_context.reset(token)\r\n\r\n\r\ndef get_user_from_db(ctx: Annotated[dict, Depends(set_context)]) -> dict:\r\n    \"\"\"Sync dependency, runs in a thread worker.\r\n\r\n    It receives the container from set_context and mutates it.\r\n    It never calls request_context.set(), only reads and mutates the\r\n    existing container, so the child-context limitation doesn't apply.\r\n    \"\"\"\r\n    # Simulate blocking DB lookup\r\n    user = {\"id\": 1, \"name\": \"Alice\", \"role\": \"admin\"}\r\n    ctx[\"user\"] = user\r\n    return user\r\n\r\n\r\n@app.get(\"/\")\r\nasync def root(user: Annotated[dict, Depends(get_user_from_db)]):\r\n    return {\r\n        \"user\": user,\r\n        \"role_from_ctx\": request_context.get().get(\"user\", {}).get(\"role\"),\r\n    }\r\n```",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "ContextVar caveats come from maintainer knowledge, not docs",
+      "tagged_by": "draft"
     },
     {
       "id": 15044,
@@ -846,7 +1095,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15044#discussioncomment-15982388",
       "answer": "Thanks for reporting!\r\n\r\nThere is already https://github.com/fastapi/fastapi/discussions/14975, let's track it there",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Duplicate of #14975",
+      "tagged_by": "draft"
     },
     {
       "id": 15042,
@@ -857,7 +1109,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/15042#discussioncomment-15984752",
       "answer": "Great question! Here's a clear breakdown of class-based middleware in FastAPI/Starlette:\r\n\r\n## Class-Based Middleware — Two Approaches\r\n\r\n### 1. Pure ASGI Middleware (using `__init__` and `__call__`)\r\nThis is the lower-level approach:\r\n\r\nfrom starlette.types import ASGIApp, Receive, Scope, Send\r\n\r\nclass AuthMiddleware:\r\n    def __init__(self, app: ASGIApp):\r\n        self.app = app\r\n\r\n    async def __call__(self, scope: Scope, receive: Receive, send: Send):\r\n        if scope[\"type\"] == \"http\":\r\n            # your auth logic here\r\n            token = dict(scope.get(\"headers\", [])).get(b\"authorization\", b\"\").decode()\r\n            if not token:\r\n                # reject request\r\n                pass\r\n        await self.app(scope, receive, send)\r\n\r\n### 2. BaseHTTPMiddleware (using `dispatch`)\r\nThis is the higher-level, easier approach:\r\n\r\nfrom starlette.middleware.base import BaseHTTPMiddleware\r\nfrom starlette.requests import Request\r\n\r\nclass AuthMiddleware(BaseHTTPMiddleware):\r\n    async def dispatch(self, request: Request, call_next):\r\n        token = request.headers.get(\"authorization\")\r\n        if not token:\r\n            return Response(\"Unauthorized\", status_code=401)\r\n        response = await call_next(request)\r\n        return response\r\n\r\n## When to use which?\r\n- Use `dispatch` (BaseHTTPMiddleware) → simpler, cleaner, recommended for most use cases\r\n- Use `__call__` (Pure ASGI) → better performance, needed for WebSockets or streaming\r\n\r\n## Register in FastAPI:\r\napp.add_middleware(AuthMiddleware)\r\n\r\nHope this helps! 🚀",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Pure ASGI and BaseHTTPMiddleware are Starlette topics",
+      "tagged_by": "draft"
     },
     {
       "id": 14990,
@@ -871,7 +1126,12 @@
         "https://fastapi.tiangolo.com/release-notes/#01210",
         "https://fastapi.tiangolo.com/tutorial/dependencies/dependencies-with-yield/#early-exit-and-scope"
       ],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "tutorial/dependencies/dependencies-with-yield.md"
+      ],
+      "why": "Answer links the \"Early exit and scope\" section",
+      "tagged_by": "draft"
     },
     {
       "id": 14980,
@@ -884,7 +1144,12 @@
       "docs_links": [
         "https://fastapi.tiangolo.com/advanced/custom-response/#custom-response-class"
       ],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "advanced/custom-response.md"
+      ],
+      "why": "Answer links the \"Custom response class\" section",
+      "tagged_by": "draft"
     },
     {
       "id": 14975,
@@ -895,7 +1160,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14975#discussioncomment-15903138",
       "answer": "Hello!\r\n\r\nYou can try this workaround until this is fixed:\r\n\r\n```python3\r\nfrom fastapi import FastAPI, UploadFile as UF, File\r\nfrom typing import Annotated\r\nfrom pydantic import WithJsonSchema\r\n\r\napp = FastAPI()\r\n\r\nUploadFile = Annotated[UF, WithJsonSchema({\"type\": \"string\", \"format\": \"binary\"})]\r\n\r\n@app.post(\"/upload\")\r\nasync def upload(files: list[UploadFile] = File(...)):\r\n    return {\"count\": len(files)}\r\n```",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Swagger file picker bug, workaround only",
+      "tagged_by": "draft"
     },
     {
       "id": 14967,
@@ -906,7 +1174,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14967#discussioncomment-15895997",
       "answer": "Hey! Ran into this exact same limitation a while ago. The tricky part is that ASGI itself doesn't actually have a native \"server is actively listening\" event, which is why lifespan blocks until you yield.\r\n\r\nIf you just need to kick off a background process right around startup without blocking the server from handling requests, the easiest way is to just drop an asyncio.create_task right before the yield. Since you don't await it, FastAPI will continue starting up:\r\n\r\n```Python\r\nimport asyncio\r\nfrom contextlib import asynccontextmanager\r\nfrom fastapi import FastAPI\r\n\r\nasync def my_background_job():\r\n    # Optional: give the server a second to bind to the port\r\n    await asyncio.sleep(1) \r\n    print(\"Running post-startup!\")\r\n\r\n@asynccontextmanager\r\nasync def lifespan(app: FastAPI):\r\n    # Fire and forget the task\r\n    task = asyncio.create_task(my_background_job())\r\n    yield\r\n    # Clean up gracefully on shutdown\r\n    task.cancel()\r\n\r\napp = FastAPI(lifespan=lifespan)\r\n```\r\n\r\nIf you strictly need to guarantee the socket is bound and the server is accepting HTTP traffic before your callback runs, you have to step outside FastAPI and handle it at the server level (e.g., Uvicorn). You can run Uvicorn programmatically and poll server.started:\r\n\r\n```Python\r\n\r\nimport asyncio\r\nimport uvicorn\r\nfrom fastapi import FastAPI\r\n\r\napp = FastAPI()\r\n\r\nasync def main():\r\n    config = uvicorn.Config(\"main:app\", port=8000)\r\n    server = uvicorn.Server(config)\r\n    \r\n    # Start server without blocking the main thread\r\n    server_task = asyncio.create_task(server.serve())\r\n    \r\n    # Wait until Uvicorn explicitly flags that it's ready\r\n    while not server.started:\r\n        await asyncio.sleep(0.1)\r\n        \r\n    print(\"Server is 100% ready and accepting requests now!\")\r\n    # ---> Do your post-startup stuff here <---\r\n    \r\n    await server_task\r\n\r\nif __name__ == \"__main__\":\r\n    asyncio.run(main())\r\n```\r\n\r\nHope this helps!",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "ASGI has no post-startup event; asyncio workaround",
+      "tagged_by": "draft"
     },
     {
       "id": 14955,
@@ -917,7 +1188,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14955#discussioncomment-15881491",
       "answer": "You can do something like:\r\n\r\n```python3\r\nfrom fastapi import FastAPI, Path\r\nfrom uuid import UUID\r\nfrom typing import Annotated\r\nfrom pydantic import WithJsonSchema\r\n\r\nDeprecatedUUID = Annotated[UUID, WithJsonSchema({\"type\": \"string\", \"format\": \"uuid\", \"deprecated\": True})]\r\n\r\napp = FastAPI()\r\n\r\n\r\n@app.get(\"/{value}\")\r\ndef fetch(value: Annotated[DeprecatedUUID | str, Path(description=\"A UUID or a string\")]):\r\n    return {\"hello\": \"world\"}\r\n```\r\n\r\nBut this just works on `/redoc`, so I think this is not FastAPI side",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Pydantic WithJsonSchema; works only in ReDoc",
+      "tagged_by": "draft"
     },
     {
       "id": 14936,
@@ -928,7 +1202,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14936#discussioncomment-15844577",
       "answer": "I don't think this is necessary. Any linter will easily find and highlight name shadowing..\r\n\r\nYou can always import it with `from fastapi import status as http_status`\r\n\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Naming suggestion, declined",
+      "tagged_by": "draft"
     },
     {
       "id": 14915,
@@ -939,7 +1216,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14915#discussioncomment-15795015",
       "answer": "Why `Python 3.14.0b4` when there is already `3.14.3`?",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "No real answer",
+      "tagged_by": "draft"
     },
     {
       "id": 14907,
@@ -950,7 +1230,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14907#discussioncomment-15786658",
       "answer": "There are real problems with file logging when you run multiple Uvicorn workers (--workers N).\r\n\r\nEach worker is a separate OS process. Stdlib handlers like FileHandler / RotatingFileHandler are thread-safe, but not multi-process safe. Multiple processes can interleave lines and break rotation (double-rotate, lost logs, rename clashes).\r\n\r\nUvicorn’s loggers (uvicorn.error, uvicorn.access) don’t fix this automatically. They’re just normal Python loggers configured by Uvicorn; if you point them at a file handler, you still have the same race unless you add a safe mechanism.\r\n\r\nBest practice (especially in Docker/K8s): log to stdout/stderr and let the platform collect/rotate (Docker logging driver, journald, Loki/ELK, etc.).\r\n\r\nIf you must log to files on a single host:\r\n- Use a multi-process-safe handler (file locking), e.g. concurrent-log-handler’s ConcurrentRotatingFileHandler\r\n- Use QueueHandler/QueueListener (one writer process/thread).\r\n\r\nAs a simpler fallback: write one file per worker (PID in filename), then aggregate later.\r\nMultiple containers/instances: don’t write all of them into the same shared file. Use stdout aggregation, or unique filenames per instance.",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Python logging with several Uvicorn workers",
+      "tagged_by": "draft"
     },
     {
       "id": 14889,
@@ -963,7 +1246,12 @@
       "docs_links": [
         "https://fastapi.tiangolo.com/tutorial/query-param-models/"
       ],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "tutorial/query-param-models.md"
+      ],
+      "why": "Answer links this page",
+      "tagged_by": "draft"
     },
     {
       "id": 14882,
@@ -974,7 +1262,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14882#discussioncomment-15753662",
       "answer": "See PR: https://github.com/fastapi/fastapi/pull/14863",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #14863",
+      "tagged_by": "draft"
     },
     {
       "id": 14861,
@@ -985,7 +1276,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14861#discussioncomment-15741097",
       "answer": "FastAPI's `HTTPConnection` (base class for `Request` and `WebSocket`) is just a re-export of Starlette's `HTTPConnection`: https://github.com/fastapi/fastapi/blob/cd31576d5704b6aef1bdadc43770238cd88aad2b/fastapi/requests.py#L1\r\n\r\nSo, I think you should ask this in Starlette repository: https://github.com/Kludex/starlette/discussions",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "HTTPConnection is Starlette's class",
+      "tagged_by": "draft"
     },
     {
       "id": 14852,
@@ -996,7 +1290,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14852#discussioncomment-15742881",
       "answer": "I think I agree with @clefeu here. I don't see a reason not to support nested annotated types..\r\n\r\nIt seems to be easy to fix this by just unwrapping annotated in `field_annotation_is_scalar_sequence`: https://github.com/fastapi/fastapi/pull/14874\r\n\r\n**UPD:** not so easy :)\r\n\r\n**UPD 2:** still easy - updated PR",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #14874",
+      "tagged_by": "draft"
     },
     {
       "id": 14821,
@@ -1007,7 +1304,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14821#discussioncomment-15696590",
       "answer": "Duplicate of https://github.com/fastapi/fastapi/discussions/9462, thanks @Kludex.",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Closed as duplicate, no answer",
+      "tagged_by": "draft"
     },
     {
       "id": 14812,
@@ -1018,7 +1318,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14812#discussioncomment-15691722",
       "answer": "FastAPI doesn't use neither `status.HTTP_422_UNPROCESSABLE_ENTITY` nor `status.HTTP_422_UNPROCESSABLE_CONTENT` internally. So, there is no incompatibility issue on FastAPI's side.\r\n\r\nI think you should fix this on your side by pinning the version of Starlette in your application's dependencies",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Starlette version pinning",
+      "tagged_by": "draft"
     },
     {
       "id": 14811,
@@ -1029,7 +1332,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14811#discussioncomment-15701602",
       "answer": "Hey. I've created PR to fix this: https://github.com/fastapi/fastapi/pull/14828",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "PR #14828 opened",
+      "tagged_by": "draft"
     },
     {
       "id": 14807,
@@ -1040,7 +1346,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14807#discussioncomment-15684899",
       "answer": "Since `broadcaster` and `fastapi-socketio` are archived, here are the actively maintained options in 2026:\n\n## Recommended Solutions\n\n### 1. **python-socketio** (Most Popular)\n```bash\npip install python-socketio\n```\n\n```python\nimport socketio\nfrom fastapi import FastAPI\n\nsio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')\napp = FastAPI()\nsocket_app = socketio.ASGIApp(sio, app)\n\n@sio.event\nasync def connect(sid, environ):\n    print(f\"Client connected: {sid}\")\n\n@sio.event\nasync def message(sid, data):\n    await sio.emit('response', {'data': data}, room=sid)\n```\n\nFor horizontal scaling, use Redis adapter:\n```python\nimport socketio\n\nmgr = socketio.AsyncRedisManager('redis://localhost:6379')\nsio = socketio.AsyncServer(client_manager=mgr, async_mode='asgi')\n```\n\n### 2. **Redis Pub/Sub Directly** (Simplest)\n```python\nimport redis.asyncio as redis\nfrom fastapi import WebSocket\n\nredis_client = redis.from_url(\"redis://localhost:6379\")\n\n@app.websocket(\"/ws/{channel}\")\nasync def websocket_endpoint(websocket: WebSocket, channel: str):\n    await websocket.accept()\n    pubsub = redis_client.pubsub()\n    await pubsub.subscribe(channel)\n\n    async for message in pubsub.listen():\n        if message[\"type\"] == \"message\":\n            await websocket.send_text(message[\"data\"].decode())\n```\n\n### 3. **Centrifugo** (Production-Grade)\nStandalone server, connects via HTTP API:\n- Handles millions of connections\n- Built-in Redis/NATS/Kafka support\n- Dashboard included\n\nGitHub: https://github.com/centrifugal/centrifugo\n\n### Comparison\n\n| Solution | Complexity | Scalability | Maintenance |\n|----------|------------|-------------|-------------|\n| python-socketio + Redis | Medium | High | Active |\n| Redis Pub/Sub | Low | High | N/A (Redis) |\n| Centrifugo | High (setup) | Very High | Active |\n\n**My recommendation**: Start with `python-socketio` + Redis adapter. It's the most documented and actively maintained option for FastAPI in 2026.\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Third-party WebSocket libraries",
+      "tagged_by": "draft"
     },
     {
       "id": 14788,
@@ -1053,7 +1362,12 @@
       "docs_links": [
         "https://fastapi.tiangolo.com/contributing/#request-a-new-language"
       ],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "contributing.md"
+      ],
+      "why": "Answer links the \"Request a New Language\" section",
+      "tagged_by": "draft"
     },
     {
       "id": 14784,
@@ -1064,7 +1378,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14784#discussioncomment-15658904",
       "answer": "https://github.com/fastapi/fastapi/pull/14789",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #14789",
+      "tagged_by": "draft"
     },
     {
       "id": 14775,
@@ -1075,7 +1392,13 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14775#discussioncomment-15604954",
       "answer": "> This causes an incorrect openapi.json to be generated that cannot be used with Swagger UI and does not work as the documentation says\r\n\r\nWhat do you mean by saying \"Swagger UI and does not work\"?\r\n\r\nSwagger docs work well:\r\n\r\n<img width=\"1103\" height=\"688\" alt=\"image\" src=\"https://github.com/user-attachments/assets/eb7d331a-3d16-4b19-b672-f00036e66ebd\" />\r\n\r\n---\r\n\r\nPrefix is added to `servers` and clients should use it to perform requests:\r\n\r\n<img width=\"137\" height=\"55\" alt=\"image\" src=\"https://github.com/user-attachments/assets/1caf470d-30b4-4b68-aea8-af2c22a3bf88\" />\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "advanced/sub-applications.md",
+        "advanced/behind-a-proxy.md"
+      ],
+      "why": "Borderline: mount path goes into root_path and servers; please check",
+      "tagged_by": "draft"
     },
     {
       "id": 14768,
@@ -1086,7 +1409,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14768#discussioncomment-15665085",
       "answer": "Hello, thanks for your question.\r\n\r\n## TL;DR\r\n\r\nNo, it is currently not possible to specify the log level (e.g., `--log-level debug`) using the `fastapi run` or `fastapi dev` commands.\r\n\r\n## Explanation\r\n\r\nThe `fastapi` CLI presently hardcodes the logging configuration for the underlying Uvicorn server to `INFO` (ref code [1](https://github.com/fastapi/fastapi-cli/blob/main/src/fastapi_cli/utils/cli.py#L23-L62) and [2](https://github.com/fastapi/fastapi-cli/blob/main/src/fastapi_cli/cli.py#L232)). It does not expose a flag to change this, nor does it respect standard environment variables like `UVICORN_LOG_LEVEL` because the explicit internal configuration overrides them.\r\n\r\n### `--verbose` flag\r\n\r\nYou might have noticed a `--verbose` flag in the CLI help. For example: `fastapi --verbose run app/main.py`.\r\n\r\nThis does not enable debug logs for your application. It only enables debug logging for the fastapi CLI tool processes (like file discovery, import logic, etc.). It has no effect on the running server or your application logs.\r\n\r\n## Workaround\r\n\r\nThe workaround available right now is to use `uvicorn` directly instead of the `fastapi` CLI as you have suggested or you can contribute to the fast API CLI source code by making this change, contributions are always welcome :)",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "fastapi CLI has no log-level flag; not in docs",
+      "tagged_by": "draft"
     },
     {
       "id": 14765,
@@ -1097,7 +1423,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14765#discussioncomment-15642292",
       "answer": "The issue was in `rich-toolkit` dependency and it was fixed by @patrick91 in `0.17.2`: https://github.com/patrick91/rich-toolkit/releases/tag/0.17.2\r\n\r\nSo, upgrade `rich-toolkit` to `>=0.17.2` and it should work!",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "rich-toolkit bug",
+      "tagged_by": "draft"
     },
     {
       "id": 14742,
@@ -1108,7 +1437,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14742#discussioncomment-17772120",
       "answer": "Thank you for all the investigation and report about this! And thanks for the intial work in a PR.\r\n\r\nI used the reasearch you did (plus some other reported by others) to make this one https://github.com/fastapi/fastapi/pull/16049, I wanted to handle `Dependant`s properties in a different way.\r\n\r\nIt is now released in FastAPI 0.140.0. :coffee: ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #16049",
+      "tagged_by": "draft"
     },
     {
       "id": 14741,
@@ -1119,7 +1451,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14741#discussioncomment-15550001",
       "answer": "Before 0.118.2 there was a bug and FastAPI failed to correctly recognize the list type if it was specified using `Annotated` inside the `Union` (like `Annotated[list[str], Query()] | None`).\r\n\r\nIn 0.118.2 that bug was fixed and FastAPI now parses this parameter as list and passes list with one element to validator. You can see this in printed log: `BeforeValidator called with: ['a,b,c']`.\r\n\r\nSo, to fix your code example you need to modify `parse_comma_separated` to handle `value` parameter passes as list:\r\n\r\n```\r\ndef parse_comma_separated(value: str | list | None) -> list[str] | None:\r\n    \"\"\"Convert comma-separated string to list.\"\"\"\r\n    print(f\"BeforeValidator called with: {value!r}\")  # Debug: see if this gets called\r\n    if isinstance(value, list) and len(value) == 1:\r\n        value = value[0]\r\n    if isinstance(value, str):\r\n        return [item.strip() for item in value.split(\",\") if item.strip()]\r\n    return value\r\n```\r\n\r\nAnd, you don't need to use union in `items: CommaSeparatedList | None = None` - just `items: CommaSeparatedList = None` is correct since `CommaSeparatedList` is already `list[str] | None`",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Behaviour change after a bug fix; not in docs",
+      "tagged_by": "draft"
     },
     {
       "id": 14719,
@@ -1132,7 +1467,12 @@
       "docs_links": [
         "https://fastapi.tiangolo.com/release-notes/#01110"
       ],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "release-notes.md"
+      ],
+      "why": "Answer links the 0.111.0 release notes",
+      "tagged_by": "draft"
     },
     {
       "id": 14709,
@@ -1143,7 +1483,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14709#discussioncomment-15757512",
       "answer": "Have you tested on latest version (0.128.7)?",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "No real answer",
+      "tagged_by": "draft"
     },
     {
       "id": 14698,
@@ -1154,7 +1497,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14698#discussioncomment-15543082",
       "answer": "I think `WebSocketRequestValidationError` is intended to be used during the connection stage only (before `await websocket.accept()`).\r\n\r\nTo indicate an error in input data sent through the opened websocket connection you can raise `WebSocketException`:\r\n\r\n```\r\nfrom fastapi import FastAPI, WebSocket, WebSocketException\r\n\r\napp = FastAPI()\r\n\r\n\r\n@app.websocket(\"/ws\")\r\nasync def websocket_endpoint(websocket: WebSocket):\r\n    await websocket.accept()\r\n    # Trigger a WebSocket error\r\n    raise WebSocketException(\r\n        code=1008,\r\n        reason=\"Custom WebSocket validation error occurred.\",\r\n    )\r\n```\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "advanced/websockets.md"
+      ],
+      "why": "Docs say to raise WebSocketException inside a WebSocket",
+      "tagged_by": "draft"
     },
     {
       "id": 14642,
@@ -1165,7 +1513,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14642#discussioncomment-15463481",
       "answer": "serve is correct, it's a browser issue. \r\nI sent the request using the console in the Chromium Edge developer tools.\r\nI went to Stack Overflow, and luckily, I guessed a few keywords for the search and found a related question from three years ago.\r\nAmong the many answers, I found a clue. The reason for this phenomenon is a browser issue. Any browser with the Chromium core may have this problem.\r\n\r\nConclusion:\r\nChromium will intercept the same GET requests and try to wait for the results to establish a cache. When connecting to 127 local, it may allow multiple requests to execute one by one because of the local client-server setup. When calling remotely, only one request remains.\r\nAt the same time, I rewrote the consecutive requests using Python and Node.js and got the expected results.\r\n\r\nStack Overflow really lives up to its reputation!",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Chromium caches identical GET requests",
+      "tagged_by": "draft"
     },
     {
       "id": 14637,
@@ -1176,7 +1527,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14637#discussioncomment-15389310",
       "answer": "It's probably just a mistake.\r\nThere is a PR that adds more info to error response context: https://github.com/fastapi/fastapi/pull/14089",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "PR #14089 adds more error info",
+      "tagged_by": "draft"
     },
     {
       "id": 14601,
@@ -1189,7 +1543,12 @@
       "docs_links": [
         "https://fastapi.tiangolo.com/tutorial/query-param-models/"
       ],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "tutorial/query-param-models.md"
+      ],
+      "why": "Answer links this page",
+      "tagged_by": "draft"
     },
     {
       "id": 14596,
@@ -1200,7 +1559,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14596#discussioncomment-15332882",
       "answer": "We are working on new translations and we temporarily disabled outdated translations: https://github.com/fastapi/fastapi/pull/14555\r\n\r\nWe will enable them back soon after we re-translate them using our new approach (automated with LLM)",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "About docs translations, not using FastAPI",
+      "tagged_by": "draft"
     },
     {
       "id": 14566,
@@ -1211,7 +1573,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14566#discussioncomment-15290823",
       "answer": "We temporarily disabled docs for languages other than English, German, Portuguese, Spanish and Russian.\r\nWe will enable them back as soon as we finish translating them with our new LLM-powered pipeline.\r\n\r\nYou can help us reviewing related PRs. Currently https://github.com/fastapi/fastapi/pull/14545 is awaiting for reviews from Japanise native speakers - this is a LLM-prompt that will later be used to translate docs to Japanese",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "About docs translations, not using FastAPI",
+      "tagged_by": "draft"
     },
     {
       "id": 14495,
@@ -1222,7 +1587,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14495#discussioncomment-15233019",
       "answer": "Thanks for the report! I created an issue here: https://github.com/fastapi/fastapi/issues/14508\r\n\r\nI'm looking at this now.\r\n\r\nI fixed it here: https://github.com/fastapi/fastapi/pull/14512, it is now available in FastAPI 0.124.3 :tada: ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #14512",
+      "tagged_by": "draft"
     },
     {
       "id": 14489,
@@ -1233,7 +1601,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14489#discussioncomment-15222090",
       "answer": "Can be fixed by https://github.com/fastapi/fastapi/pull/14490, but we should probably add more tests",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "PR #14490",
+      "tagged_by": "draft"
     },
     {
       "id": 14481,
@@ -1244,7 +1615,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14481#discussioncomment-15217310",
       "answer": "Actually, I think I found the issue.\r\n`ValidationException` has one positional argument `errors: Sequence[Any]` and you are passing a single string to it. This string is also a sequence of strings (sequence of characters).\r\nTry raising the error passing a list with that single string:\r\n\r\n```diff\r\ndef create_or_update_folder(...):\r\n    user = get_user_by_email(db, assigned_user_email)\r\n    if not user:\r\n        raise UserWithEmailNotFound(\r\n-            f\"Assigned user with email {assigned_user_email} not found.\"\r\n+            [f\"Assigned user with email {assigned_user_email} not found.\"]\r\n        )\r\n```\r\n\r\nOr, modify `UserWithEmailNotFound` to accept `error: str` and pass it to parent constructor as `errors=[error]`",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Plain Python: a string passed where a list was expected",
+      "tagged_by": "draft"
     },
     {
       "id": 14478,
@@ -1255,7 +1629,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14478#discussioncomment-15208629",
       "answer": "@imredobos, thanks for reporting!\r\n\r\nThis is reproducible without FastAPI:\r\n\r\n```py\r\nfrom pydantic import TypeAdapter\r\nfrom pydantic.v1 import BaseModel\r\n\r\n\r\nclass Item(BaseModel):\r\n    name: str\r\n\r\n\r\nadapter = TypeAdapter(dict[str, str | Item])\r\n\r\nadapter.validate_python({\"item_id\": \"123\", \"item\": Item(name=\"foo\")})\r\n# TypeError: BaseModel.validate() takes 2 positional arguments but 3 were given\r\n```\r\n\r\nAnd, there is a closed issue in Pydantic repo: https://github.com/pydantic/pydantic/issues/9682\r\n\r\nSo, I'm not sure we can do something here..\r\n\r\n---\r\n\r\nAs a workaround, try using Root model to define response model:\r\n\r\n```py\r\nfrom fastapi import FastAPI\r\nfrom pydantic.v1 import BaseModel\r\n\r\napp = FastAPI()\r\n\r\n\r\nclass Item(BaseModel):\r\n    name: str\r\n\r\nclass Container(BaseModel):\r\n    __root__: dict[str, str | Item]\r\n\r\n@app.put(\"/items/{item_id}\", response_model=Container)\r\nasync def update_item(item_id: str, item: Item):\r\n    results = {\"item_id\": item_id, \"item\": item}\r\n    return results\r\n```\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Pydantic v1 model inside a v2 TypeAdapter",
+      "tagged_by": "draft"
     },
     {
       "id": 14464,
@@ -1266,7 +1643,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14464#discussioncomment-15219577",
       "answer": "Thanks for the very simple replicable example @edgarrmondragon! :rocket: \r\n\r\nI used it in the tests.\r\n\r\nI created an issue here for completeness: https://github.com/fastapi/fastapi/issues/14484\r\n\r\nThis should be solved by https://github.com/fastapi/fastapi/pull/14485\r\n\r\nIt's available in FastAPI 0.124.2, just released :tada: ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #14485",
+      "tagged_by": "draft"
     },
     {
       "id": 14462,
@@ -1277,7 +1657,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14462#discussioncomment-15169414",
       "answer": "This is a known limitation. For now combining Query model with single parameters or combining several Query models in one path operation is not supported",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Known limitation, not in docs",
+      "tagged_by": "draft"
     },
     {
       "id": 14452,
@@ -1288,7 +1671,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14452#discussioncomment-15165463",
       "answer": "Here is my attempt to fix this: https://github.com/fastapi/fastapi/pull/14458",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "PR #14458",
+      "tagged_by": "draft"
     },
     {
       "id": 14451,
@@ -1299,7 +1685,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14451#discussioncomment-15159107",
       "answer": "Thanks for reporting!\r\n\r\nI'm working on this: https://github.com/fastapi/fastapi/pull/14453 ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "PR #14453",
+      "tagged_by": "draft"
     },
     {
       "id": 14442,
@@ -1310,7 +1699,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14442#discussioncomment-15155361",
       "answer": "This should be fixed by https://github.com/fastapi/fastapi/pull/14448\r\n\r\nIt's now released in FastAPI 0.123.6 :tada: ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #14448",
+      "tagged_by": "draft"
     },
     {
       "id": 14428,
@@ -1321,7 +1713,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14428#discussioncomment-15172324",
       "answer": "`example` property is deprecated by openapi specification. FastAPI just follows the specification.\r\n\r\nSee: https://spec.openapis.org/oas/v3.1.0#fixed-fields-19\r\n\r\n<img width=\"808\" height=\"224\" alt=\"image\" src=\"https://github.com/user-attachments/assets/eff15d1e-49b3-4265-b30f-a2338b339de3\" />\r\n\r\n---\r\n\r\nUse `examples` and `openapi_examples`:\r\n\r\n```py\r\nfrom typing import Annotated\r\n\r\nfrom fastapi import FastAPI, Path\r\nfrom pydantic import BaseModel, Field\r\n\r\n\r\nclass MY_OBJ(BaseModel):\r\n    id: Annotated[int, Field(examples=[5])]\r\n    name: Annotated[int, Field(examples=[\"object name example\"])]\r\n\r\napp = FastAPI()\r\n\r\n@app.get(\"/v0/my_obj/{objectid}\")\r\ndef get_my_obj(\r\n    objectid: int = Path(..., openapi_examples={\"example1\": {\"value\": 5}}),\r\n) -> list[MY_OBJ]:\r\n    pass\r\n\r\n```\r\n<img width=\"417\" height=\"533\" alt=\"image\" src=\"https://github.com/user-attachments/assets/59e39360-4a3a-4494-846e-edc0aad18b77\" />\r\n\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "tutorial/schema-extra-example.md"
+      ],
+      "why": "Docs say example is deprecated and to use examples / openapi_examples",
+      "tagged_by": "draft"
     },
     {
       "id": 14424,
@@ -1332,7 +1729,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14424#discussioncomment-15511826",
       "answer": "Requirements line: \"starlette>=0.40.0,<0.51.0\"\n\nCVE affected versions: \"starlette>= 0.39.0, <= 0.49.0\"\n\nAs most of package managers prefer latest possible version during dependency resolution,  this will lead to installing 0.49.1 or 0.50.0 which are not affected by this CVE.\n\nCases then version with CVE is installed:\n* Starlette version is limited by some other dependency\n* Starlette version is explicitly limited by user\n* Starlette was installed long time ago into venv, and no package updates were performed since\n\nReleasing FastAPI with lower version limit bumped will not change anything in these 3 cases. If user wants to use specific Starlette version, of cannot upgrade, nothin will change.\nIt's not a FastAPI job to perform vulnerability scans or maintenance for dependencies used in user project.",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Starlette CVE and version ranges",
+      "tagged_by": "draft"
     },
     {
       "id": 14399,
@@ -1343,7 +1743,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14399#discussioncomment-15055578",
       "answer": "That makes sense to me, I already open a PR https://github.com/fastapi/fastapi/pull/14400\r\n\r\nLet's see other people opinion, but following the RFC you're correct",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "PR #14400",
+      "tagged_by": "draft"
     },
     {
       "id": 14380,
@@ -1354,7 +1757,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14380#discussioncomment-15037859",
       "answer": "By default, Pydantic would expect to validate the external data received when creating a model, but it will assume that if you set values in your own code, that code is already correct and has correct values.\r\n\r\nIf you're in a situation where you cannot trust the assignment of the values in the model from inside your same code, you can change the Pydantic model to also validate on assignment: https://docs.pydantic.dev/latest/api/config/#pydantic.config.ConfigDict.validate_assignment\r\n\r\nThis way it will raise a validation error that will become a server error right on the first line where the first incorrect value is set.\r\n\r\nFor example:\r\n\r\n```Python\r\nfrom fastapi import FastAPI\r\nfrom pydantic import BaseModel, EmailStr, Field\r\n\r\napp = FastAPI()\r\n\r\n\r\nclass UserIn(BaseModel):\r\n    email: EmailStr\r\n    age: int = Field(default=18, gt=0)\r\n    not_null: str\r\n\r\n    model_config = {\"validate_assignment\": True}\r\n\r\n\r\n@app.post(\"/user/\", response_model=UserIn)\r\nasync def create_user(user: UserIn) -> UserIn:\r\n    user.email = \"invalid email\"\r\n    user.age = -1\r\n    user.not_null = None\r\n    return user\r\n```\r\n\r\nNotice the:\r\n\r\n```Python\r\n    model_config = {\"validate_assignment\": True}\r\n```",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Pydantic validate_assignment",
+      "tagged_by": "draft"
     },
     {
       "id": 14377,
@@ -1365,7 +1771,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14377#discussioncomment-15172629",
       "answer": "This was fixed by https://github.com/fastapi/fastapi/pull/11355, works well with FastAPI 0.123.7+",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #11355",
+      "tagged_by": "draft"
     },
     {
       "id": 14376,
@@ -1376,7 +1785,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14376#discussioncomment-15051893",
       "answer": "hey @mattalexanderhill, \r\n\r\nOpenAPI spec generation should be deterministic. You are correct on that. Even though modern Python preserves insertion order, reliance on dictionary iteration order during complex recursive schema mapping is fragile and frequently breaks CI pipelines like yours.\r\n\r\nSince you have already identified the loop causing the non-determinism (`field_mapping.items()`), I strongly encourage you to **submit a PR to sort it**.\r\nSimply changing the iteration to `sorted(field_mapping.items(), key=lambda x: x[0].__name__)` (or a similar stable key) would likely solve this for the whole community. It is a valid bug that the spec generation fluctuates.\r\n\r\nThe issue is triggered because FastAPI detects a naming collision (`Response` vs `Response`) and enters that fallback resolution logic to generate the `routers__one__Response` names.\r\n\r\nTo unblock your CI immediately, the most robust fix is to bypass that collision logic entirely by ensuring the classes have unique names at the Python class definition level:\r\n\r\n```python\r\n# routers/one.py\r\nclass OneResponse(BaseModel): # Renamed from Response\r\n    data: Data\r\n\r\n# routers/two.py\r\nclass TwoResponse(BaseModel): # Renamed from Response\r\n    data: Data\r\n```\r\n\r\nI know this is similar to \"Option 2\" mentioned above, but it really is the only way to guarantee stability until the framework patch lands. Using `model_config` often isn't enough because FastAPI uses the class `__name__` to generate the `$ref` keys in `components/schemas`, which is where the collision resolution logic kicks in.\r\n\r\n**If you find this breakdown helpful for your debugging, please mark this response as the answer so others with similar OpenAPI spec generation needs can find it easily\\!**",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Nondeterministic schema names; PR suggested",
+      "tagged_by": "draft"
     },
     {
       "id": 14374,
@@ -1387,7 +1799,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14374#discussioncomment-15051875",
       "answer": "Hi @gbertoncelli-nw,\r\n\r\nThe `objgraph` trace pointing to `run_in_threadpool` is the key indicator here.\r\n\r\n**The likely cause**\r\nWhen you loop through the file with `await input_file.read(CHUNK_FILE_SIZE)`, you are dispatching a new task to the threadpool for *every single chunk*. For a large file, this creates thousands of short-lived thread tasks. This puts immense pressure on the `anyio` and `starlette` threadpool and the Python Garbage Collector, often leading to memory fragmentation or \"soft leaks\" where objects (like the captured `self.file` reference in the thread task) stay alive longer than expected.\r\n\r\n**Solution**\r\nSince `UploadFile` wraps a synchronous `SpooledTemporaryFile`, it is most efficient to perform the file copy completely synchronously within a *single* threadpool task, rather than switching back and forth between async and sync contexts for every chunk.\r\n\r\nTry replacing your read/write loop with `shutil.copyfileobj` wrapped in `run_in_threadpool`. This moves the heavy lifting to a worker thread and keeps the main loop clean.\r\n\r\n```python\r\nimport shutil\r\nfrom starlette.concurrency import run_in_threadpool\r\n\r\n# Define a sync helper function to do the copy\r\ndef save_file_sync(input_file_obj, output_path):\r\n    with open(output_path, \"wb\") as buffer:\r\n        shutil.copyfileobj(input_file_obj, buffer)\r\n\r\n# Inside your endpoint\r\nfor input_file in setup_files:\r\n    output_path = Path('sample_folder') / some_random_name()\r\n    \r\n    # Ensure the file cursor is at the start (just in case)\r\n    await input_file.seek(0)\r\n    \r\n    # Run the blocking copy operation in a separate thread\r\n    await run_in_threadpool(save_file_sync, input_file.file, output_path)\r\n```\r\n\r\n**your questions**\r\n\r\n**Is `FormData` or `UploadFile` memory leaking?**\r\n    Likely not the classes themselves, but the *usage pattern* involving thousands of `run_in_threadpool` calls creates references that are hard for the GC to clean up immediately. The `objgraph` references you see are likely the closures created for these thread tasks.\r\n\r\n**Is it correct to use `list[UploadFile]`?**\r\n    Yes, your annotation `Annotated[list[fastapi.UploadFile], fastapi.File()]` is correct. `python-multipart` handles this standardly.\r\n\r\n*Should I care to handle closing other resources?**\r\n    Your `UploadFilesContext` is excellent practice. However, if you switch to the `shutil` method above, you might find the manual closing is still necessary but the memory pressure will disappear because you aren't generating the massive object overhead during the read.",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Speculative memory answer",
+      "tagged_by": "draft"
     },
     {
       "id": 14366,
@@ -1398,7 +1813,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14366#discussioncomment-15011546",
       "answer": "This is fixed by https://github.com/fastapi/fastapi/pull/14282 and will be available in the next FastAPI release.",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #14282",
+      "tagged_by": "draft"
     },
     {
       "id": 14363,
@@ -1411,7 +1829,12 @@
       "docs_links": [
         "https://fastapi.tiangolo.com/how-to/custom-docs-ui-assets/#custom-cdn-for-javascript-and-css"
       ],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "how-to/custom-docs-ui-assets.md"
+      ],
+      "why": "Answer links the custom CDN section",
+      "tagged_by": "draft"
     },
     {
       "id": 14350,
@@ -1422,7 +1845,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14350#discussioncomment-15909224",
       "answer": "Thanks for the interest! As I mentioned in the PR, I'm currently not using Cassandra, I wouldn't have the bandwidth to maintain this extra tutorial. So I'll pass on this one for now. Thanks! ☕",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Contribution proposal, declined",
+      "tagged_by": "draft"
     },
     {
       "id": 14339,
@@ -1433,7 +1859,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14339#discussioncomment-14944126",
       "answer": "As your function is `async` and there is no any `await` inside it, it will be executed in one go without interruption.\r\nSo, your worker will only be able to handle 1 request at a time.\r\n\r\nIf you need to use blocking code in your endpoint functions (like you do in this code example), either convert this endpoint to sync (remove `async` from function signature) or use `run_in_threadpool` to run blocking code inside `async` function.\r\n\r\nOne more alternative (in your case better use on of the approaches above) is to make `client.beta.messages.create` async and add some `await asyncio.sleep(0)` inside it to let event loop execute other tasks.",
       "docs_links": [],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "async.md"
+      ],
+      "why": "Docs say blocking libraries need def, not async def",
+      "tagged_by": "draft"
     },
     {
       "id": 14336,
@@ -1444,7 +1875,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14336#discussioncomment-14935653",
       "answer": "`StreamingResponse` is actually just re-imported by FastAPI from Starlette.\r\n\r\nAnd this behavior can be reproduced with Starlette app.\r\nSo, this should be reported there: https://github.com/Kludex/starlette\r\n\r\n```py\r\nimport asyncio\r\n\r\nfrom starlette.applications import Starlette\r\nfrom starlette.responses import StreamingResponse\r\nfrom starlette.routing import Route\r\n\r\n\r\nasync def event_generator():\r\n    \"\"\"Generate server-sent events.\"\"\"\r\n    try:\r\n        count = 0\r\n        while True:\r\n            count += 1\r\n            yield f\"data: Message {count} from server\\n\\n\"\r\n            await asyncio.sleep(1)  # Send a message every second\r\n    finally:\r\n        print(\"Event generator closed (before await)\")\r\n        await asyncio.sleep(0)\r\n        print(\"Event generator closed (after await)\")\r\n\r\n\r\ndef sse(request):\r\n    return StreamingResponse(event_generator(), media_type=\"text/html\")\r\n\r\n\r\nroutes = [\r\n    Route(\"/sse\", sse),\r\n]\r\n\r\napp = Starlette(debug=True, routes=routes)\r\n\r\n```",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "StreamingResponse is Starlette's",
+      "tagged_by": "draft"
     },
     {
       "id": 14334,
@@ -1455,7 +1889,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14334#discussioncomment-14937374",
       "answer": "As I saw, `jsonable_encoder()` calls `asdict()` for `@dataclass`, doing it separately still not working, so I think thats not FastAPI side, but let's see someone else opinion.\r\n\r\nTest:\r\n```python3\r\nfrom pydantic import Field\r\nfrom pydantic.dataclasses import dataclass\r\nfrom dataclasses import asdict\r\n\r\n@dataclass\r\nclass Item:\r\n    name: str\r\n    price: float\r\n    description: str | None = Field(\r\n        default=None, description=\"The description of the item\"\r\n    )\r\n    tax: float | None = Field(\r\n        default=None, description=\"The tax applied to the item\"\r\n    )\r\n    excluded_field: str | None = Field(default=None, exclude=True)\r\n    excluded_if_field: str | None = Field(\r\n        default=None, exclude_if=lambda v: v is None\r\n    )\r\n\r\nitem1 = Item(\r\n    name=\"Sample Item\",\r\n    description=\"This is a sample item\",\r\n    price=10.5,\r\n    tax=1.5,\r\n    excluded_field=\"This field is excluded\",\r\n    excluded_if_field=None\r\n)\r\n\r\nitem2 = Item(\r\n    name=\"Another Item\",\r\n    description=None,\r\n    price=20.0,\r\n    tax=2.0,\r\n    excluded_field=\"This field is excluded\",\r\n    excluded_if_field=\"This field is included\"\r\n)\r\n\r\nitem1_dict = asdict(item1)\r\nitem2_dict = asdict(item2)\r\nimport dataclasses\r\nprint(dataclasses.is_dataclass(item1))\r\nprint(dataclasses.is_dataclass(item2))\r\nprint(f\"{item1_dict=}\")\r\nprint(f\"{item2_dict=}\")\r\n```\r\nOutput:\r\n> item1_dict={'name': 'Sample Item', 'price': 10.5, 'description': 'This is a sample item', 'tax': 1.5, 'excluded_field': 'This field is excluded', 'excluded_if_field': None}\r\nitem2_dict={'name': 'Another Item', 'price': 20.0, 'description': None, 'tax': 2.0, 'excluded_field': 'This field is excluded', 'excluded_if_field': 'This field is included'}",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Pydantic dataclasses and asdict",
+      "tagged_by": "draft"
     },
     {
       "id": 14329,
@@ -1466,7 +1903,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14329#discussioncomment-14934153",
       "answer": "Solved by the super nice people over on the [Pydantic issue](https://github.com/pydantic/pydantic/issues/12512). \r\nOne more `model_rebuild` was all that was needed.",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Pydantic model_rebuild",
+      "tagged_by": "draft"
     },
     {
       "id": 14326,
@@ -1477,7 +1917,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14326#discussioncomment-18596558",
       "answer": "This was a real bug, but it has been fixed upstream. I could reproduce it on FastAPI 0.121.0 (Pydantic 2.12.3), and it no longer occurs from **0.128.0** onwards.\n\n**Cause.** `jsonable_encoder` dumped the model with `model_dump(mode=\"json\")` and then ran a Pydantic v1-era check, `if \"__root__\" in obj_dict`. In Pydantic v2 a `RootModel` dumps to the bare root value, so for `RootModel[int]` that check became `\"__root__\" in 1`, which raises `TypeError: argument of type 'int' is not iterable`. It only went unnoticed for list/dict roots because `in` works on them.\n\nThe same substring check also broke `RootModel[str]` when the value contained `__root__` (`TypeError: string indices must be integers, not 'str'`).\n\n**Fix.** The `__root__` branch was removed together with Pydantic v1 support in #14609, first released in 0.128.0. I checked the versions directly:\n\n| FastAPI | `jsonable_encoder(Model(1))` |\n|---|---|\n| 0.121.0 | `TypeError` |\n| 0.127.1 | `TypeError` |\n| 0.128.0 | `1` |\n\n**If you can't upgrade yet**, unwrap the root yourself: `jsonable_encoder(model.root)` or `model.model_dump(mode=\"json\")`.\n\nThanks for the clear minimal example. I think this can be closed as fixed.",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed in 0.128.0 by PR #14609",
+      "tagged_by": "draft"
     },
     {
       "id": 14324,
@@ -1490,7 +1933,12 @@
       "docs_links": [
         "https://fastapi.tiangolo.com/tutorial/dependencies/sub-dependencies/#using-the-same-dependency-multiple-times"
       ],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "tutorial/dependencies/sub-dependencies.md"
+      ],
+      "why": "Answer links \"Using the same dependency multiple times\"",
+      "tagged_by": "draft"
     },
     {
       "id": 14323,
@@ -1501,7 +1949,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14323#discussioncomment-14951100",
       "answer": "Hello @bfontaine, \r\n\r\ncan you try the following?\r\n\r\n```python\r\nfrom typing import Annotated\r\nfrom fastapi import FastAPI, Depends\r\nfrom fastapi.openapi.utils import get_openapi\r\n\r\napp = FastAPI()\r\n\r\ndef get_random():\r\n    return 4\r\n\r\nRandom = Depends(get_random)\r\n\r\n@app.get(\"/\")\r\ndef show_random(r: Annotated[int | None, Random]):  # Place all types inside Annotated\r\n    return {\"r\": r}\r\n\r\n\r\nget_openapi(\r\n    title=\"Test\",\r\n    version=\"1\",\r\n    routes=app.routes\r\n)\r\n```\r\n\r\nI do not rember exactly when and if it ever worked with mixed typing annotation.\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Mixed Annotated typing breaks get_openapi; not in docs",
+      "tagged_by": "draft"
     },
     {
       "id": 14321,
@@ -1512,7 +1963,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14321#discussioncomment-14914669",
       "answer": "Yes, it's known issue.\r\nWe already have a PR, but it's incomplete: https://github.com/fastapi/fastapi/pull/13605\r\nIf somebody is ready to work on this - feel free to do so",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Known issue, incomplete PR #13605",
+      "tagged_by": "draft"
     },
     {
       "id": 14311,
@@ -1526,7 +1980,13 @@
         "https://fastapi.tiangolo.com/tutorial/dependencies/classes-as-dependencies/",
         "https://fastapi.tiangolo.com/tutorial/query-param-models/"
       ],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "tutorial/query-param-models.md",
+        "tutorial/dependencies/classes-as-dependencies.md"
+      ],
+      "why": "Answer links both pages",
+      "tagged_by": "draft"
     },
     {
       "id": 14300,
@@ -1537,7 +1997,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14300#discussioncomment-14889014",
       "answer": "> The `Query()` model parameter shows as a **map/object** in Swagger when a `Json[Model]` parameter is present, but shows as **individual query parameters** when the `Json[Model]` parameter is removed.\r\n\r\nThis (combining query model with other query parameters) is currently not supported.\r\nThere is a PR that attempts to add such support: https://github.com/fastapi/fastapi/pull/12481\r\n\r\nAs for **case 4**, I looked at it only briefly, but it seems to me that the schema is good. Why do you think this is not expected?\r\n\r\nIn **case 3** the schema is quite general, but I think it can't be improved (as far as I know, there is no way to express such logic for query parameters in openapi)",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Combining query models with other params not supported; PR #12481",
+      "tagged_by": "draft"
     },
     {
       "id": 14296,
@@ -1548,7 +2011,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14296#discussioncomment-14886342",
       "answer": "Hello @guldfisk,\r\nI can confirm the issue. It appears to be a bug either way you look at it. If function scope isn’t supported at the router level, it should be better documented and validated at runtime. If it is supported, then the behavior on API routes isn’t working as expected.\r\nI have opened a PR here: https://github.com/fastapi/fastapi/pull/14301",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "PR #14301",
+      "tagged_by": "draft"
     },
     {
       "id": 14292,
@@ -1559,7 +2025,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14292#discussioncomment-14936881",
       "answer": "There is no one \"right\" file structure.\r\nYou can search for existing FastAPI project templates or create your own.\r\n\r\nThere is also https://github.com/fastapi/fastapi-new but it's not exactly what you are looking for",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "No real answer",
+      "tagged_by": "draft"
     },
     {
       "id": 14288,
@@ -1570,7 +2039,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14288#discussioncomment-14893232",
       "answer": "Done ✅ \r\n\r\nhttps://github.com/pydantic/pydantic/issues/12492",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Reported to Pydantic",
+      "tagged_by": "draft"
     },
     {
       "id": 14265,
@@ -1581,7 +2053,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14265#discussioncomment-14998895",
       "answer": "Hi all! Thanks for the report. PR #14361 should fix this - it would be great if you can test your code with that branch and let us know on the PR if it solves your issue.",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "PR #14361",
+      "tagged_by": "draft"
     },
     {
       "id": 14263,
@@ -1592,7 +2067,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14263#discussioncomment-14841414",
       "answer": "Thanks for the complete report @oldfielj-ansto! :raised_hands: \r\n\r\nAnd thanks for the discussion here everyone. :coffee: \r\n\r\nThis was solved by @YuriiMotov in https://github.com/fastapi/fastapi/pull/14266. It was just released in FastAPI 0.120.4. :rocket: :tada: ",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Fixed by PR #14266",
+      "tagged_by": "draft"
     },
     {
       "id": 14259,
@@ -1603,7 +2081,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14259#discussioncomment-14862224",
       "answer": "I think to fully solve your problem the combination of #12481 and #13203 is needed",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Needs PRs #12481 and #13203",
+      "tagged_by": "draft"
     },
     {
       "id": 14251,
@@ -1614,7 +2095,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14251#discussioncomment-14824797",
       "answer": "I opened this PR time ago: https://github.com/fastapi/fastapi/pull/11425 \r\nAnd I forgot to create another one bc it was closed automatically bc I delete the repo in my profile\r\nOpening new one",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "PR #11425",
+      "tagged_by": "draft"
     },
     {
       "id": 14226,
@@ -1625,7 +2109,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14226#discussioncomment-14771382",
       "answer": "Are you talking about this page? https://github.com/fastapi/fastapi/blob/master/docs/en/docs/tutorial/body.md\r\n\r\nThere is no such type on that page\r\n\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Typo report that was wrong",
+      "tagged_by": "draft"
     },
     {
       "id": 14220,
@@ -1636,7 +2123,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14220#discussioncomment-19021318",
       "answer": "Thanks for flagging this!\r\n\r\nThe inconsistency between root_path and --root-path is definitely problematic. I don't want to unnecessarily provide two ways of achieving the same thing, when there's a canonical standard way to do it. So I'm now deprecating the parameter `root_path` from `FastAPI` in favor of the command flags and the ASGI provided ones.\r\n\r\nThe parameter root_path was there as a way to achieve what the old openapi_prefix did in a way closer to the ASGI standard, it was before Uvicorn provided a way to configure it (or before I realized it was there that it should be configured).\r\n\r\nBut it's always been there bothering me, so now I went ahead and deprecated it.",
       "docs_links": [],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "advanced/behind-a-proxy.md"
+      ],
+      "why": "Docs at 0.150.0 say FastAPI(root_path=) is deprecated; use --root-path",
+      "tagged_by": "draft"
     },
     {
       "id": 14218,
@@ -1647,7 +2139,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14218#discussioncomment-14793455",
       "answer": "If your need is to allow this on the client side, it’s purely a URL-rewriting task that fits middleware perfectly.\r\nIf you need to standardize internal path definitions, you should also act at the routing level and ensure a consistent convention is enforced.",
       "docs_links": [],
-      "tag": ""
+      "tag": "skip",
+      "gold_pages": [],
+      "why": "Opinion, no concrete answer",
+      "tagged_by": "draft"
     },
     {
       "id": 14207,
@@ -1658,7 +2153,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14207#discussioncomment-14729790",
       "answer": "Can't reproduce the issue.\r\nTry upgrading `fastapi-cli` to the latest version. This option is supported starting from `0.0.10` (https://github.com/fastapi/fastapi-cli/pull/113)",
       "docs_links": [],
-      "tag": ""
+      "tag": "other-library",
+      "gold_pages": [],
+      "why": "Upgrade fastapi-cli",
+      "tagged_by": "draft"
     },
     {
       "id": 14202,
@@ -1669,7 +2167,10 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14202#discussioncomment-14720590",
       "answer": "Since your actual type (`StudyVersion`) is complex, FastAPI treats it as `Body` parameter, but you send it as `Query`, that's why it's `None`.\r\nFor me it's more strange that it worked before 0.118.2. \r\n\r\nSo, it looks like it worked because of the bug, and that bug was fixed by https://github.com/fastapi/fastapi/pull/12942.\r\n\r\nFor simple types it works as expected:\r\n```py\r\nfrom typing import Annotated, Optional\r\nfrom fastapi import FastAPI\r\nfrom pydantic import BeforeValidator\r\nfrom starlette.testclient import TestClient\r\n\r\nMyAnnotatedType = Annotated[str, BeforeValidator(lambda x: f\"p_{x}\")]\r\n\r\napp = FastAPI()\r\n\r\n@app.post(\"/\")\r\ndef post_(param: Optional[MyAnnotatedType] = None):\r\n    return {\"param\": param}\r\n\r\ndef test_():\r\n    client = TestClient(app)\r\n    response = client.post(\"/\", params={\"param\": \"value\"})\r\n    assert response.status_code == 200, response.text\r\n    assert response.json() == {\"param\": \"p_value\"}\r\n```\r\n\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "bug",
+      "gold_pages": [],
+      "why": "Worked only because of an old bug fixed by PR #12942",
+      "tagged_by": "draft"
     },
     {
       "id": 14198,
@@ -1680,7 +2181,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14198#discussioncomment-14730119",
       "answer": "### Fix\r\n\r\n Your happy-path test is the only one that needs startup state. Since `TestClient(app)` is created without a context manager, the lifespan startup does not run, templates are not loaded, and your handler likely returns 404 for “template not found.” Use a context-managed client so startup runs, and align your model keys.\r\n\r\n---\r\n\r\n#### Minimal fix: run lifespan in tests\r\n\r\n```python\r\n# conftest.py or test_main.py\r\nimport pytest\r\nfrom fastapi.testclient import TestClient\r\nfrom app.main import app\r\n\r\n@pytest.fixture(scope=\"module\")\r\ndef client():\r\n    # This triggers lifespan startup and shutdown\r\n    with TestClient(app) as c:\r\n        yield c\r\n```\r\n\r\nUpdate tests to use the fixture:\r\n\r\n```python\r\ndef test_valid_method(client, good_test):\r\n    resp = client.post(\"/template1/\", json=good_test)\r\n    assert resp.status_code == 200\r\n    assert resp.headers[\"Content-Type\"] == \"application/json\"\r\n```\r\n\r\n---\r\n\r\n#### Make the failure obvious\r\n\r\n```python\r\ndef test_root(client):\r\n    r = client.get(\"/\")\r\n    data = r.json()\r\n    assert r.status_code == 200\r\n    # Ensure templates actually loaded during tests\r\n    assert len(data.get(\"loaded_templates\", [])) > 0\r\n```\r\n\r\n---\r\n\r\n#### Key gotchas to clean up\r\n\r\n* **Model vs payload keys**\r\n  Your model shows `table: List[Table1]` but tests send `table1`. Your route also checks `payload.table1`. Pick one name and use it everywhere. Example:\r\n\r\n  ```python\r\n  class Template1Payload(BaseModel):\r\n      docId: str\r\n      salutation: str\r\n      firstName: str\r\n      familyName: str\r\n      table1: list[Table1]   # align with tests\r\n  ```\r\n\r\n  And in the handler:\r\n\r\n  ```python\r\n  if not payload.table1:\r\n      raise HTTPException(status_code=400, detail=\"Table 1 missing\")\r\n  ```\r\n\r\n* **Correct runner guard**\r\n  In `main.py` change\r\n\r\n  ```python\r\n  if name == \"main\":\r\n  ```\r\n\r\n  to\r\n\r\n  ```python\r\n  if __name__ == \"__main__\":\r\n      import uvicorn\r\n      uvicorn.run(app, host=\"127.0.0.1\", port=80, log_level=\"info\")\r\n  ```\r\n\r\n* **Trailing slash**\r\n  You mounted `router = APIRouter(prefix=\"/template1\")` and `@router.post(\"/\")`.\r\n  Your test uses `\"/template1/\"`, which is correct. Keep them consistent.\r\n\r\n---\r\n\r\n#### Optional: speed up unit tests with mocks\r\n\r\n```python\r\nfrom unittest.mock import patch\r\n\r\n@patch(\"app.templates.get_all\", return_value={\"template1\": \"<html>...</html>\"})\r\n@patch(\"app.pdf.generate_pdf\", return_value=b\"%PDF-1.4 ...\")\r\ndef test_valid_method(mock_pdf, mock_templates, client, good_test):\r\n    r = client.post(\"/template1/\", json=good_test)\r\n    assert r.status_code == 200\r\n```\r\n\r\n---\r\n\r\n#### Why other tests pass\r\n\r\n* Missing or bad payloads fail at Pydantic validation or your early checks, so they never touch the template store.\r\n* Only the happy path needs loaded templates, which are empty if startup never ran, so you get a 404.\r\n",
       "docs_links": [],
-      "tag": ""
+      "tag": "docs",
+      "gold_pages": [
+        "advanced/testing-events.md"
+      ],
+      "why": "Docs say use TestClient in a with block so lifespan runs",
+      "tagged_by": "draft"
     }
   ]
 }
