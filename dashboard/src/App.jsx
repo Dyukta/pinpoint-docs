@@ -1,24 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  Activity,
   ArrowRight,
   BookOpenCheck,
+  ChevronRight,
+  CircleCheck,
   CircleHelp,
+  CircleSlash,
   Clock,
   Crosshair,
-  LayoutGrid,
-  ListTree,
   Loader2,
-  Moon,
-  Send,
-  Sun,
+  Search,
+  ShieldCheck,
   Zap,
 } from "lucide-react";
 
 const POLL_MS = 5000;
+const PAGE_SIZE = 20;
+const IDK = "I don't know.";
 const FAILURES = {
-  search_missed_gold: "Search missed the gold page",
-  refused_with_gold: "Refused although the page was found",
+  search_missed_gold: "Search missed the right page",
+  refused_with_gold: "Refused, though the right page was found",
   answered_unanswerable: "Answered a question the docs do not cover",
   cited_wrong_page: "Cited the wrong page",
   error: "Error",
@@ -32,14 +33,14 @@ function usePoll(url) {
     const load = async () => {
       try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) throw new Error(response.status >= 500 ? "offline" : `HTTP ${response.status}`);
         const body = await response.json();
         if (alive) {
           setData(body);
           setError(null);
         }
       } catch (e) {
-        if (alive) setError(e.message);
+        if (alive) setError(e.message === "Failed to fetch" ? "offline" : e.message);
       }
     };
     load();
@@ -52,99 +53,235 @@ function usePoll(url) {
   return [data, error];
 }
 
-const pct = (x) => (x == null ? "–" : `${Math.round(x * 100)}%`);
-const secs = (x) => (x == null ? "–" : `${x.toFixed(1)} s`);
-const num = (x) => (x == null ? "–" : x.toLocaleString());
+const pct = (x) => `${Math.round((x ?? 0) * 100)}%`;
+const secs = (x) => `${(x ?? 0).toFixed(1)} s`;
+const num = (x) => (x ?? 0).toLocaleString();
+const section = (url) => url.replace("https://fastapi.tiangolo.com/", "").replace(/\/$/, "") || "home";
+const firstLine = (text) => text.split("\n")[0];
 
-function greeting() {
-  const hour = new Date().getHours();
-  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-}
-
-function Card({ title, action, children, className = "" }) {
+function Card({ title, action, children, footer, scroll = false, className = "" }) {
   return (
-    <section className={`rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#1a1640] ${className}`}>
+    <section className={`rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ${scroll ? "flex min-h-0 flex-col" : ""} ${className}`}>
       {(title || action) && (
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{title}</h2>
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+          </div>
           {action}
         </div>
       )}
-      {children}
+      {scroll ? <div className="min-h-0 flex-1 scroll-theme overflow-y-auto pr-4">{children}</div> : children}
+      {footer}
     </section>
   );
 }
 
+const TONES = {
+  violet: "bg-violet-100 text-violet-600",
+  amber: "bg-amber-100 text-amber-600",
+  rose: "bg-rose-100 text-rose-600",
+  emerald: "bg-emerald-100 text-emerald-600",
+  sky: "bg-sky-100 text-sky-600",
+};
+
 function Stat({ label, value, hint, icon: Icon, tone }) {
-  const tones = {
-    violet: "bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300",
-    amber: "bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300",
-    rose: "bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300",
-    emerald: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
-  };
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#1a1640]">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between">
-        <span className="text-sm text-slate-500 dark:text-slate-400">{label}</span>
-        <span className={`rounded-xl p-2 ${tones[tone]}`}>
+        <span className="text-sm text-slate-500">{label}</span>
+        <span className={`rounded-xl p-2 ${TONES[tone]}`}>
           <Icon size={18} />
         </span>
       </div>
-      <div className="mt-2 text-3xl font-semibold">{value}</div>
-      {hint && <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{hint}</div>}
+      <div className="mt-2 text-3xl font-semibold text-slate-900">{value}</div>
+      {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
     </div>
   );
 }
 
-function Bar({ label, value, max, detail }) {
-  const width = max ? Math.max(4, (value / max) * 100) : 0;
+function Meter({ value, max, tone = "from-violet-500 to-indigo-500" }) {
+  const width = max ? Math.max(3, (value / max) * 100) : 0;
   return (
-    <div>
-      <div className="mb-1 flex justify-between text-sm">
-        <span>{label}</span>
-        <span className="text-slate-500 dark:text-slate-400">{detail}</span>
-      </div>
-      <div className="h-2.5 rounded-full bg-slate-100 dark:bg-white/10">
-        <div className="h-2.5 rounded-full bg-gradient-to-r from-violet-500 to-indigo-500" style={{ width: `${width}%` }} />
-      </div>
+    <div className="h-2 rounded-full bg-slate-100">
+      <div className={`h-2 rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${width}%` }} />
     </div>
   );
 }
 
-function Outcome({ trace }) {
+function Verdict({ trace }) {
   const [text, style] = trace.error
-    ? ["Error", "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"]
+    ? ["Error", "bg-rose-100 text-rose-700"]
     : trace.cached
-      ? ["Cached", "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"]
-      : trace.answer === "I don't know."
-        ? ["I don't know", "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"]
-        : ["Answered", "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300"];
-  return <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${style}`}>{text}</span>;
+      ? ["Cached", "bg-sky-100 text-sky-700"]
+      : trace.answer === IDK
+        ? ["I don't know", "bg-amber-100 text-amber-700"]
+        : ["Answered", "bg-violet-100 text-violet-700"];
+  return <span className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${style}`}>{text}</span>;
+}
+
+function Steps({ trace, dark = false }) {
+  const muted = dark ? "text-indigo-200" : "text-slate-500";
+  const strong = dark ? "text-white" : "text-slate-800";
+  if (trace.cached) {
+    return <p className={`text-sm ${muted}`}>Served from the answer cache: an almost identical question was answered before with the same settings.</p>;
+  }
+  const steps = [
+    ["Retrieve", "BM25 + vector search, fused with RRF", trace.search_seconds],
+    ["Check", trace.answerable ? "Excerpts answer it: YES" : "Excerpts answer it: NO", trace.check_seconds],
+    ["Answer", trace.answer_seconds == null ? "Skipped" : "Grounded answer with links", trace.answer_seconds],
+  ];
+  const max = Math.max(...steps.map(([, , s]) => s ?? 0), 0.1);
+  return (
+    <ol className="space-y-3">
+      {steps.map(([name, detail, s], i) => (
+        <li key={name} className="grid grid-cols-[1.75rem_1fr_3.5rem] items-center gap-3 text-sm">
+          <span className={`grid h-7 w-7 place-items-center rounded-full text-xs font-semibold ${dark ? "bg-white/20 text-white" : "bg-violet-100 text-violet-700"}`}>{i + 1}</span>
+          <div>
+            <div className="mb-1 flex justify-between gap-2">
+              <span className={`font-medium ${strong}`}>{name}</span>
+              <span className={`text-xs ${muted}`}>{detail}</span>
+            </div>
+            <div className={`h-2 rounded-full ${dark ? "bg-white/15" : "bg-slate-100"}`}>
+              <div
+                className={`h-2 rounded-full ${s == null ? "bg-transparent" : dark ? "bg-white/80" : "bg-gradient-to-r from-violet-500 to-indigo-500"}`}
+                style={{ width: `${s == null ? 0 : Math.max(3, (s / max) * 100)}%` }}
+              />
+            </div>
+          </div>
+          <span className={`text-right font-mono text-xs ${muted}`}>{secs(s)}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function AskBox() {
+  const [question, setQuestion] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
+  const [trace, setTrace] = useState(null);
+  const controller = useRef(null);
+
+  const ask = async (e) => {
+    e.preventDefault();
+    if (question.trim().length < 3 || busy) return;
+    setBusy(true);
+    setError(null);
+    setResult(null);
+    setTrace(null);
+    controller.current = new AbortController();
+    const { signal } = controller.current;
+    try {
+      const response = await fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+        signal,
+      });
+      if (!response.ok) throw new Error(response.status >= 500 ? "the API is not running" : `HTTP ${response.status}`);
+      const body = await response.json();
+      setResult(body);
+      const detail = await fetch(`/traces/${body.trace_id}`, { signal });
+      if (detail.ok) setTrace(await detail.json());
+    } catch (err) {
+      if (err.name !== "AbortError") setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const abstained = result?.answer === IDK;
+
+  return (
+    <section className="rounded-2xl bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-800 p-6 text-white shadow-lg">
+      <h2 className="text-lg font-semibold">Search the docs</h2>
+      <form onSubmit={ask} className="mt-4 flex gap-3">
+        <div className="relative flex-1">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-200" />
+          <input
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="How do I declare a request body?"
+            className="w-full rounded-xl border border-white/20 bg-white/10 py-3 pl-11 pr-4 text-white placeholder:text-indigo-200 focus:border-white/60 focus:outline-none"
+          />
+        </div>
+        {busy ? (
+          <button
+            key="cancel"
+            type="button"
+            onClick={() => controller.current.abort()}
+            className="flex items-center gap-2 rounded-xl border border-white/40 px-7 py-3 font-semibold text-white hover:bg-white/10"
+          >
+            <Loader2 size={18} className="animate-spin" />
+            Cancel
+          </button>
+        ) : (
+          <button key="search" className="rounded-xl bg-white px-7 py-3 font-semibold text-violet-700 shadow-sm hover:bg-indigo-50">
+            Search
+          </button>
+        )}
+      </form>
+      {busy && <p className="mt-4 text-sm text-indigo-100">Searching the docs, checking the excerpts, then answering. About 20 seconds on a local 3B model.</p>}
+      {error && <p className="mt-4 text-sm text-rose-200">Request failed: {error}.</p>}
+      {result && (
+        <div className="mt-5 grid gap-4 lg:grid-cols-5">
+          <div className={`rounded-xl bg-white/10 p-4 lg:col-span-3 ${abstained ? "flex items-center" : ""}`}>
+            {abstained ? (
+              <div className="flex gap-3">
+                <CircleSlash size={20} className="mt-0.5 shrink-0 text-amber-200" />
+                <div>
+                  <div className="font-semibold">I don't know.</div>
+                  <div className="mt-1 text-sm text-indigo-100">The retrieved sections do not answer this, so Pinpoint does not guess.</div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{result.answer}</pre>
+                <div className="mt-4 text-xs font-semibold uppercase tracking-wider text-indigo-200">Grounded in</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {result.sources.map((url) => (
+                    <a key={url} href={url} target="_blank" rel="noreferrer" className="rounded-full bg-white/15 px-3 py-1 text-xs hover:bg-white/25">
+                      {section(url)}
+                    </a>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          <div className="rounded-xl bg-white/10 p-4 lg:col-span-2">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-indigo-200">How it was answered</div>
+            {trace ? <Steps trace={trace} dark /> : <Loader2 size={18} className="animate-spin text-indigo-200" />}
+          </div>
+        </div>
+      )}
+    </section>
+  );
 }
 
 function TraceTable({ traces, onPick, picked }) {
-  if (!traces?.length) return <p className="py-8 text-center text-slate-500">No requests yet. Ask something above.</p>;
+  if (!traces?.length) return <p className="py-10 text-center text-sm text-slate-500">No questions yet. Search above.</p>;
   return (
-    <table className="w-full text-left text-sm">
-      <thead className="text-xs uppercase text-slate-500 dark:text-slate-400">
+    <table className="w-full table-fixed text-left text-sm">
+      <thead className="sticky top-0 bg-white text-xs uppercase text-slate-500">
         <tr>
           <th className="pb-2 font-medium">Question</th>
-          <th className="pb-2 font-medium">Outcome</th>
-          <th className="pb-2 text-right font-medium">Time</th>
+          <th className="w-28 pb-2 font-medium">Result</th>
+          <th className="w-16 pb-2 text-right font-medium">Time</th>
         </tr>
       </thead>
       <tbody>
         {traces.map((t) => (
           <tr
             key={t.trace_id}
-            onClick={() => onPick?.(t.trace_id)}
-            className={`cursor-pointer border-t border-slate-100 hover:bg-violet-50 dark:border-white/5 dark:hover:bg-white/5 ${picked === t.trace_id ? "bg-violet-50 dark:bg-white/5" : ""}`}
+            onClick={() => onPick(t.trace_id)}
+            className={`cursor-pointer border-t border-slate-100 hover:bg-violet-50 ${picked === t.trace_id ? "bg-violet-50" : ""}`}
           >
-            <td className="max-w-md truncate py-2.5 pr-4">{t.question}</td>
+            <td className="truncate py-2.5 pr-4 text-slate-800">{firstLine(t.question)}</td>
             <td className="py-2.5">
-              <Outcome trace={t} />
+              <Verdict trace={t} />
             </td>
-            <td className="py-2.5 text-right tabular-nums">{secs(t.seconds)}</td>
+            <td className="py-2.5 text-right text-slate-600 tabular-nums">{secs(t.seconds)}</td>
           </tr>
         ))}
       </tbody>
@@ -152,121 +289,90 @@ function TraceTable({ traces, onPick, picked }) {
   );
 }
 
-function AskBox() {
-  const [question, setQuestion] = useState("");
-  const [result, setResult] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
-
-  const ask = async (e) => {
-    e.preventDefault();
-    if (question.trim().length < 3 || busy) return;
-    setBusy(true);
-    setError(null);
-    const start = performance.now();
-    try {
-      const response = await fetch("/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      setResult({ ...(await response.json()), seconds: (performance.now() - start) / 1000 });
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
+function Pipeline({ stats }) {
+  const steps = stats?.steps_p50 ?? {};
+  const stages = [
+    ["Retrieve", "BM25 + vector, RRF", steps.search],
+    ["Check", "Do the excerpts answer it?", steps.check],
+    ["Answer", "Grounded, with links", steps.answer],
+  ];
+  const max = Math.max(...stages.map(([, , s]) => s ?? 0), 0.1);
   return (
-    <section className="rounded-2xl bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-800 p-6 text-white shadow-lg">
-      <h2 className="text-lg font-semibold">Ask the docs</h2>
-      <p className="mt-1 text-sm text-indigo-100">Answers come only from the FastAPI 0.150.0 docs, with links, or "I don't know".</p>
-      <form onSubmit={ask} className="mt-4 flex gap-3">
-        <input
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="How do I declare a request body?"
-          className="flex-1 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-indigo-200 focus:border-white/60 focus:outline-none"
-        />
-        <button
-          disabled={busy}
-          className="flex items-center gap-2 rounded-xl bg-white/20 px-5 py-3 font-medium hover:bg-white/30 disabled:opacity-60"
-        >
-          {busy ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-          {busy ? "Searching" : "Ask"}
-        </button>
-      </form>
-      {error && <p className="mt-4 text-sm text-rose-200">Request failed: {error}. Is the API running?</p>}
-      {result && (
-        <div className="mt-5 rounded-xl bg-white/10 p-4">
-          <div className="mb-2 flex gap-2 text-xs">
-            {result.cached && <span className="rounded-full bg-emerald-400/25 px-2.5 py-0.5">From cache</span>}
-            <span className="rounded-full bg-white/15 px-2.5 py-0.5">{secs(result.seconds)}</span>
+    <div>
+      <div className="flex items-stretch gap-2">
+        {stages.map(([name, detail, s], i) => (
+          <div key={name} className="flex flex-1 items-center gap-2">
+            <div className="flex-1 rounded-xl bg-slate-50 p-4">
+              <div className="font-medium text-slate-800">{name}</div>
+              <div className="text-xs text-slate-500">{detail}</div>
+              <div className="mb-2 mt-2 text-2xl font-semibold text-slate-900">{secs(s)}</div>
+              <Meter value={s ?? 0} max={max} />
+            </div>
+            {i < stages.length - 1 && <ChevronRight size={18} className="shrink-0 text-slate-300" />}
           </div>
-          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{result.answer}</pre>
-          {result.sources.length > 0 && (
-            <ul className="mt-3 space-y-1 text-sm">
-              {result.sources.map((url) => (
-                <li key={url}>
-                  <a href={url} target="_blank" rel="noreferrer" className="underline decoration-white/40 hover:decoration-white">
-                    {url.replace("https://fastapi.tiangolo.com/", "")}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </section>
+        ))}
+      </div>
+      <p className="mt-4 text-xs text-slate-500">
+        Median seconds per stage. Questions the check refuses skip the answer stage. Tokens per 1,000 questions: {num(stats?.tokens_per_1000.prompt)} in, {num(stats?.tokens_per_1000.output)} out.
+      </p>
+    </div>
   );
 }
 
-function Overview({ go }) {
-  const [stats, statsError] = usePoll("/stats?last=200");
-  const [traces] = usePoll("/traces?limit=8");
-  const steps = stats?.steps_p50 ?? {};
-  const max = Math.max(...Object.values(steps).map((v) => v ?? 0), 0);
+function SearchPage({ go }) {
+  const [stats] = usePoll("/stats?last=200");
+  const [latest] = usePoll("/traces?limit=6");
+  const answered = stats ? 1 - (stats.refusal_rate ?? 0) - (stats.error_rate ?? 0) : null;
 
   return (
     <div className="space-y-6">
       <AskBox />
-      {statsError && <p className="text-sm text-rose-600">Cannot reach the API ({statsError}). Start it with fastapi dev pinpoint_docs/api.py</p>}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Requests" value={num(stats?.requests)} hint="last 200 traced" icon={Activity} tone="violet" />
-        <Stat label="Latency p50" value={secs(stats?.latency.p50)} hint={`p95 ${secs(stats?.latency.p95)}`} icon={Clock} tone="amber" />
-        <Stat label="Said I don't know" value={pct(stats?.refusal_rate)} hint={`errors ${pct(stats?.error_rate)}`} icon={CircleHelp} tone="rose" />
-        <Stat label="Cache hits" value={pct(stats?.cache_hit_rate)} hint="same question, same settings" icon={Zap} tone="emerald" />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat label="Answered with sources" value={pct(answered)} hint={`${num(stats?.requests)} questions traced`} icon={CircleCheck} tone="emerald" />
+        <Stat label="Said I don't know" value={pct(stats?.refusal_rate)} hint="no grounded answer found" icon={CircleHelp} tone="amber" />
+        <Stat label="Latency p50" value={secs(stats?.latency.p50)} hint={`p95 ${secs(stats?.latency.p95)}`} icon={Clock} tone="violet" />
+        <Stat label="Cache hits" value={pct(stats?.cache_hit_rate)} hint={`errors ${pct(stats?.error_rate)}`} icon={Zap} tone="sky" />
       </div>
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <Card title="Where the time goes" className="xl:col-span-1">
-          <div className="space-y-4">
-            {Object.entries(steps).map(([step, value]) => (
-              <Bar key={step} label={step} value={value ?? 0} max={max} detail={`p50 ${secs(value)}`} />
-            ))}
-          </div>
-          <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-            Tokens per 1,000 questions: {num(stats?.tokens_per_1000.prompt)} in, {num(stats?.tokens_per_1000.output)} out
-          </p>
+      <div className="grid gap-6 xl:grid-cols-5">
+        <Card title="Pipeline" className="xl:col-span-3">
+          <Pipeline stats={stats} />
         </Card>
         <Card
-          title="Recent requests"
+          title="Latest questions"
           className="xl:col-span-2"
           action={
-            <button onClick={() => go("requests")} className="flex items-center gap-1 text-sm font-medium text-violet-600 dark:text-violet-300">
-              All requests <ArrowRight size={14} />
+            <button onClick={() => go("traces")} className="flex items-center gap-1 text-sm font-medium text-violet-600 hover:text-violet-700">
+              All traces <ArrowRight size={14} />
             </button>
           }
         >
-          <TraceTable traces={traces} onPick={() => go("requests")} />
+          <TraceTable traces={latest?.items} onPick={() => go("traces")} />
         </Card>
       </div>
     </div>
   );
 }
 
-function TraceDetail({ id }) {
+function Chunks({ trace }) {
+  const scores = trace.scores ?? [];
+  const max = Math.max(...scores, 0.0001);
+  if (!trace.retrieved?.length) return <p className="text-sm text-slate-500">Nothing retrieved.</p>;
+  return (
+    <ul className="space-y-3">
+      {trace.retrieved.map((chunk, i) => (
+        <li key={chunk} className="text-xs">
+          <div className="mb-1 flex justify-between gap-3">
+            <span className="truncate font-mono text-slate-700">{chunk}</span>
+            <span className="font-mono text-slate-500">{scores[i]?.toFixed(4)}</span>
+          </div>
+          <Meter value={scores[i] ?? 0} max={max} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Inspector({ id }) {
   const [trace, setTrace] = useState(null);
   useEffect(() => {
     setTrace(null);
@@ -274,89 +380,176 @@ function TraceDetail({ id }) {
   }, [id]);
   if (!trace) return <Loader2 className="mx-auto animate-spin text-violet-500" />;
   return (
-    <div className="space-y-4 text-sm">
-      <div>
-        <div className="mb-1 text-xs uppercase text-slate-500">Question</div>
-        <p className="max-h-32 overflow-auto whitespace-pre-wrap">{trace.question}</p>
+    <div className="space-y-5 text-sm">
+      <div className="flex items-center justify-between">
+        <Verdict trace={trace} />
+        <span className="font-mono text-xs text-slate-400">{trace.trace_id}</span>
       </div>
       <div>
-        <div className="mb-1 text-xs uppercase text-slate-500">Answer</div>
-        <pre className="max-h-48 overflow-auto whitespace-pre-wrap font-sans">{trace.answer}</pre>
-        {trace.error && <p className="mt-1 text-rose-600">{trace.error}</p>}
-      </div>
-      <div className="grid grid-cols-3 gap-2 text-center">
-        {["search", "check", "answer"].map((step) => (
-          <div key={step} className="rounded-xl bg-slate-50 p-2 dark:bg-white/5">
-            <div className="text-xs text-slate-500">{step}</div>
-            <div className="font-semibold tabular-nums">{secs(trace[`${step}_seconds`])}</div>
-          </div>
-        ))}
+        <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Question</div>
+        <p className="whitespace-pre-wrap text-slate-700">{trace.question}</p>
       </div>
       <div>
-        <div className="mb-1 text-xs uppercase text-slate-500">Retrieved chunks (RRF score)</div>
-        <ul className="space-y-1">
-          {(trace.retrieved ?? []).map((chunk, i) => (
-            <li key={chunk} className="flex justify-between gap-2">
-              <span className="truncate">{chunk}</span>
-              <span className="tabular-nums text-slate-500">{trace.scores?.[i]?.toFixed(4)}</span>
-            </li>
-          ))}
-        </ul>
+        <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Answer</div>
+        <pre className="whitespace-pre-wrap font-sans text-slate-800">{trace.answer}</pre>
+        {trace.error && <p className="mt-1 font-mono text-xs text-rose-600">{trace.error}</p>}
+      </div>
+      <div>
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Steps</div>
+        <Steps trace={trace} />
+      </div>
+      <div>
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Retrieved chunks, RRF score</div>
+        <Chunks trace={trace} />
       </div>
       <p className="text-xs text-slate-500">
-        {num(trace.prompt_tokens)} prompt tokens · {num(trace.output_tokens)} output tokens · trace {trace.trace_id}
+        {num(trace.prompt_tokens)} prompt tokens · {num(trace.output_tokens)} output tokens
       </p>
     </div>
   );
 }
 
-function Requests() {
-  const [traces] = usePoll("/traces?limit=100");
+function Pager({ page, total, onPage }) {
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const first = total ? page * PAGE_SIZE + 1 : 0;
+  const last = Math.min(total, (page + 1) * PAGE_SIZE);
+  const button = "rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-violet-700 hover:bg-violet-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent";
+  return (
+    <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-sm text-slate-500">
+      <span>
+        {first}–{last} of {total}
+      </span>
+      <div className="flex items-center gap-2">
+        <button className={button} disabled={page === 0} onClick={() => onPage(page - 1)}>
+          Previous
+        </button>
+        <span className="px-2">
+          Page {page + 1} of {pages}
+        </span>
+        <button className={button} disabled={page >= pages - 1} onClick={() => onPage(page + 1)}>
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Traces() {
+  const [page, setPage] = useState(0);
+  const [data] = usePoll(`/traces?limit=${PAGE_SIZE}&offset=${page * PAGE_SIZE}`);
   const [picked, setPicked] = useState(null);
   return (
-    <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
-      <Card title="Requests" className="xl:col-span-3">
-        <TraceTable traces={traces} onPick={setPicked} picked={picked} />
+    <div className="grid gap-6 xl:h-[calc(100vh-10rem)] xl:grid-cols-5">
+      <Card
+        title="All questions"
+       
+        scroll
+        className="xl:col-span-3 xl:h-full"
+        footer={<Pager page={page} total={data?.total ?? 0} onPage={setPage} />}
+      >
+        <TraceTable traces={data?.items} onPick={setPicked} picked={picked} />
       </Card>
-      <Card title="Trace" className="xl:col-span-2">
-        {picked ? <TraceDetail id={picked} /> : <p className="py-8 text-center text-slate-500">Pick a request to see what was retrieved and how long each step took.</p>}
+      <Card title="Inspector" scroll className="xl:col-span-2 xl:h-full">
+        {picked ? <Inspector id={picked} /> : <p className="py-10 text-center text-sm text-slate-500">Pick a question to see how it was answered.</p>}
       </Card>
     </div>
   );
 }
 
+function Compare({ run, base }) {
+  const docs = (r) => r.by_tag.docs ?? { passed: 0, total: 0 };
+  const other = (r) =>
+    Object.entries(r.by_tag)
+      .filter(([tag]) => tag !== "docs")
+      .reduce((a, [, v]) => ({ passed: a.passed + v.passed, total: a.total + v.total }), { passed: 0, total: 0 });
+  const rows = [
+    ["Passed", (r) => `${r.passed} / ${r.questions}`],
+    ["Docs questions: cited the right page", (r) => `${docs(r).passed} / ${docs(r).total}`],
+    ["Other questions: said I don't know", (r) => `${other(r).passed} / ${other(r).total}`],
+    ["Said I don't know overall", (r) => pct(r.refusal_rate)],
+    ["Latency p50 / p95", (r) => `${secs(r.latency.p50)} / ${secs(r.latency.p95)}`],
+  ];
+  return (
+    <table className="w-full text-sm">
+      <thead className="text-xs uppercase text-slate-500">
+        <tr>
+          <th className="pb-2 text-left font-medium" />
+          <th className="pb-2 text-right font-medium">Without check</th>
+          <th className="pb-2 text-right font-medium text-violet-600">With check</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(([label, value]) => (
+          <tr key={label} className="border-t border-slate-100">
+            <td className="py-2.5 text-slate-700">{label}</td>
+            <td className="py-2.5 text-right text-slate-500 tabular-nums">{value(base)}</td>
+            <td className="py-2.5 text-right font-semibold text-slate-900 tabular-nums">{value(run)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 function Evaluation() {
   const [run, error] = usePoll("/eval");
-  if (error) return <Card title="Evaluation"><p className="text-slate-500">No test run found ({error}).</p></Card>;
+  if (error) return <Card title="Evaluation"><p className="text-sm text-slate-500">No test run found ({error}).</p></Card>;
   if (!run) return <Loader2 className="mx-auto animate-spin text-violet-500" />;
+  const base = run.without_check;
   const failures = Object.entries(run.failures);
   const most = Math.max(...failures.map(([, n]) => n), 1);
-  const docs = run.by_tag.docs ?? { passed: 0, total: 0 };
-  const other = Object.entries(run.by_tag).filter(([tag]) => tag !== "docs").reduce((a, [, v]) => ({ passed: a.passed + v.passed, total: a.total + v.total }), { passed: 0, total: 0 });
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Passed" value={`${run.passed} / ${run.questions}`} hint="held-out test questions" icon={BookOpenCheck} tone="violet" />
-        <Stat label="Docs questions" value={`${docs.passed} / ${docs.total}`} hint="cited a gold page" icon={Crosshair} tone="emerald" />
-        <Stat label="Other questions" value={`${other.passed} / ${other.total}`} hint={'said "I don\'t know"'} icon={CircleHelp} tone="rose" />
-        <Stat label="Latency p95" value={secs(run.latency.p95)} hint={`p50 ${secs(run.latency.p50)}`} icon={Clock} tone="amber" />
+      <section className="flex flex-wrap items-center gap-3 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-800 px-5 py-3 text-white shadow-lg">
+        <span className="rounded-lg bg-white/15 p-2">
+          <ShieldCheck size={20} />
+        </span>
+        <div className="flex-1">
+          <div className="text-base font-semibold">
+            {run.passed} of {run.questions} held-out questions passed with the abstention check{base && <span className="text-indigo-200">, {base.passed} without it</span>}
+          </div>
+        </div>
+      </section>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat label="Passed" value={`${run.passed} / ${run.questions}`} hint="held-out test" icon={BookOpenCheck} tone="violet" />
+        <Stat label="Docs questions" value={`${run.by_tag.docs?.passed ?? 0} / ${run.by_tag.docs?.total ?? 0}`} hint="cited the right page" icon={Crosshair} tone="emerald" />
+        <Stat label="Said I don't know" value={pct(run.refusal_rate)} hint="of all test questions" icon={CircleHelp} tone="amber" />
+        <Stat label="Latency p95" value={secs(run.latency.p95)} hint={`p50 ${secs(run.latency.p50)}`} icon={Clock} tone="sky" />
       </div>
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <Card title="Failures">
+      <div className="grid gap-6 xl:grid-cols-2">
+        {base && (
+          <Card title="With and without the check">
+            <Compare run={run} base={base} />
+          </Card>
+        )}
+        <Card title="What still fails">
           <div className="space-y-4">
             {failures.map(([kind, n]) => (
-              <Bar key={kind} label={FAILURES[kind] ?? kind} value={n} max={most} detail={n} />
+              <div key={kind}>
+                <div className="mb-1 flex justify-between text-sm">
+                  <span className="text-slate-700">{FAILURES[kind] ?? kind}</span>
+                  <span className="text-slate-500">{n}</span>
+                </div>
+                <Meter value={n} max={most} tone="from-rose-400 to-rose-500" />
+              </div>
             ))}
           </div>
         </Card>
-        <Card title="By question type">
+        <Card title="By question type" className="xl:col-span-2">
           <div className="space-y-4">
             {Object.entries(run.by_tag).map(([tag, v]) => (
-              <Bar key={tag} label={tag} value={v.passed} max={v.total} detail={`${v.passed} / ${v.total} passed`} />
+              <div key={tag}>
+                <div className="mb-1 flex justify-between text-sm">
+                  <span className="text-slate-700">{tag}</span>
+                  <span className="text-slate-500">
+                    {v.passed} / {v.total} passed
+                  </span>
+                </div>
+                <Meter value={v.passed} max={v.total} />
+              </div>
             ))}
           </div>
-          <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">From {run.run}. Passing means the answer cited a gold page, or said "I don't know" when the docs do not cover the question.</p>
         </Card>
       </div>
     </div>
@@ -364,93 +557,46 @@ function Evaluation() {
 }
 
 const PAGES = {
-  overview: { label: "Overview", icon: LayoutGrid, title: greeting, subtitle: "Live from data/traces.jsonl, refreshed every 5 seconds", view: Overview },
-  requests: { label: "Requests", icon: ListTree, title: () => "Requests", subtitle: "Every traced question, newest first", view: Requests },
-  evaluation: { label: "Evaluation", icon: BookOpenCheck, title: () => "Evaluation", subtitle: "Held-out test questions, reviewed by hand", view: Evaluation },
+  search: { label: "Search", title: "Search", view: SearchPage },
+  traces: { label: "Traces", title: "Traces", view: Traces },
+  evaluation: { label: "Evaluation", title: "Evaluation", view: Evaluation },
 };
-const SECTIONS = [
-  ["Monitoring", ["overview", "requests"]],
-  ["Quality", ["evaluation"]],
-];
 
-function readTheme() {
-  try {
-    return localStorage.getItem("theme") === "dark";
-  } catch {
-    return false;
-  }
+function ApiStatus() {
+  const [, error] = usePoll("/stats?last=1");
+  const online = !error;
+  return (
+    <div className="flex items-center gap-2 rounded-xl bg-white/5 p-3 text-sm font-medium text-white">
+      <span className={`h-2 w-2 rounded-full ${online ? "bg-emerald-400" : "bg-rose-400"}`} />
+      {online ? "API connected" : "API not connected"}
+    </div>
+  );
 }
 
 export default function App() {
-  const [page, setPage] = useState("overview");
-  const [dark, setDark] = useState(readTheme);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-    try {
-      localStorage.setItem("theme", dark ? "dark" : "light");
-    } catch {
-      return;
-    }
-  }, [dark]);
-
-  const { title, subtitle, view: View } = PAGES[page];
+  const [page, setPage] = useState("search");
+  const { title, view: View } = PAGES[page];
 
   return (
-    <div className="flex min-h-screen bg-[#f4f3fb] font-sans text-slate-800 dark:bg-[#0f0c29] dark:text-slate-100">
+    <div className="flex min-h-screen bg-[#f4f3fb] font-sans text-slate-800">
       <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col bg-gradient-to-b from-[#221a5c] to-[#15103d] p-4 text-indigo-100">
-        <div className="mb-6 flex items-center gap-3 px-2 py-1">
-          <span className="rounded-xl bg-violet-500 p-2 text-white">
-            <Crosshair size={18} />
-          </span>
-          <span className="text-lg font-semibold text-white">Pinpoint</span>
-        </div>
-        <nav className="flex-1 space-y-6">
-          {SECTIONS.map(([section, keys]) => (
-            <div key={section}>
-              <div className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-indigo-300/70">{section}</div>
-              {keys.map((key) => {
-                const { label, icon: Icon } = PAGES[key];
-                const active = key === page;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setPage(key)}
-                    className={`mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left font-medium ${active ? "bg-violet-600 text-white shadow" : "hover:bg-white/5"}`}
-                  >
-                    <Icon size={18} />
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
+        <div className="mb-6 px-3 py-1 text-xl font-semibold text-white">Pinpoint</div>
+        <nav className="flex-1">
+          {Object.entries(PAGES).map(([key, { label }]) => (
+            <button
+              key={key}
+              onClick={() => setPage(key)}
+              className={`mb-1 flex w-full items-center rounded-xl px-3 py-2.5 text-left font-medium ${key === page ? "bg-violet-600 text-white shadow" : "hover:bg-white/5"}`}
+            >
+              {label}
+            </button>
           ))}
         </nav>
-        <div className="mb-3 grid grid-cols-2 rounded-xl bg-white/5 p-1 text-sm">
-          <button onClick={() => setDark(false)} className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 ${dark ? "" : "bg-violet-600 text-white"}`}>
-            <Sun size={14} /> Light
-          </button>
-          <button onClick={() => setDark(true)} className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 ${dark ? "bg-violet-600 text-white" : ""}`}>
-            <Moon size={14} /> Dark
-          </button>
-        </div>
-        <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-violet-500 text-sm font-semibold text-white">L3</span>
-          <div className="text-sm">
-            <div className="font-medium text-white">llama3.2 · local</div>
-            <div className="text-xs text-indigo-300">FastAPI docs 0.150.0</div>
-          </div>
-        </div>
+        <ApiStatus />
       </aside>
       <main className="flex-1 overflow-x-hidden px-6 py-8 lg:px-10">
-        <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-semibold">{title()}</h1>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
-          </div>
-          <span className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-600 dark:border-white/10 dark:bg-[#1a1640] dark:text-slate-300">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" /> Live
-          </span>
+        <header className="mb-6">
+          <h1 className="text-3xl font-semibold text-slate-900">{title}</h1>
         </header>
         <View go={setPage} />
       </main>

@@ -1,7 +1,15 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
-
 @theme {
   --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+body {
+  background: #f4f3fb;
+}
+
+.scroll-theme {
+  scrollbar-width: thin;
+  scrollbar-color: #c4b5fd transparent;
 }

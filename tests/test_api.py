@@ -38,7 +38,10 @@ def test_stats_and_traces_read_the_trace_log(tmp_path, monkeypatch):
     assert body["refusal_rate"] == 0.333 and body["cache_hit_rate"] == 0.333 and body["error_rate"] == 0.0
 
     recent = client.get("/traces").json()
-    assert [t["trace_id"] for t in recent] == ["c3", "b2", "a1"]
+    assert recent["total"] == 3
+    assert [t["trace_id"] for t in recent["items"]] == ["c3", "b2", "a1"]
+    page = client.get("/traces?limit=2&offset=2").json()
+    assert page["total"] == 3 and [t["trace_id"] for t in page["items"]] == ["a1"]
     assert client.get("/traces/b2").json()["answer"] == "I don't know."
     assert client.get("/traces/zz").status_code == 404
 
@@ -54,7 +57,9 @@ def test_eval_summary(tmp_path, monkeypatch):
     ]
     run.write_text(json.dumps({"results": rows}), encoding="utf-8")
     monkeypatch.setattr(api, "EVAL_RUN", run)
+    monkeypatch.setattr(api, "NO_CHECK_RUN", tmp_path / "missing.json")
     body = client.get("/eval").json()
     assert body["passed"] == 2 and body["questions"] == 3
     assert body["failures"] == {"search_missed_gold": 1}
     assert body["by_tag"] == {"bug": {"passed": 1, "total": 1}, "docs": {"passed": 1, "total": 2}}
+    assert body["without_check"] is None
