@@ -39,7 +39,7 @@ def main():
     review = "--review" in sys.argv
     if review:
         todo = [q for q in questions if q.get("tagged_by") == "draft"
-                and (q["tag"] == "docs" or "orderline" in q.get("why", ""))]
+                and (q["tag"] == "docs" or "borderline" in q.get("why", "").lower())]
     else:
         todo = [q for q in questions if not q["tag"]]
     for n, q in enumerate(todo, 1):
