@@ -7,7 +7,7 @@ from datetime import date
 from pathlib import Path
 
 DOCS_VERSION = "0.150.0"
-TARGET = 150
+TARGET = 350
 OUT = Path(__file__).resolve().parent.parent / "evals" / "questions.json"
 DOCS_LINK = re.compile(r"https?://fastapi\.tiangolo\.com[^\s)\]>\"']*")
 
@@ -47,12 +47,21 @@ def main():
     if not token:
         sys.exit("GITHUB_TOKEN is not set.")
 
-    questions, cursor = [], None
+    if OUT.exists():
+        data = json.loads(OUT.read_text(encoding="utf-8"))
+    else:
+        data = {"collected_on": date.today().isoformat(), "docs_version": DOCS_VERSION, "questions": []}
+    questions = data["questions"]
+    seen = {q["id"] for q in questions}
+    cursor = None
     while len(questions) < TARGET:
         page = fetch_page(token, cursor)
         for d in page["nodes"]:
-            if d["category"]["name"] != "Questions":
+            if d["category"]["name"] != "Questions" or d["number"] in seen:
                 continue
+            if d["createdAt"] >= data["collected_on"] or len(questions) >= TARGET:
+                continue
+            seen.add(d["number"])
             questions.append({
                 "id": d["number"],
                 "url": d["url"],
@@ -68,13 +77,8 @@ def main():
             break
         cursor = page["pageInfo"]["endCursor"]
 
-    questions = questions[:TARGET]
     OUT.parent.mkdir(exist_ok=True)
-    OUT.write_text(json.dumps({
-        "collected_on": date.today().isoformat(),
-        "docs_version": DOCS_VERSION,
-        "questions": questions,
-    }, indent=2, ensure_ascii=False), encoding="utf-8")
+    OUT.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
     linked = sum(1 for q in questions if q["docs_links"])
     print(f"Saved {len(questions)} questions to {OUT}")
