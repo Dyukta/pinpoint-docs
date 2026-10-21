@@ -1,0 +1,246 @@
+{
+ "split": "dev",
+ "pool": 20,
+ "rows": [
+  {
+   "id": 13608,
+   "hybrid": 8,
+   "full question": 15,
+   "no code": 15
+  },
+  {
+   "id": 13449,
+   "hybrid": 3,
+   "full question": 11,
+   "no code": 0
+  },
+  {
+   "id": 16376,
+   "hybrid": 0,
+   "full question": 0,
+   "no code": 0
+  },
+  {
+   "id": 14889,
+   "hybrid": 1,
+   "full question": 2,
+   "no code": 0
+  },
+  {
+   "id": 14012,
+   "hybrid": 0,
+   "full question": 0,
+   "no code": 0
+  },
+  {
+   "id": 14082,
+   "hybrid": 16,
+   "full question": 14,
+   "no code": 16
+  },
+  {
+   "id": 14311,
+   "hybrid": null,
+   "full question": null,
+   "no code": null
+  },
+  {
+   "id": 13538,
+   "hybrid": 75,
+   "full question": 75,
+   "no code": 75
+  },
+  {
+   "id": 13245,
+   "hybrid": 18,
+   "full question": 19,
+   "no code": 19
+  },
+  {
+   "id": 14698,
+   "hybrid": 2,
+   "full question": 13,
+   "no code": 6
+  },
+  {
+   "id": 14094,
+   "hybrid": 1,
+   "full question": 0,
+   "no code": 0
+  },
+  {
+   "id": 14363,
+   "hybrid": 0,
+   "full question": 0,
+   "no code": 0
+  },
+  {
+   "id": 13842,
+   "hybrid": 8,
+   "full question": 12,
+   "no code": 11
+  },
+  {
+   "id": 15084,
+   "hybrid": 0,
+   "full question": 2,
+   "no code": 0
+  },
+  {
+   "id": 13261,
+   "hybrid": 10,
+   "full question": 3,
+   "no code": 2
+  },
+  {
+   "id": 15846,
+   "hybrid": 3,
+   "full question": 7,
+   "no code": 3
+  },
+  {
+   "id": 14719,
+   "hybrid": 0,
+   "full question": 1,
+   "no code": 1
+  },
+  {
+   "id": 13238,
+   "hybrid": 0,
+   "full question": 2,
+   "no code": 2
+  },
+  {
+   "id": 16085,
+   "hybrid": 4,
+   "full question": 6,
+   "no code": 6
+  },
+  {
+   "id": 13812,
+   "hybrid": null,
+   "full question": null,
+   "no code": null
+  },
+  {
+   "id": 15639,
+   "hybrid": 0,
+   "full question": 0,
+   "no code": 0
+  },
+  {
+   "id": 13467,
+   "hybrid": 2,
+   "full question": 0,
+   "no code": 4
+  },
+  {
+   "id": 16139,
+   "hybrid": 3,
+   "full question": 0,
+   "no code": 0
+  },
+  {
+   "id": 14324,
+   "hybrid": 14,
+   "full question": 18,
+   "no code": 2
+  },
+  {
+   "id": 15742,
+   "hybrid": 8,
+   "full question": 8,
+   "no code": 5
+  },
+  {
+   "id": 13679,
+   "hybrid": 0,
+   "full question": 0,
+   "no code": 0
+  },
+  {
+   "id": 13723,
+   "hybrid": 1,
+   "full question": 0,
+   "no code": 0
+  },
+  {
+   "id": 13705,
+   "hybrid": 0,
+   "full question": 9,
+   "no code": 6
+  },
+  {
+   "id": 13868,
+   "hybrid": 2,
+   "full question": 0,
+   "no code": 1
+  },
+  {
+   "id": 14601,
+   "hybrid": 0,
+   "full question": 1,
+   "no code": 3
+  },
+  {
+   "id": 15843,
+   "hybrid": 0,
+   "full question": 0,
+   "no code": 0
+  },
+  {
+   "id": 13376,
+   "hybrid": 0,
+   "full question": 0,
+   "no code": 0
+  },
+  {
+   "id": 16404,
+   "hybrid": 0,
+   "full question": 0,
+   "no code": 0
+  },
+  {
+   "id": 13249,
+   "hybrid": 2,
+   "full question": 0,
+   "no code": 0
+  },
+  {
+   "id": 13490,
+   "hybrid": 0,
+   "full question": 1,
+   "no code": 0
+  },
+  {
+   "id": 14151,
+   "hybrid": 1,
+   "full question": 4,
+   "no code": 4
+  },
+  {
+   "id": 13660,
+   "hybrid": 0,
+   "full question": 1,
+   "no code": 1
+  },
+  {
+   "id": 13382,
+   "hybrid": 21,
+   "full question": 21,
+   "no code": 21
+  },
+  {
+   "id": 16473,
+   "hybrid": 0,
+   "full question": 0,
+   "no code": 0
+  },
+  {
+   "id": 13973,
+   "hybrid": 0,
+   "full question": 2,
+   "no code": 2
+  }
+ ]
+}

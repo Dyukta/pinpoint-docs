@@ -310,7 +310,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "AliasChoices for query params not supported; not in docs",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 16085,
@@ -354,7 +354,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "jsonable_encoder bug, tracked in another discussion",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 16028,
@@ -371,7 +371,7 @@
         "advanced/additional-responses.md"
       ],
       "why": "Answer uses a custom exception handler and responses={404: {'model': ...}}; both pages cover these",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 15989,
@@ -441,7 +441,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Fixed by PR #16013",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 15847,
@@ -455,7 +455,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "WSL networking problem",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 15846,
@@ -573,7 +573,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Fixed by PR #15763",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 15749,
@@ -601,7 +601,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Pydantic BeforeValidator and EmailStr",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 15742,
@@ -631,7 +631,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Pydantic exclude and PrivateAttr",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 15704,
@@ -659,7 +659,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Feature request, not planned",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 15648,
@@ -831,7 +831,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Known OpenAPI 3.1 issue; only the workaround is in docs",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 15302,
@@ -1015,7 +1015,7 @@
         "advanced/custom-response.md"
       ],
       "why": "Docs say a response model or return type is serialized to JSON directly",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 15089,
@@ -1089,7 +1089,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "ContextVar caveats come from maintainer knowledge, not docs",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 15044,
@@ -1136,7 +1136,7 @@
         "tutorial/dependencies/dependencies-with-yield.md"
       ],
       "why": "Answer links the \"Early exit and scope\" section",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 14980,
@@ -1154,7 +1154,7 @@
         "advanced/custom-response.md"
       ],
       "why": "Answer links the \"Custom response class\" section",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 14975,
@@ -1168,7 +1168,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Swagger file picker bug, workaround only",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 14967,
@@ -1182,7 +1182,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "ASGI has no post-startup event; asyncio workaround",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 14955,
@@ -1340,7 +1340,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "PR #14828 opened",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 14807,
@@ -1354,7 +1354,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Third-party WebSocket libraries",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 14788,
@@ -1401,7 +1401,7 @@
         "advanced/behind-a-proxy.md"
       ],
       "why": "Mount path becomes root_path, and FastAPI inserts root_path as the first server",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 14768,
@@ -1415,7 +1415,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "fastapi CLI has no log-level flag; not in docs",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 14765,
@@ -1443,7 +1443,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Fixed by PR #16049",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 14741,
@@ -1533,7 +1533,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "PR #14089 adds more error info",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 14601,
@@ -1663,7 +1663,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Known limitation, not in docs",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 14452,
@@ -1721,7 +1721,7 @@
         "tutorial/schema-extra-example.md"
       ],
       "why": "Docs say example is deprecated and to use examples / openapi_examples",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 14424,
@@ -1749,7 +1749,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "PR #14400",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 14380,
@@ -1763,7 +1763,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Pydantic validate_assignment",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 14377,
@@ -1777,7 +1777,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Fixed by PR #11355",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 14376,
@@ -1867,7 +1867,7 @@
         "async.md"
       ],
       "why": "Docs say blocking libraries need def, not async def",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 14336,
@@ -1895,7 +1895,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Pydantic dataclasses and asdict",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 14329,
@@ -1909,7 +1909,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Pydantic model_rebuild",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 14326,
@@ -2003,7 +2003,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Combining query models with other params not supported; PR #12481",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 14296,
@@ -2017,7 +2017,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "PR #14301",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 14292,
@@ -2131,7 +2131,7 @@
         "advanced/behind-a-proxy.md"
       ],
       "why": "Docs at 0.150.0 say FastAPI(root_path=) is deprecated; use --root-path",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 14218,
@@ -2173,7 +2173,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Worked only because of an old bug fixed by PR #12942",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 14198,
@@ -2189,7 +2189,7 @@
         "advanced/testing-events.md"
       ],
       "why": "Docs say use TestClient in a with block so lifespan runs",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 14197,
@@ -2228,10 +2228,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/14187#discussioncomment-14677745",
       "answer": "Thanks for the report! We're working on this here: https://github.com/fastapi/fastapi/pull/14186.\r\n\r\nFor now, you can downgrade/pin to Pydantic 2.12.0 to avoid this from happening.\r\n\r\nUpdate: the PR is now merged and released as fastapi 0.119.1 ✅ ",
       "docs_links": [],
-      "tag": "bug",
-      "gold_pages": [],
-      "why": "Fixed by PR #14186",
-      "tagged_by": "draft"
+      "tag": "docs",
+      "gold_pages": [
+        "release-notes.md"
+      ],
+      "why": "Release notes: fix for the Pydantic v1 warnings on Python 3.14 (PR #14186)",
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 14185,
@@ -2349,7 +2351,7 @@
         "tutorial/dependencies/dependencies-with-yield.md"
       ],
       "why": "Answer links the \"Early exit and scope\" section",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 14118,
@@ -2407,7 +2409,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Port already in use",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 14082,
@@ -2507,7 +2509,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Fix PR #14022",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 14012,
@@ -2565,7 +2567,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Starlette middleware exceptions are not caught by handlers",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13991,
@@ -2579,7 +2581,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Nested query models not supported",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13990,
@@ -2595,7 +2597,7 @@
         "async.md"
       ],
       "why": "Blocking code inside async def blocks the event loop; use def instead",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13989,
@@ -2664,10 +2666,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/13972#discussioncomment-14007807",
       "answer": "~You're hitting a known limitation in FastAPI/Starlette: by the time the exception handler runs, the request body has likely already been consumed (and can't be read again).~ You need to read and store the request body in middleware, before any endpoint or error handler consumes it.\r\n\r\nWorking code example:\r\n```\r\nfrom fastapi import FastAPI, Request, HTTPException\r\nfrom starlette.middleware.base import BaseHTTPMiddleware\r\nfrom starlette.responses import JSONResponse\r\n\r\napp = FastAPI()\r\n\r\n# Middleware to capture the request body\r\nclass BodyCaptureMiddleware(BaseHTTPMiddleware):\r\n    async def dispatch(self, request: Request, call_next):\r\n        request.state.body = await request.body()\r\n        response = await call_next(request)\r\n        return response\r\n\r\napp.add_middleware(BodyCaptureMiddleware)\r\n\r\n# Fake logger\r\nclass ErrorLogger:\r\n    @staticmethod\r\n    async def log_error(exception: Exception, request: Request):\r\n        body = getattr(request.state, \"body\", b\"[unavailable]\")\r\n        print(\"Logging error:\", exception)\r\n        print(\"Request body:\", body.decode(\"utf-8\", errors=\"ignore\"))\r\n\r\n# General exception handler\r\n@app.exception_handler(Exception)\r\nasync def general_exception_handler(request: Request, exception: Exception):\r\n    await ErrorLogger.log_error(exception=exception, request=request)\r\n    return JSONResponse(\r\n        status_code=500,\r\n        content={\"detail\": f\"Internal server error: {str(exception)}\"},\r\n    )\r\n\r\n@app.post(\"/crash\")\r\nasync def crash_endpoint(payload: dict):\r\n    # Simulate error\r\n    raise ValueError(\"Simulated error for testing!\")\r\n\r\n```\r\nResults:\r\n```\r\nINFO:     127.0.0.1:65431 - \"GET /openapi.json HTTP/1.1\" 200 OK\r\nLogging error: Simulated error for testing!\r\nRequest body: {\r\n  \"additionalProp1\": {}\r\n}\r\nINFO:     127.0.0.1:65437 - \"POST /crash HTTP/1.1\" 500 Internal Server Error\r\n```",
       "docs_links": [],
-      "tag": "other-library",
-      "gold_pages": [],
-      "why": "Starlette request body already consumed",
-      "tagged_by": "draft"
+      "tag": "docs",
+      "gold_pages": [
+        "how-to/custom-request-and-route.md"
+      ],
+      "why": "Docs section 'Accessing the request body in an exception handler', and its tip pointing to the RequestValidationError body",
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13970,
@@ -2695,7 +2699,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Hacky workaround, not supported",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13950,
@@ -2711,7 +2715,7 @@
         "advanced/custom-response.md"
       ],
       "why": "Docs at 0.150.0 say a declared return type is serialized directly by Pydantic",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13945,
@@ -2725,7 +2729,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Deep object query serialization not supported",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13942,
@@ -2739,7 +2743,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Starlette and Uvicorn ContextVar issue",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13926,
@@ -2781,7 +2785,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Multiple query models not supported; not in docs",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13908,
@@ -2795,7 +2799,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Sharing parent app state with a sub-app; workaround not in docs",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13905,
@@ -2823,7 +2827,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Dynamic auth schemes via signature hacks; not in docs",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13893,
@@ -3030,7 +3034,7 @@
         "tutorial/path-params-numeric-validations.md"
       ],
       "why": "Docs say a path parameter is always required",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13828,
@@ -3152,7 +3156,7 @@
         "tutorial/query-params-str-validations.md"
       ],
       "why": "Answer links both pages",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13789,
@@ -3166,7 +3170,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Form model plus File params limitation",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13784,
@@ -3182,7 +3186,7 @@
         "fastapi-cli.md"
       ],
       "why": "Docs say use fastapi run for production; it runs on production-ready Uvicorn",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13779,
@@ -3196,7 +3200,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "WebSocket is Starlette's class",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13776,
@@ -3224,7 +3228,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Known issue with defaults in Query models",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13742,
@@ -3280,7 +3284,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Starlette BaseHTTPMiddleware drains the form stream",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13738,
@@ -3294,7 +3298,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Starlette stream read after response started",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13732,
@@ -3336,7 +3340,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "No config for concurrent background tasks; workaround",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13723,
@@ -3382,7 +3386,7 @@
         "advanced/path-operation-advanced-configuration.md"
       ],
       "why": "Answer: use openapi_extra on the path decorator, covered on this page",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13720,
@@ -3480,7 +3484,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Query model plus single query params not supported",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13707,
@@ -3494,7 +3498,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Detecting client disconnect in a Starlette StreamingResponse",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13705,
@@ -3570,7 +3574,7 @@
         "advanced/response-cookies.md"
       ],
       "why": "Docs say a Response returned directly is used as is, so the Response parameter is ignored",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13673,
@@ -3584,7 +3588,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Starlette url_path_for with StaticFiles mounts",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13660,
@@ -3659,7 +3663,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Starlette BaseHTTPMiddleware bypasses exception handlers",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13646,
@@ -3691,7 +3695,7 @@
         "fastapi-cli.md"
       ],
       "why": "Answer links the fastapi dev section: it listens on 127.0.0.1",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13638,
@@ -3705,7 +3709,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Python try/finally inside the stream generator",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13637,
@@ -3865,7 +3869,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "sys.getsizeof counts object overhead",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13591,
@@ -3938,7 +3942,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Pydantic Field pattern on list items",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13582,
@@ -3952,7 +3956,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "No official way to regenerate OpenAPI at runtime",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13573,
@@ -4136,7 +4140,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Uvicorn access log filter",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13516,
@@ -4250,7 +4254,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Open issue #13400",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13474,
@@ -4327,7 +4331,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Examples on query models not applied; OpenAPI limits",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13445,
@@ -4345,7 +4349,7 @@
         "tutorial/body.md"
       ],
       "why": "Answer links \"Declare it as a parameter\"",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13431,
@@ -4429,7 +4433,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Python GIL with CPU-bound threads",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13382,
@@ -4561,7 +4565,7 @@
         "async.md"
       ],
       "why": "Blocking sync code inside async def blocks the event loop; docs explain def vs async def",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13353,
@@ -4589,7 +4593,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "No option to keep streaming after disconnect",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13346,
@@ -4603,7 +4607,7 @@
       "tag": "other-library",
       "gold_pages": [],
       "why": "Uvicorn issue #1301",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13344,
@@ -4645,7 +4649,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "Nested discriminated unions; workaround elsewhere",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13336,
@@ -4675,7 +4679,7 @@
         "async.md"
       ],
       "why": "Answer explains the \"In a hurry\" section of this page",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13332,
@@ -4747,7 +4751,7 @@
         "tutorial/handling-errors.md"
       ],
       "why": "Docs show overriding RequestValidationError with a PlainTextResponse handler",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13277,
@@ -4772,10 +4776,12 @@
       "answer_url": "https://github.com/fastapi/fastapi/discussions/13276#discussioncomment-12074599",
       "answer": "You can use `SkipJsonSchema` to hide particular type (not parameter) in schema.\r\n\r\n```\r\nimport uvicorn\r\nfrom fastapi import FastAPI, Depends\r\nfrom pydantic import BaseModel\r\nfrom pydantic.json_schema import SkipJsonSchema\r\n\r\napp = FastAPI()\r\n\r\nclass QueryParams(BaseModel):\r\n    param1: str\r\n    param2: str | SkipJsonSchema[None] = None\r\n\r\n@app.get(\"/\")\r\ndef read_items(params: QueryParams = Depends()):\r\n    return params\r\n\r\nif __name__ == \"__main__\":\r\n    uvicorn.run(app, host=\"0.0.0.0\", port=8000)\r\n```\r\n\r\nThe code above will produce schema for `param2` (notice the type is just `string`):\r\n```\r\n          {\r\n            \"name\": \"param2\",\r\n            \"in\": \"query\",\r\n            \"required\": false,\r\n            \"schema\": {\r\n              \"type\": \"string\",\r\n              \"title\": \"Param2\"\r\n            }\r\n          }\r\n```\r\n\r\n\r\nAnd if you want to hide the parameter, you should use `Query(include_in_schema=False)`.\r\nThe problem is that id doesn't work with Query parameters defined using BaseModel.\r\nSo, you can only use it directly:\r\n```\r\nfrom typing import Annotated\r\nfrom fastapi import FastAPI,Query\r\n\r\napp = FastAPI()\r\n\r\n@app.get(\"/\")\r\ndef read_items(\r\n    param1: str,\r\n    param2: Annotated[str | None, Query(include_in_schema=False)] = None,\r\n):\r\n    return {\"param1\": param1, \"param2\": param2}\r\n\r\n```\r\n\r\nOr as parameters of function:\r\n```\r\nfrom typing import Annotated\r\nfrom fastapi import Depends, FastAPI,Query\r\nfrom pydantic import BaseModel\r\n\r\napp = FastAPI()\r\n\r\n\r\nclass QueryParams(BaseModel):\r\n    param1: str\r\n    param2: str | None = None\r\n\r\n\r\nasync def get_params(\r\n    param1: str,\r\n    param2: Annotated[str | None, Query(include_in_schema=False)] = None,\r\n):\r\n    return QueryParams(param1=param1, param2=param2)\r\n\r\n\r\n@app.get(\"/\")\r\ndef read_items(params: QueryParams = Depends(get_params)):\r\n    return params\r\n```",
       "docs_links": [],
-      "tag": "other-library",
-      "gold_pages": [],
+      "tag": "docs",
+      "gold_pages": [
+        "tutorial/query-params-str-validations.md"
+      ],
       "why": "Pydantic SkipJsonSchema usage",
-      "tagged_by": "draft"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13263,
@@ -4879,7 +4885,7 @@
         "tutorial/header-params.md"
       ],
       "why": "Answer: read the extra token with a Header parameter",
-      "tagged_by": "checked"
+      "tagged_by": "human-reviewed"
     },
     {
       "id": 13246,
@@ -4983,7 +4989,7 @@
       "tag": "bug",
       "gold_pages": [],
       "why": "OpenAPI parameter order can't follow function order",
-      "tagged_by": "draft"
+      "tagged_by": "reviewed"
     },
     {
       "id": 13204,

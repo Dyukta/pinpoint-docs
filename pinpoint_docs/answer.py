@@ -72,8 +72,8 @@ def answer_cache():
     return chromadb.PersistentClient(str(DB)).get_or_create_collection(CACHE, configuration={"hnsw": {"space": "cosine"}})
 
 
-def settings_key(model, k):
-    settings = [model, k, SYSTEM, CHECK, CHECK_ASK, OPTIONS, COLLECTION]
+def settings_key(model, k, check=True):
+    settings = [model, k, check, SYSTEM, CHECK, CHECK_ASK, OPTIONS, COLLECTION]
     return hashlib.sha256(json.dumps(settings, sort_keys=True).encode()).hexdigest()[:16]
 
 
@@ -94,10 +94,10 @@ def remember(vector, key, question, result):
     )
 
 
-def answer(question, k=5, model=MODEL, use_cache=True):
+def answer(question, k=5, model=MODEL, use_cache=True, check=True):
     trace = {"trace_id": uuid.uuid4().hex[:12], "time": datetime.now(timezone.utc).isoformat(timespec="seconds"), "model": model, "question": question}
     try:
-        trace |= respond(question, k, model, use_cache)
+        trace |= respond(question, k, model, use_cache, check)
         trace["error"] = None
     except Exception as e:
         trace |= {**EMPTY, "error": f"{type(e).__name__}: {e}"}
@@ -106,19 +106,19 @@ def answer(question, k=5, model=MODEL, use_cache=True):
     return trace
 
 
-def respond(question, k, model, use_cache):
+def respond(question, k, model, use_cache, check=True):
     start = time.perf_counter()
     vector = embed_question(question)
-    key = settings_key(model, k)
+    key = settings_key(model, k, check)
     hit = cached_answer(vector, key) if use_cache else None
     if hit:
         return {**EMPTY, **hit, "cached": True, "search_seconds": round(time.perf_counter() - start, 2)}
     hits = search(question, k, vector=vector)
     searched = time.perf_counter()
     context = excerpts(hits)
-    ok, check = is_answerable(question, context, model)
+    ok, verdict = is_answerable(question, context, model) if check else (True, {})
     checked = time.perf_counter()
-    calls = [check]
+    calls = [verdict]
     text, urls = IDK, []
     if ok:
         reply = chat(model, SYSTEM, f"Question:\n{question}\n\nExcerpts:\n\n{context}")
@@ -130,6 +130,7 @@ def respond(question, k, model, use_cache):
         "retrieved": [c["id"] for c in hits],
         "scores": [c["score"] for c in hits],
         "answerable": ok,
+        "check": check,
         "cached": False,
         "search_seconds": round(searched - start, 2),
         "check_seconds": round(checked - searched, 2),

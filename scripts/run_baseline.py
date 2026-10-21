@@ -5,14 +5,15 @@ import time
 
 from pinpoint_docs.answer import IDK, MODEL, chat
 from scripts.compare_retrieval import query_text
-from scripts.run_eval import ROOT, load_questions, sample
+from scripts.run_eval import ROOT, load_split
 
 SYSTEM = f"Answer the FastAPI question. Keep it to 2 to 5 sentences. If you are not sure of the answer, reply with exactly: {IDK}"
 
 
 def main():
-    model = sys.argv[1] if len(sys.argv) > 1 else MODEL
-    questions = sample(load_questions())
+    name = sys.argv[1] if len(sys.argv) > 1 else "test"
+    model = sys.argv[2] if len(sys.argv) > 2 else MODEL
+    questions = load_split(name)
     results = []
     for n, q in enumerate(questions, 1):
         start = time.perf_counter()
@@ -26,7 +27,7 @@ def main():
         })
         print(f"{n}/{len(questions)} {q['tag']:<13} {'IDK' if said_idk else 'answered'} {results[-1]['seconds']:5.1f}s  #{q['id']} {q['title'][:60]}", flush=True)
 
-    out = ROOT / "evals" / f"baseline_{model.replace(':', '-')}.json"
+    out = ROOT / "evals" / f"baseline_{name}_{model.replace(':', '-')}.json"
     out.write_text(json.dumps({"model": model, "results": results}, indent=1, ensure_ascii=False), encoding="utf-8")
     docs = [r for r in results if r["gold_pages"]]
     other = [r for r in results if not r["gold_pages"]]

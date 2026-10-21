@@ -1,0 +1,90 @@
+{
+ "run": "eval_llama3.2_graded.json",
+ "judge": "llama3.2",
+ "results": [
+  {
+   "id": 16376,
+   "tag": "docs",
+   "faithful": "no",
+   "relevant": "no",
+   "correct": "yes"
+  },
+  {
+   "id": 14082,
+   "tag": "docs",
+   "faithful": "no",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 13245,
+   "tag": "docs",
+   "faithful": "no",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 14094,
+   "tag": "docs",
+   "faithful": "no",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 14363,
+   "tag": "docs",
+   "faithful": "no",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 13261,
+   "tag": "docs",
+   "faithful": "no",
+   "relevant": "yes",
+   "correct": "yes"
+  },
+  {
+   "id": 15846,
+   "tag": "docs",
+   "faithful": "no",
+   "relevant": "yes",
+   "correct": "no"
+  },
+  {
+   "id": 16085,
+   "tag": "docs",
+   "faithful": "no",
+   "relevant": "yes",
+   "correct": "yes"
+  },
+  {
+   "id": 15328,
+   "tag": "bug",
+   "faithful": "no",
+   "relevant": "yes",
+   "correct": "no"
+  },
+  {
+   "id": 15914,
+   "tag": "bug",
+   "faithful": "no",
+   "relevant": "no",
+   "correct": "yes"
+  },
+  {
+   "id": 14021,
+   "tag": "bug",
+   "faithful": "no",
+   "relevant": "yes",
+   "correct": "yes"
+  },
+  {
+   "id": 14967,
+   "tag": "other-library",
+   "faithful": "no",
+   "relevant": "no",
+   "correct": "no"
+  }
+ ]
+}

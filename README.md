@@ -2,7 +2,7 @@
 
 Pinpoint answers FastAPI questions using only FastAPI's own documentation, links the docs section each answer came from, and says "I don't know" when the docs do not cover the question. It runs fully on a local machine with Ollama, and it is measured against real questions people asked on the FastAPI forum.
 
-**Headline result.** The same 3B model was given the same 20 docs questions with and without Pinpoint, and every answer was graded by hand. Alone, 12 of its 17 answers were wrong. With Pinpoint, 1 of 8 answers was wrong. On 20 questions the docs do not answer, Pinpoint says "I don't know" 16 times. These are small samples: one question is 5 points.
+**Headline result.** The same 3B model was given the same 20 dev docs questions with and without Pinpoint, and every answer was graded by hand. Alone, 12 of its 17 answers were wrong. With Pinpoint, 1 of 8 answers was wrong. On 20 questions the docs do not answer, Pinpoint says "I don't know" 16 times. On 50 held-out test questions, all reviewed by hand, it passes 27. These are small samples: one question is 2 to 5 points.
 
 ## Problem
 
@@ -22,7 +22,8 @@ Most questions on a library's forum are already answered in its docs, but people
 | Model-alone baseline | The same questions with no retrieval, graded by hand |
 | Telemetry | One structured trace per request; p50/p95 latency, tokens, refusal and error rates in every eval report |
 | Semantic cache | A question almost identical to one already answered gets the saved answer |
-| API | `POST /ask` with FastAPI, with Swagger UI at `/docs` |
+| API | FastAPI: `POST /ask`, plus `GET /stats`, `/traces`, `/traces/{id}` and `/eval` for monitoring, with Swagger UI at `/docs` |
+| Dashboard | React, Vite and Tailwind: ask questions, watch live latency, refusal, cache and error rates, open any trace, and see the held-out test results |
 
 ## Run it
 
@@ -45,6 +46,16 @@ Clone the FastAPI docs at tag 0.150.0 into `data/fastapi-0.150.0` (only `docs/en
 .venv\Scripts\python -m scripts.run_eval
 .venv\Scripts\python -m pytest -q
 ```
+
+The dashboard needs Node 20 or newer. With the API running in one terminal:
+
+```
+cd dashboard
+npm install
+npm run dev
+```
+
+Then open http://localhost:5173. Vite forwards API calls to FastAPI on port 8000.
 
 ## Architecture
 
@@ -97,21 +108,31 @@ The eval harness calls the same `answer()` as a live question, so measured score
 | `pinpoint_docs/index.py` | Chunks to ChromaDB |
 | `pinpoint_docs/search.py` | BM25, RRF, MMR and hybrid search |
 | `pinpoint_docs/answer.py` | Answer cache, YES/NO check, answer prompt, citation parsing, tracing |
-| `pinpoint_docs/api.py` | FastAPI app: `POST /ask` |
+| `pinpoint_docs/api.py` | FastAPI app: `POST /ask` and the monitoring endpoints |
+| `pinpoint_docs/stats.py` | Latency percentiles and rates from the traces, shared by the API and the eval |
+| `dashboard/` | React + Vite + Tailwind monitoring dashboard |
 | `scripts/collect_questions.py` | Collects answered questions from GitHub Discussions |
 | `scripts/tag_questions.py` | Tool for tagging and reviewing questions |
 | `scripts/compare_retrieval.py` | Compares chunking and search strategies |
 | `scripts/run_eval.py` | Runs a fixed sample end to end and writes the report |
 | `scripts/run_baseline.py` | Asks the model the same questions with no retrieval |
 | `scripts/measure_threshold.py` | Tests whether a distance cutoff can spot questions the docs do not answer |
-| `scripts/measure_gate.py` | Tests whether a YES/NO check can spot questions the excerpts do not answer |
+| `scripts/measure_gate.py` | Compares YES/NO check variants on a split |
+| `pinpoint_docs/rerank.py` | Cross-encoder reranker on ONNX Runtime (measured, not used) |
+| `scripts/measure_rerank.py` | Measures reranking on a split |
+| `scripts/judge.py` | LLM judge for faithfulness, relevancy and correctness, compared with the hand grades |
 | `scripts/m2_check.py` | The first 6 end-to-end questions |
 | `evals/questions.json` | The 350 tagged questions |
-| `evals/eval_llama3.2.json` | Latest eval run, one row per question with its trace id |
-| `evals/eval_llama3.2_no-check.json` | Eval run before the YES/NO check |
+| `evals/eval_test_llama3.2.json` | Held-out test run, one row per question with its trace id |
+| `evals/eval_llama3.2.json` | Latest dev-sample run |
+| `evals/eval_test_no-check_llama3.2.json` | Held-out test run with the YES/NO check turned off |
+| `evals/eval_llama3.2_no-check.json` | Dev-sample run before the YES/NO check |
+| `evals/m2_answers_llama3.2.json`, `evals/m2_answers_qwen2.5-3b.json` | The first 6 end-to-end questions, answered by each model |
+| `evals/gate_dev.json` | Per-question votes of the YES/NO check variants on dev |
+| `evals/rerank_dev.json` | Per-question ranks with and without reranking on dev |
 | `evals/eval_llama3.2_graded.json` | The run whose answers were graded by hand |
 | `evals/baseline_llama3.2.json` | Model-alone run |
-| `evals/hand_grades.json` | Hand grades with a reason for each |
+| `evals/hand_grades.json` | Hand grades for correctness, faithfulness and relevancy, with a reason for each |
 | `evals/split.json` | Frozen dev and test question ids |
 | `scripts/make_split.py` | Builds the dev/test split |
 | `evals/retrieval_results_dev.json` | Every chunking and search result on dev, with per-question ranks |
@@ -129,17 +150,17 @@ The eval harness calls the same `answer()` as a live question, so measured score
 | Hybrid search + Reciprocal Rank Fusion | Top 50 from each retriever, merged by `1 / (60 + rank)` | used, measured |
 | Metadata and citations | Every chunk carries page, section and a deep link. Answers cite excerpt numbers that our code maps to links, so a cited page always exists and was retrieved | used |
 | Structured output | Model names its evidence before answering (`EXCERPTS:` then `ANSWER:`) | used, JSON tried and dropped |
-| Abstention | A separate YES/NO call decides whether the excerpts answer the question before any answer is written | used, measured on two samples |
+| Abstention | A separate YES/NO call decides whether the excerpts answer the question before any answer is written | used: chosen on dev, then 27 against 15 passes on the held-out test (p = 0.02) |
 | Context budgeting | Top 5 chunks, about 5800 characters, inside an 8192-token window | used, measured |
 | Deterministic generation | Temperature 0, pinned docs version, pinned eval set | used |
 | Retrieval evaluation | hit@1, hit@5, MRR@10 on hand-checked questions, with a paired sign test | used |
-| Answer evaluation | Correctness graded by hand against accepted forum answers | used for 40 answers. Automatic grading not built |
+| Answer evaluation | Correctness against accepted forum answers, faithfulness to the excerpts and relevancy to the question | graded by hand for 40 answers; an LLM judge is being calibrated against these grades |
 | Model-alone baseline | Same questions without retrieval | used |
 | Per-request telemetry | Trace id, retrieved chunks and RRF scores, time per step, tokens, refusal and errors, as JSON lines | used |
 | Semantic cache | Reuse the answer of an almost identical earlier question | used, with a strict cutoff measured below |
 | Relevance threshold | Answer "I don't know" before calling the model when nothing retrieved is close enough | measured and rejected |
 | MMR / diversity | Pick a top 5 that is relevant but not repetitive, from the top 20 | measured, no significant gain: on dev, hit@5 0.72 to 0.78 with weight 0.5 (5 questions better, 3 worse, p = 0.73), hit@1 0.42 to 0.40 |
-| Reranking (cross-encoder) | Rescore the top 50 with a model that reads question and chunk together | not used yet: it targets the biggest failure (search misses). The top 10 holds a gold page for 78% of docs questions against 69% for the top 5, so there is room to gain |
+| Reranking (cross-encoder) | Re-sort the top 20 with a model that reads question and chunk together | measured and rejected: `ms-marco-MiniLM-L6-v2` lowered hit@5 on dev from 29 to 25 or 28 and added 2.7 s |
 | Query rewriting, multi-query, HyDE | Rewrite or expand the question before searching | not used: adds a model call per question, and the full question already ties with or beats the title alone |
 | Parent-child (small-to-big) retrieval | Search small chunks, send their whole section | not used: sections are already the unit sent |
 | Semantic chunking | Split where embedding similarity drops | not used: headings already mark topic changes in these docs |
@@ -147,20 +168,33 @@ The eval harness calls the same `answer()` as a live question, so measured score
 
 ## Results
 
-**Read with care.** Two known problems in the numbers below are being fixed: most non-docs tags are unchecked drafts, and the docs questions used to choose the chunking and the YES/NO check are the same ones the eval reports on, which makes the scores look better than they are.
+### Eval set and split
 
-### Eval set
-
-350 answered questions, newest first, collected on 2026-10-20.
+350 answered questions, newest first, collected on 2026-10-20. Only 27 of the accepted answers link to the docs site, so most gold pages were found by searching the docs.
 
 | Tag | Count | Meaning |
 |---|---|---|
-| docs | 65 | The docs answer it. Each one is checked against the 0.150.0 docs and lists its gold pages |
-| bug | 120 | About FastAPI, but the docs do not answer it |
-| other-library | 81 | Really about Pydantic, Starlette, SQLAlchemy and so on |
+| docs | 68 | The 0.150.0 docs answer it; lists its gold pages |
+| bug | 119 | About FastAPI, but the docs do not answer it |
+| other-library | 79 | Really about Pydantic, Starlette, Uvicorn and so on |
 | skip | 84 | Not a usable question |
 
-Only 27 of the 350 accepted answers link to the docs site, so most gold pages were found by searching the docs by hand. 275 tags (all bug, other-library and skip tags except 10) are still drafts.
+The questions are split once, in `evals/split.json`, before any final number was measured:
+
+- **dev, 80 questions** (40 docs, 40 non-docs): every question already used for a decision, namely the two samples behind the YES/NO check. Chunking, search and the check are tuned only on dev.
+- **test, 50 questions** (28 docs, 22 non-docs): never used for a decision. Final numbers are reported only on test.
+
+How each tag was checked:
+
+| Status | Count | Meaning |
+|---|---|---|
+| human-reviewed | 50 | Every test question, reviewed by the author against the 0.150.0 docs |
+| human | 11 | Tagged by the author from the start |
+| reviewed | 36 | Dev non-docs questions, re-read against the question, the accepted answer and the docs in a second pass, not by the author |
+| checked | 39 | Docs questions checked against the docs by an automated pass, not by a person (37 of them in dev) |
+| draft | 214 | Not used by any eval |
+
+Reviewing the test set moved 3 questions from non-docs to docs (the docs answer them through a section the forum answer did not link) and narrowed one gold page.
 
 ### Chunking and search strategies
 
@@ -204,24 +238,57 @@ Why headings with a 1500 cap plus hybrid search: its accuracy ties with the best
 
 The choice was first made on all 65 docs questions, which included the questions the eval reports on. It was then re-checked on the 40 dev questions only, with the same result.
 
-### Eval run
+### Held-out test results
 
-`scripts/run_eval.py`, llama3.2, a fixed sample of 20 docs questions and 20 bug or other-library questions (seed 0). A docs question passes when the answer cites a gold page and does not say "I don't know"; any other question passes only on "I don't know". Passing does not mean correct: see the hand grades below.
+`scripts/run_eval.py test`, llama3.2, the 50 test questions. A docs question passes when the answer cites a gold page and does not say "I don't know"; any other question passes only on "I don't know". Passing does not mean correct: see the hand grades below.
 
-| Measure | Before the YES/NO check | Final |
+| Measure | Current YES/NO check |
+|---|---|
+| Passed overall | **27 / 50** |
+| Docs questions: search found a gold page in the top 5 | 17 / 28 |
+| Docs questions: answer cited a gold page | 9 / 28 |
+| Docs questions: wrongly said "I don't know" | 14 / 28 |
+| Non-docs questions: correctly said "I don't know" | **18 / 22** |
+| Passed by type: docs / bug / other-library | 9 / 28, 12 / 16, 6 / 6 |
+
+| Failure on test | Count | Stage |
+|---|---|---|
+| Search missed the gold page | **11** | search |
+| Refused although the gold page was found | 7 | YES/NO check |
+| Answered a question the docs do not cover | 4 | YES/NO check |
+| Cited the wrong page | 1 | answer |
+
+On test, search misses are the largest failure. On dev it was the other way round (15 refusals against 11 misses), and the fixes below were chosen on dev, as they must be.
+
+**The adopted fix, measured on held-out questions.** The YES/NO check was chosen on dev. Running the same 50 test questions with the check turned off (`scripts/run_eval.py test no-check`) gives a clean before and after:
+
+| Test, 50 questions | Without the check | With the check |
+|---|---|---|
+| Passed overall | 15 / 50 | **27 / 50** |
+| Docs questions: answer cited a gold page | **15 / 28** | 9 / 28 |
+| Non-docs questions: correctly said "I don't know" | 0 / 22 | **18 / 22** |
+| Answers given | 50 | 18 |
+| Answers that cite a gold page | 15 / 50 (30%) | **9 / 18 (50%)** |
+| Latency p50 / p95 | 18.3 s / 30.6 s | 19.1 s / 42.2 s |
+
+Question by question, the check is better on 18 and worse on 6 (sign test p = 0.02), the only significant result on the test set. Without it, the model answers all 50 questions, including every question the docs do not cover. With it, Pinpoint answers fewer questions, but half of its answers cite the right page instead of under a third, at the cost of 6 docs answers it now refuses.
+
+### Development results
+
+These come from the 40-question seed 0 sample, which is now part of dev. They shaped the system, so they are more optimistic than the test numbers.
+
+**Adding the YES/NO check:**
+
+| Measure (dev sample) | Before the check | After |
 |---|---|---|
 | Passed overall | 10 / 40 | **20 / 40** |
-| Docs questions: search found a gold page in the top 5 | 12 / 20 | 12 / 20 |
 | Docs questions: answer cited a gold page | **10 / 20** | 4 / 20 |
 | Docs questions: wrongly said "I don't know" | 0 / 20 | 12 / 20 |
 | Non-docs questions: correctly said "I don't know" | 0 / 20 | **16 / 20** |
-| Passed by type: docs / bug / other-library | – | 4 / 20, 6 / 9, 10 / 11 |
 
-Without the check, the model never says "I don't know": it always finds an excerpt to cite. With the check, Pinpoint passes twice as often overall, but answers far fewer docs questions. The check is not fully repeatable: between two runs on the same questions, 2 of 40 decisions flipped even at temperature 0.
+Without the check, the model never says "I don't know": it always finds an excerpt to cite. The check is not fully repeatable: between two runs on the same questions, 2 of 40 decisions flipped even at temperature 0.
 
-### Pinpoint vs the model alone
-
-`scripts/run_baseline.py` asks llama3.2 the same 40 questions with no retrieval. Its prompt also allows "I don't know." All 20 docs answers from both systems were read by hand against the accepted forum answer and the gold page. Each verdict and its reason are in `evals/hand_grades.json`.
+**Pinpoint against the model alone.** `scripts/run_baseline.py` asks llama3.2 the same questions with no retrieval; its prompt also allows "I don't know." All 20 docs answers from both systems were read by hand against the accepted forum answer and the gold page (`evals/hand_grades.json`).
 
 | Docs questions (20) | Model alone | Pinpoint |
 |---|---|---|
@@ -232,36 +299,32 @@ Without the check, the model never says "I don't know": it always finds an excer
 | **Wrong among answers given** | **12 / 17 (71%)** | **1 / 8 (13%)** |
 | Non-docs questions: said "I don't know" | 10 / 20 | 16 / 20 |
 
-Alone, llama3.2 answers most docs questions, and most of those answers are wrong: invented flags, made-up install extras, code that does not run. Pinpoint answers fewer, but when it answers it is rarely wrong, and it always links the docs. Retrieval without the check made the model more overconfident than the model alone (0 against 10 refusals on non-docs questions), which is why the check exists. The grades come from one reader.
+Alone, llama3.2 answers most docs questions, and most of those answers are wrong: invented flags, made-up install extras, code that does not run. Retrieval without the check made the model more overconfident than the model alone (0 against 10 refusals on non-docs questions), which is why the check exists.
 
-### Failure modes
+**Faithfulness and relevancy.** Each of the 12 answers Pinpoint gave was also graded by hand, before any automatic judge was run: is every claim and code line backed by the 5 excerpts it was given, and does it address what was asked?
 
-The harness labels every failure. Counts from the latest run:
-
-| Failure | Count | Stage | What happens |
+| 12 answers | Yes | Partly | No |
 |---|---|---|---|
-| Search missed the gold page | **8** | search | No chunk from the right page in the top 5 |
-| Refused although the gold page was found | 7 | YES/NO check | The check says NO to excerpts that hold the answer |
-| Answered a question the docs do not cover | 4 | YES/NO check | The check says YES to related but not answering excerpts |
-| Cited the wrong page | 1 | answer | Answered from an excerpt outside the gold pages |
+| Faithful to the excerpts | 3 | 7 | 2 |
+| Relevant to the question | 5 | 5 | 2 |
 
-Reading the answered docs questions by hand adds two more: answers that start right and then add wrong claims (4 partly right), and the right page with the wrong section, for example an answering section ranked 41st by search.
+Citations are always real, because the code builds them, but the answer text often mixes in claims from the question or the model's memory: a function name the asker mentioned, "fixed in Python 3.13", one invented link. This is the clearest remaining hallucination problem.
 
 ### Telemetry
 
 Every call to `answer()` appends one JSON line to `data/traces.jsonl`: trace id, time, question, retrieved chunk ids and RRF scores, time for search, check and answer, prompt and output tokens, the answer, refusal, cache use and any error. Each eval row keeps its trace id. All runs are on a GTX 1650 (4 GB).
 
-| Measure | Model alone | Before the check | Latest |
+| Measure | Model alone (dev) | Before the check (dev) | Current (test) |
 |---|---|---|---|
-| Latency p50 | 6.3 s | 28.0 s | 24.1 s |
-| Latency p95 | 13.1 s | 54.8 s | 38.6 s |
-| Step p50: search / check / answer | – | 2.7 s / – / 25.4 s | 3.8 s / 12.6 s / 15.0 s |
-| Prompt tokens per 1,000 questions | 680,000 | 2,358,000 | 2,841,000 |
-| Output tokens per 1,000 questions | 93,000 | 145,000 | 55,000 |
-| Answered / said "I don't know" | 27 / 13 | 40 / 0 | 12 / 28 |
-| Errors | – | – | 0 / 40 |
+| Latency p50 | 6.3 s | 28.0 s | 19.1 s |
+| Latency p95 | 13.1 s | 54.8 s | 42.2 s |
+| Step p50: search / check / answer | – | 2.7 s / – / 25.4 s | 3.2 s / 12.8 s / 15.9 s |
+| Prompt tokens per 1,000 questions | 680,000 | 2,358,000 | 2,887,000 |
+| Output tokens per 1,000 questions | 93,000 | 145,000 | 58,000 |
+| Answered / said "I don't know" | 27 / 13 | 40 / 0 | 18 / 32 |
+| Errors | – | – | 0 / 50 |
 
-24 s per question is the price of two calls to a local 3B model: one for the YES/NO check and one for the answer, each reading about 2,700 prompt tokens. The run before the check used an older GPU setup (part of the model on the CPU), so its latency is not directly comparable. All models run locally, so cost is reported in tokens, not money.
+About 20 s per question is the price of two calls to a local 3B model: one for the YES/NO check and one for the answer, each reading about 2,700 prompt tokens. Questions the check refuses skip the answer call. The run before the check used an older GPU setup (part of the model on the CPU), so its latency is not directly comparable. All models run locally, so cost is reported in tokens, not money.
 
 ### Semantic cache cutoff
 
@@ -299,6 +362,37 @@ Two ideas for "I don't know" were then tested with a bar set before each run:
 | Docs questions where search missed: NO | 6 / 8 | 2 / 3 |
 | Non-docs questions: NO | 16 / 20 (80%) | 17 / 20 (85%) |
 
+### Fixing refusals
+
+The YES/NO check is the largest failure on the dev questions: it says NO for 15 of the 29 dev docs questions where search found the gold page, while a perfect reranker over the top 20 could recover at most 7 search misses. Two changes to the check are measured on dev with `scripts/measure_gate.py`, against the current check run under the same conditions:
+
+- **Fully or in part:** ask whether the excerpts contain information that answers the question fully or in part, instead of whether they contain the answer.
+- **No code:** give the check only the question's title and description, without the asker's code.
+
+Bar set before the run: adopt a change if it says YES for at least 5 more of the 29 found-page dev docs questions than the current check, and still says NO for at least 70% of the 40 dev non-docs questions. The adopted check is then compared with the current one on the test questions only.
+
+| Variant (80 dev questions) | Found-page docs: YES | Missed docs: NO | Non-docs: NO | Result |
+|---|---|---|---|---|
+| Current check | 13 / 29 | 7 / 11 | 32 / 40 (80%) | baseline |
+| Fully or in part | **18 / 29** | 7 / 11 | 13 / 40 (33%) | rejected: says YES to almost everything |
+| No code | 16 / 29 | 8 / 11 | 29 / 40 (73%) | rejected: 3 more YES, the bar was 5 |
+
+Neither change passed, so the check is unchanged. A looser question makes the 3B model agree with almost anything, and hiding the asker's code helps only a little. Per-question results are in `evals/gate_dev.json`.
+
+### Reranking
+
+With the check unchanged, the next fix targets search misses, the largest failure on test. A cross-encoder (`cross-encoder/ms-marco-MiniLM-L6-v2`, run with ONNX Runtime on the CPU) reads the question and each chunk together and re-sorts the top 20 chunks from hybrid search. It is measured on the 40 dev docs questions with `scripts/measure_rerank.py`, with two forms of the question: the full question, and the title and description without the asker's code.
+
+Bar set before the run: adopt reranking if it puts a gold page in the top 5 for at least 4 more of the 40 dev docs questions than hybrid search alone, and adds at most 2 seconds per question. The adopted version is then compared with the current pipeline on the test questions only.
+
+| Search (40 dev docs questions) | hit@1 | hit@5 | Against hybrid at hit@5 | Added time (p50) |
+|---|---|---|---|---|
+| Hybrid | 17 | **29** | – | – |
+| Hybrid + rerank, full question | 15 | 25 | 1 better, 5 worse (p = 0.22) | 2.8 s |
+| Hybrid + rerank, no code | 17 | 28 | 2 better, 3 worse (p = 1.00) | 2.7 s |
+
+Rejected: reranking made search slightly worse and slower. This cross-encoder was trained on short web-search queries (MS MARCO), not on long forum posts full of code matched against technical docs. A reranker trained on code or documentation might do better; it was not tried. Per-question results are in `evals/rerank_dev.json`.
+
 ## Problems and fixes
 
 | Problem | Fix |
@@ -317,11 +411,12 @@ Two ideas for "I don't know" were then tested with a bar set before each run:
 
 ## Limitations
 
-- **Small samples.** The retrieval comparison uses 40 dev questions, and the test set has 25 docs questions. One question is 4 points in a group of 25. Only the BM25 result passed a significance test; the other differences, including MRR 0.54 against 0.61, are within noise.
-- **Draft labels.** 275 of 350 tags are unchecked drafts, including most non-docs questions in the eval sample.
-- **Tuned on the reported questions.** The chunking choice and the YES/NO check were chosen with the same docs questions the eval reports on.
+- **Small samples.** The retrieval comparison uses 40 dev questions, and the test set has 28 docs and 22 non-docs questions. One question is about 4 points in a group of 25. Only the BM25 result passed a significance test; the other differences, including MRR 0.54 against 0.61, are within noise.
+- **Labels.** The 50 test questions were reviewed by the author. The dev questions were reviewed by a second pass, not by the author. 214 questions that no eval uses are still drafts.
+- **Dev numbers are optimistic.** The chunking and the YES/NO check were chosen on dev questions, so only the test numbers are unbiased.
 - **One grader.** Correctness was graded by one person. The grades and reasons are in `evals/hand_grades.json` so they can be checked.
-- **Answers few docs questions.** Pinpoint answers 8 of 20 docs questions. Search misses the gold page for 8 of 20, and the YES/NO check refuses 7 where the page was found.
+- **Answers few docs questions.** On test, Pinpoint cites a gold page for 9 of 28 docs questions. Search misses the gold page for 11, and the YES/NO check refuses 7 where the page was found.
+- **Answers are not fully faithful.** Only 3 of 12 hand-graded answers were backed by their excerpts in every claim. Citations are always real; the answer text is not always.
 - **The check is not fully repeatable.** 2 of 40 decisions flipped between runs at temperature 0.
 - **Section-level misses are not measured.** Gold labels are pages, so a right page with the wrong section counts as found.
 - **Small model, small GPU.** A 3B model on a 4 GB GPU misreads some excerpts that hold the answer, and a question takes 24 s at p50. A 7–8B model does not fit on this GPU.

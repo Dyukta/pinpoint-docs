@@ -49,3 +49,20 @@ def test_cache_returns_only_near_identical_questions_with_the_same_settings(monk
 
     monkeypatch.setattr(answer_module, "SYSTEM", answer_module.SYSTEM + " Be brief.")
     assert answer_module.cached_answer([1.0, 0.0, 0.0], answer_module.settings_key("llama3.2", 5)) is None
+
+
+def test_no_check_skips_the_yes_no_call(monkeypatch):
+    calls = []
+    hits = [{"id": "body#1", "url": "https://a/", "title": "Body", "section": "Body", "text": "Use a model.", "score": 0.03}]
+    monkeypatch.setattr(answer_module, "embed_question", lambda q: [1.0, 0.0])
+    monkeypatch.setattr(answer_module, "search", lambda q, k, vector: hits)
+
+    def fake_chat(model, system, user, **options):
+        calls.append(system)
+        return {"message": {"content": "EXCERPTS: 1\nANSWER: Use a model."}, "prompt_eval_count": 10, "eval_count": 5}
+
+    monkeypatch.setattr(answer_module, "chat", fake_chat)
+    result = answer_module.respond("How do I declare a body?", 5, "llama3.2", use_cache=False, check=False)
+    assert calls == [answer_module.SYSTEM]
+    assert result["answer"] == "Use a model." and result["check"] is False
+    assert answer_module.settings_key("llama3.2", 5, check=False) != answer_module.settings_key("llama3.2", 5)

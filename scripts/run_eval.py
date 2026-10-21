@@ -7,6 +7,7 @@ from pathlib import Path
 
 from pinpoint_docs.answer import IDK, MODEL, answer
 from pinpoint_docs.chunk import page_url
+from pinpoint_docs.stats import percentile, seconds
 from scripts.compare_retrieval import query_text
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -40,14 +41,10 @@ def grade(q, result):
     return row
 
 
-def seconds(r):
-    return sum(r[k] or 0 for k in ("search_seconds", "check_seconds", "answer_seconds"))
-
-
-def run(questions, model, name):
+def run(questions, model, name, check=True):
     results = []
     for n, q in enumerate(questions, 1):
-        result = answer(query_text(q, full=True), model=model, use_cache=False)
+        result = answer(query_text(q, full=True), model=model, use_cache=False, check=check)
         row = {"id": q["id"], "title": q["title"], "tag": q["tag"], "gold_pages": q["gold_pages"], **grade(q, result), **result}
         results.append(row)
         print(f"{n}/{len(questions)} {'PASS' if row['pass'] else 'FAIL'} {q['tag']:<13} {'YES' if result['answerable'] else 'NO '} {seconds(row):>5.1f}s  #{q['id']} {q['title'][:60]}", flush=True)
@@ -74,8 +71,7 @@ def report(results):
 
     ok = [r for r in results if not r.get("error")]
     total = [seconds(r) for r in ok]
-    p95 = statistics.quantiles(total, n=20, method="inclusive")[-1] if len(total) > 1 else total[0]
-    print(f"latency per question: p50 {statistics.median(total):.1f}s, p95 {p95:.1f}s")
+    print(f"latency per question: p50 {percentile(total, 50):.1f}s, p95 {percentile(total, 95):.1f}s")
     for step in ("search_seconds", "check_seconds", "answer_seconds"):
         values = [r[step] for r in ok if r[step] is not None]
         if values:
@@ -93,10 +89,29 @@ def load_split(name):
     return [by_id[i] for i in ids]
 
 
+def regrade(file_name):
+    path = ROOT / "evals" / file_name
+    data = json.loads(path.read_text(encoding="utf-8"))
+    questions = {q["id"]: q for q in load_questions()}
+    keep = ("search_found_gold", "cited_gold")
+    rows = []
+    for r in data["results"]:
+        q = questions[r["id"]]
+        base = {k: v for k, v in r.items() if k not in keep}
+        rows.append({**base, "tag": q["tag"], "gold_pages": q["gold_pages"], **grade(q, r)})
+    data["results"] = rows
+    path.write_text(json.dumps(data, indent=1, ensure_ascii=False), encoding="utf-8")
+    report(rows)
+    print(f"-> regraded {file_name} with the current tags")
+
+
 def main():
+    if sys.argv[1:2] == ["regrade"]:
+        return regrade(sys.argv[2])
     name = sys.argv[1] if len(sys.argv) > 1 else "test"
-    model = sys.argv[2] if len(sys.argv) > 2 else MODEL
-    run(load_split(name), model, f"eval_{name}")
+    model = next((a for a in sys.argv[2:] if a != "no-check"), MODEL)
+    check = "no-check" not in sys.argv
+    run(load_split(name), model, f"eval_{name}" + ("" if check else "_no-check"), check)
 
 
 if __name__ == "__main__":

@@ -31,3 +31,11 @@ def test_sample_is_fixed_and_balanced():
     a, b = sample(load_questions()), sample(load_questions())
     assert [q["id"] for q in a] == [q["id"] for q in b]
     assert sum(bool(q["gold_pages"]) for q in a) == 20 and len(a) == 40
+
+
+def test_judge_verdict_parsing():
+    from scripts.judge import agreement, verdict
+
+    assert verdict("YES.") == "yes" and verdict(" partly, mostly") == "partly" and verdict("No") == "no"
+    assert verdict("Maybe") == "unclear" and verdict("") == "unclear"
+    assert agreement([("yes", "yes"), ("partly", "no"), ("no", "no")]) == "exact 2/3, yes vs not-yes 3/3"

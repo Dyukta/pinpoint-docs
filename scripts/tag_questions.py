@@ -40,7 +40,8 @@ def main():
     if "--split" in sys.argv:
         name = sys.argv[sys.argv.index("--split") + 1]
         ids = set(json.loads((ROOT / "evals" / "split.json").read_text(encoding="utf-8"))[name])
-        todo = [q for q in questions if q["id"] in ids and q.get("tagged_by") == "draft"]
+        todo = [q for q in questions if q["id"] in ids and q.get("tagged_by") not in ("human", "human-reviewed")]
+        todo.sort(key=lambda q: q["tag"] != "docs")
     elif review:
         todo = [q for q in questions if q.get("tagged_by") == "draft"
                 and (q["tag"] == "docs" or "borderline" in q.get("why", "").lower())]
