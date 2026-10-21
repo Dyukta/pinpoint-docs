@@ -62,7 +62,7 @@ def main():
     question = "How do I declare a request body?"
     hits = col.query(query_embeddings=embed([f"search_query: {question}"]), n_results=3)
     print(f"\n{question}")
-    for meta, dist in zip(hits["metadatas"][0], hits["distances"][0]):
+    for meta, dist in zip(hits["metadatas"][0], hits["distances"][0], strict=True):
         print(f"  {dist:.3f}  {meta['page']}  ({meta['section']})")
 
 

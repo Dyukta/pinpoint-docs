@@ -105,7 +105,7 @@ def main():
         bm25 = BM25([f"{c['title']}\n{c['text']}" for c in chunks])
         for full in (False, True):
             results = {"bm25": [], "vector": [], "hybrid": [], "hybrid + MMR 0.7": [], "hybrid + MMR 0.5": []}
-            for q, text, qv in zip(questions, queries[full], query_vecs[full]):
+            for q, text, qv in zip(questions, queries[full], query_vecs[full], strict=True):
                 gold = set(q["gold_pages"])
                 lexical = bm25.rank(text, TOP)
                 semantic = [int(i) for i in np.argsort(-(vecs @ qv))[:TOP]]

@@ -35,7 +35,7 @@ def main():
     bm25 = BM25([f"{c['title']}\n{c['text']}" for c in chunks])
 
     rows, timings = [], {v: [] for v in QUERIES}
-    for q, qv in zip(questions, query_vectors):
+    for q, qv in zip(questions, query_vectors, strict=True):
         text = query_text(q, full=True)
         fused = [i for i, _ in rrf([bm25.rank(text, 50), [int(i) for i in np.argsort(-(vectors @ qv))[:50]]])]
         row = {"id": q["id"], "hybrid": first_gold(fused, chunks, q["gold_pages"])}

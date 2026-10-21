@@ -442,7 +442,6 @@ function Traces() {
     <div className="grid gap-6 xl:h-[calc(100vh-10rem)] xl:grid-cols-5">
       <Card
         title="All questions"
-       
         scroll
         className="xl:col-span-3 xl:h-full"
         footer={<Pager page={page} total={data?.total ?? 0} onPage={setPage} />}
