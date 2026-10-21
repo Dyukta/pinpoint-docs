@@ -1,0 +1,168 @@
+{
+ "run": "baseline_llama3.2.json",
+ "judge": "llama3.2",
+ "results": [
+  {
+   "id": 13449,
+   "tag": "docs",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 16376,
+   "tag": "docs",
+   "relevant": "yes",
+   "correct": "yes"
+  },
+  {
+   "id": 14012,
+   "tag": "docs",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 14082,
+   "tag": "docs",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 14311,
+   "tag": "docs",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 13538,
+   "tag": "docs",
+   "relevant": "yes",
+   "correct": "no"
+  },
+  {
+   "id": 13245,
+   "tag": "docs",
+   "relevant": "no",
+   "correct": "yes"
+  },
+  {
+   "id": 14698,
+   "tag": "docs",
+   "relevant": "yes",
+   "correct": "no"
+  },
+  {
+   "id": 14094,
+   "tag": "docs",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 14363,
+   "tag": "docs",
+   "relevant": "yes",
+   "correct": "yes"
+  },
+  {
+   "id": 13842,
+   "tag": "docs",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 15084,
+   "tag": "docs",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 13261,
+   "tag": "docs",
+   "relevant": "yes",
+   "correct": "yes"
+  },
+  {
+   "id": 15846,
+   "tag": "docs",
+   "relevant": "yes",
+   "correct": "yes"
+  },
+  {
+   "id": 14719,
+   "tag": "docs",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 13238,
+   "tag": "docs",
+   "relevant": "yes",
+   "correct": "no"
+  },
+  {
+   "id": 13812,
+   "tag": "docs",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 13779,
+   "tag": "other-library",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 13392,
+   "tag": "other-library",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 13651,
+   "tag": "other-library",
+   "relevant": "yes",
+   "correct": "yes"
+  },
+  {
+   "id": 15328,
+   "tag": "bug",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 14380,
+   "tag": "other-library",
+   "relevant": "yes",
+   "correct": "no"
+  },
+  {
+   "id": 15914,
+   "tag": "bug",
+   "relevant": "yes",
+   "correct": "yes"
+  },
+  {
+   "id": 13724,
+   "tag": "bug",
+   "relevant": "yes",
+   "correct": "yes"
+  },
+  {
+   "id": 14021,
+   "tag": "bug",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 13638,
+   "tag": "other-library",
+   "relevant": "no",
+   "correct": "no"
+  },
+  {
+   "id": 13586,
+   "tag": "other-library",
+   "relevant": "yes",
+   "correct": "no"
+  }
+ ]
+}
