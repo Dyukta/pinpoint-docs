@@ -36,8 +36,12 @@ def ask_pages(q):
 def main():
     data = json.loads(FILE.read_text(encoding="utf-8"))
     questions = data["questions"]
-    review = "--review" in sys.argv
-    if review:
+    review = "--review" in sys.argv or "--split" in sys.argv
+    if "--split" in sys.argv:
+        name = sys.argv[sys.argv.index("--split") + 1]
+        ids = set(json.loads((ROOT / "evals" / "split.json").read_text(encoding="utf-8"))[name])
+        todo = [q for q in questions if q["id"] in ids and q.get("tagged_by") == "draft"]
+    elif review:
         todo = [q for q in questions if q.get("tagged_by") == "draft"
                 and (q["tag"] == "docs" or "borderline" in q.get("why", "").lower())]
     else:

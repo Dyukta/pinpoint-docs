@@ -1,4 +1,4 @@
-from pinpoint_docs.chunk import page_url, split_page
+from pinpoint_docs.chunk import MAX_CHARS, page_url, split_long, split_page
 
 PAGE = """# Body { #body }
 
@@ -34,3 +34,13 @@ def test_page_url():
     assert page_url("index.md") == "https://fastapi.tiangolo.com/"
     assert page_url("tutorial/index.md") == "https://fastapi.tiangolo.com/tutorial/"
     assert page_url("async.md") == "https://fastapi.tiangolo.com/async/"
+
+
+def test_split_long():
+    code = "```python\n" + "x = 1\n\n" * 500 + "```"
+    bullets = "\n".join(f"* change {i} " + "y" * 80 for i in range(100))
+    pieces = split_long(bullets + "\n\n" + code)
+    assert len(pieces) > 2
+    assert all(len(p) <= MAX_CHARS for p in pieces[:-1])
+    assert pieces[-1].startswith("```python") and pieces[-1].endswith("```")
+    assert "\n".join(pieces).count("* change") == 100

@@ -1,0 +1,117 @@
+{
+ "model": "qwen2.5:3b",
+ "results": [
+  {
+   "id": 16297,
+   "title": "How to handle long-running background tasks: FastAPI BackgroundTasks vs Celery?",
+   "tag": "docs",
+   "gold_pages": [
+    "tutorial/background-tasks.md"
+   ],
+   "search_found_gold": true,
+   "pass": false,
+   "answer": "For long-running background tasks in production, the best practice architectural boundary is to use an external task queue like Celery with Redis or ARQ. These tools provide better scalability, fault tolerance, and resource management compared to FastAPI's built-in BackgroundTasks. They allow you to run tasks in multiple processes and servers, and handle failures more gracefully. Here's how you can integrate Celery with FastAPI:\n\n```python\nfrom fastapi import FastAPI\nfrom celery import Celery\n\napp = FastAPI()\n\n# Configure Celery\ncelery_app = Celery(\n    __name__,\n    broker=\"redis://localhost:6379/0\",\n    backend=\"redis://localhost:6379/0\"\n)\n\n@celery_app.task\ndef heavy_video_processing(video_id: str):\n    # Simulating a heavy CPU task (takes 2 minutes)\n    time.sleep(120)\n    print(f\"Finished processing video: {video_id}\")\n\n@app.post(\"/process-video/{video_id}\")\nasync def process_video(video_id: str):\n    # Use Celery task instead of BackgroundTasks\n    celery_app.send_task('heavy_video_processing', args=[video_id])\n    return {\"status\": \"Processing started\", \"video_id\": video_id}\n```\n\nIn this example, the `heavy_video_processing` task is defined as a Celery task. The `process_video` endpoint sends a task to Celery using `celery_app.send_task` and passes the `video_id` as an argument. This approach leverages Celery's robust task queue and worker system for handling long-running tasks in a production environment.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/background-tasks.md#4",
+    "tutorial/background-tasks.md#2",
+    "tutorial/background-tasks.md#6",
+    "tutorial/background-tasks.md#3",
+    "tutorial/background-tasks.md#1"
+   ]
+  },
+  {
+   "id": 14094,
+   "title": "Difference between `fastapi dev` and `fastapi run --reload`",
+   "tag": "docs",
+   "gold_pages": [
+    "fastapi-cli.md"
+   ],
+   "search_found_gold": true,
+   "pass": false,
+   "answer": "In production mode, auto-reload is disabled by default, and the server listens on `0.0.0.0`, making it publicly accessible. In development mode, auto-reload is enabled by default, and the server listens on `127.0.0.1`, which is only accessible from the local machine.\n\n```python\n# Production mode\nfastapi run --reload\n\n# Development mode\nfastapi dev\n```",
+   "sources": [],
+   "retrieved": [
+    "fastapi-cli.md#5",
+    "index.md#15",
+    "fastapi-cli.md#6",
+    "deployment/manually.md#5",
+    "release-notes.md#525"
+   ]
+  },
+  {
+   "id": 13973,
+   "title": "Async or sync dependencies",
+   "tag": "docs",
+   "gold_pages": [
+    "async.md"
+   ],
+   "search_found_gold": true,
+   "pass": false,
+   "answer": "For custom dependencies provided through a Python package, you should include both async and sync versions. This is because users might need to use your dependency in both async and sync contexts. Here are some valid use cases where a sync version is preferable or required:\n\n1. **Legacy Code**: If your dependency is used in legacy code that is not yet async-compatible, you need to provide a sync version to maintain compatibility.\n\n2. **Third-party Libraries**: Some third-party libraries might not support async yet, and you might need to integrate with such libraries. Providing a sync version allows you to use your dependency with these libraries.\n\n3. **Compatibility with Other Libraries**: If your dependency is used in conjunction with other libraries that are not async-compatible, you need to provide a sync version to ensure everything works together seamlessly.\n\nHere's an example of how you might define both async and sync versions of a dependency:\n\n```python\nfrom typing import Annotated\nfrom fastapi import Depends, FastAPI\n\napp = FastAPI()\n\n\nasync def common_parameters(q: str | None = None, skip: int = 0, limit: int = 100):\n    return {\"q\": q, \"skip\": skip, \"limit\": limit}\n\n\ndef common_parameters_sync(q: str | None = None, skip: int = 0, limit: int = 100):\n    return {\"q\": q, \"skip\": skip, \"limit\": limit}\n\n\n@app.get(\"/items/\")\nasync def read_items(commons: Annotated[dict, Depends(common_parameters)]):\n    return commons\n\n\n@app.get(\"/users/\")\nasync def read_users(commons: Annotated[dict, Depends(common_parameters)]):\n    return commons\n\n\n@app.get(\"/items/\")\ndef read_items_sync(commons: Annotated[dict, Depends(common_parameters_sync)]):\n    return commons\n\n\n@app.get(\"/users/\")\ndef read_users_sync(commons: Annotated[dict, Depends(common_parameters_sync)]):\n    return commons\n```\n\nIn this example, `common_parameters` is async, while `common_parameters_sync` is sync. Users can choose which version to use based on their application's context.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/dependencies/index.md#6",
+    "async.md#1",
+    "async.md#13",
+    "tutorial/dependencies/index.md#3",
+    "tutorial/dependencies/index.md#7"
+   ]
+  },
+  {
+   "id": 16139,
+   "title": "Support specifying default values inside Annotated for parameter functions like Query()",
+   "tag": "docs",
+   "gold_pages": [
+    "tutorial/query-params-str-validations.md"
+   ],
+   "search_found_gold": true,
+   "pass": false,
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/query-param-models.md#1",
+    "tutorial/query-param-models.md#3",
+    "release-notes.md#784",
+    "tutorial/query-params-str-validations.md#11",
+    "tutorial/body-fields.md#2"
+   ]
+  },
+  {
+   "id": 14012,
+   "title": "Pydantic model validation when used as query parameter",
+   "tag": "docs",
+   "gold_pages": [
+    "tutorial/query-param-models.md"
+   ],
+   "search_found_gold": true,
+   "pass": false,
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/handling-errors.md#8",
+    "tutorial/query-param-models.md#3",
+    "advanced/path-operation-advanced-configuration.md#9",
+    "tutorial/handling-errors.md#10",
+    "tutorial/handling-errors.md#9"
+   ]
+  },
+  {
+   "id": 15819,
+   "title": "FastAPI segfaults with Python 3.14.0 on MacOS",
+   "tag": "other-library",
+   "gold_pages": [],
+   "search_found_gold": false,
+   "pass": true,
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "index.md#14",
+    "tutorial/index.md#3",
+    "deployment/docker.md#7",
+    "index.md#19",
+    "release-notes.md#341"
+   ]
+  }
+ ]
+}

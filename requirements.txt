@@ -1,1 +1,3 @@
-pytest
+chromadb==1.5.9
+fastapi[standard]==0.150.0
+pytest==9.1.1

@@ -9,6 +9,7 @@ INCLUDE_BASE = SRC / "docs" / "en"
 DOCS = INCLUDE_BASE / "docs"
 OUT = ROOT / "data" / "chunks.jsonl"
 SITE = "https://fastapi.tiangolo.com/"
+MAX_CHARS = 1500
 
 INCLUDE = re.compile(r"^\{\*\s*(\S+)(.*?)\*\}\s*$")
 HEADING = re.compile(r"^(#{1,3}) (.+?)(?: \{ #([\w-]+) \})?\s*$")
@@ -27,6 +28,7 @@ def include_code(match):
             start, _, end = r.partition(":")
             picked += lines[int(start) - 1:int(end or start)]
         lines = picked
+    lines = [l if len(l) <= 200 else l[:80] + " ..." for l in lines]
     return ["```python", *lines, "```"]
 
 
@@ -34,6 +36,23 @@ def page_url(page):
     path = page.removesuffix(".md")
     path = path.removesuffix("index")
     return SITE + (path.rstrip("/") + "/" if path else "")
+
+
+def split_long(text):
+    pieces, cur, cut, size, fence = [], [], 0, 0, False
+    for line in text.splitlines():
+        if not fence and (not line.strip() or line.startswith(("* ", "- "))):
+            cut = len(cur)
+        if size + len(line) > MAX_CHARS and cut:
+            pieces.append("\n".join(cur[:cut]))
+            cur, cut = cur[cut:], 0
+            size = sum(len(l) + 1 for l in cur)
+        if line.lstrip().startswith("```"):
+            fence = not fence
+        cur.append(line)
+        size += len(line) + 1
+    pieces.append("\n".join(cur))
+    return [p.strip() for p in pieces if p.strip()]
 
 
 def split_page(page, text):
@@ -44,14 +63,15 @@ def split_page(page, text):
     def flush():
         body = "\n".join(buf).strip()
         if body and not HEADING.match(body):
-            chunks.append({
-                "id": f"{page}#{len(chunks)}",
-                "page": page,
-                "title": title,
-                "section": section,
-                "url": page_url(page) + (f"#{anchor}" if anchor else ""),
-                "text": body,
-            })
+            for i, piece in enumerate(split_long(body)):
+                chunks.append({
+                    "id": f"{page}#{len(chunks)}",
+                    "page": page,
+                    "title": title,
+                    "section": section,
+                    "url": page_url(page) + (f"#{anchor}" if anchor else ""),
+                    "text": piece if i == 0 else f"{section}\n\n{piece}",
+                })
         buf.clear()
 
     for line in text.splitlines():

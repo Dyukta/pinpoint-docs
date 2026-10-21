@@ -1,0 +1,145 @@
+{
+ "model": "llama3.2",
+ "results": [
+  {
+   "id": 16297,
+   "title": "How to handle long-running background tasks: FastAPI BackgroundTasks vs Celery?",
+   "tag": "docs",
+   "gold_pages": [
+    "tutorial/background-tasks.md"
+   ],
+   "search_found_gold": true,
+   "pass": true,
+   "answer": "For long-running background tasks, consider using an external task queue like Celery + Redis or ARQ instead of FastAPI's built-in BackgroundTasks, especially when scaling in production, to avoid process crashes, memory usage, worker blocking, and task durability issues. \n\nFastAPI's BackgroundTasks can be useful for small background tasks like sending email notifications, but for heavy background computations, consider using a more robust solution like Celery.",
+   "sources": [
+    "https://fastapi.tiangolo.com/tutorial/background-tasks/#dependency-injection",
+    "https://fastapi.tiangolo.com/tutorial/background-tasks/#create-a-task-function",
+    "https://fastapi.tiangolo.com/tutorial/background-tasks/#caveat",
+    "https://fastapi.tiangolo.com/tutorial/background-tasks/#add-the-background-task",
+    "https://fastapi.tiangolo.com/tutorial/background-tasks/#using-backgroundtasks"
+   ],
+   "retrieved": [
+    "tutorial/background-tasks.md#4",
+    "tutorial/background-tasks.md#2",
+    "tutorial/background-tasks.md#6",
+    "tutorial/background-tasks.md#3",
+    "tutorial/background-tasks.md#1"
+   ]
+  },
+  {
+   "id": 14094,
+   "title": "Difference between `fastapi dev` and `fastapi run --reload`",
+   "tag": "docs",
+   "gold_pages": [
+    "fastapi-cli.md"
+   ],
+   "search_found_gold": true,
+   "pass": true,
+   "answer": "The main difference between `fastapi dev` and `fastapi run --reload` is that `fastapi dev` starts the server in development mode with auto-reload enabled, while `fastapi run --reload` starts the server in production mode with auto-reload enabled. \n\n```console\n$ fastapi dev --host 0.0.0.0\n╭────────── FastAPI CLI - Development mode ───────────╮\n│                                                     │\n│  Serving at: http://127.0.0.1:8000                  │\n│                                                     │\n│  API docs: http://127.0.0.1:8000/docs               │\n│                                                     │\n│  Running in development mode, for production use:   │\n│                                                     │\n│  fastapi run                                        │\n│                                                     │\n╰─────────────────────────────────────────────────────╯\n\nINFO:     Will watch for changes in these directories: ['/home/user/code/awesomeapp']\nINFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)\n```",
+   "sources": [
+    "https://fastapi.tiangolo.com/#run-it",
+    "https://fastapi.tiangolo.com/fastapi-cli/#fastapi-dev",
+    "https://fastapi.tiangolo.com/deployment/manually/#run-the-server-program",
+    "https://fastapi.tiangolo.com/fastapi-cli/#fastapi-run"
+   ],
+   "retrieved": [
+    "index.md#17",
+    "fastapi-cli.md#5",
+    "deployment/manually.md#7",
+    "fastapi-cli.md#6",
+    "release-notes.md#603"
+   ]
+  },
+  {
+   "id": 13973,
+   "title": "Async or sync dependencies",
+   "tag": "docs",
+   "gold_pages": [
+    "async.md"
+   ],
+   "search_found_gold": true,
+   "pass": false,
+   "answer": "You should provide both async and sync versions of your custom dependency, as FastAPI will know what to do regardless of whether you use an async or sync dependency. The documentation emphasizes that the choice between async and sync is not relevant to the functionality of the dependency.",
+   "sources": [
+    "https://fastapi.tiangolo.com/tutorial/dependencies/#share-annotated-dependencies",
+    "https://fastapi.tiangolo.com/tutorial/dependencies/#to-async-or-not-to-async"
+   ],
+   "retrieved": [
+    "async.md#18",
+    "async.md#1",
+    "tutorial/dependencies/index.md#8",
+    "tutorial/dependencies/index.md#10",
+    "tutorial/dependencies/index.md#3"
+   ]
+  },
+  {
+   "id": 16139,
+   "title": "Support specifying default values inside Annotated for parameter functions like Query()",
+   "tag": "docs",
+   "gold_pages": [
+    "tutorial/query-params-str-validations.md"
+   ],
+   "search_found_gold": true,
+   "pass": true,
+   "answer": "Yes, you can declare default values inside `Annotated` for parameter functions like `Query` by using the `default` parameter in the `Query` function, as shown in Excerpt 4.",
+   "sources": [
+    "https://fastapi.tiangolo.com/tutorial/query-param-models/#query-parameters-with-a-pydantic-model",
+    "https://fastapi.tiangolo.com/release-notes/",
+    "https://fastapi.tiangolo.com/tutorial/query-params-str-validations/#required-parameters"
+   ],
+   "retrieved": [
+    "tutorial/query-param-models.md#1",
+    "release-notes.md#537",
+    "tutorial/query-param-models.md#3",
+    "tutorial/query-params-str-validations.md#12",
+    "release-notes.md#536"
+   ]
+  },
+  {
+   "id": 14012,
+   "title": "Pydantic model validation when used as query parameter",
+   "tag": "docs",
+   "gold_pages": [
+    "tutorial/query-param-models.md"
+   ],
+   "search_found_gold": true,
+   "pass": true,
+   "answer": "The issue is that the `Depends` function is not designed to handle query parameters. The `Query` function is used to define a query parameter, which is a special type of dependency that is used to validate the query parameters. The `Depends` function is used to define a dependency that is used to validate the request body. To fix the issue, you should use the `Query` function instead of `Depends` to define the query parameter.",
+   "sources": [
+    "https://fastapi.tiangolo.com/tutorial/query-param-models/#forbid-extra-query-parameters",
+    "https://fastapi.tiangolo.com/tutorial/handling-errors/#override-request-validation-exceptions",
+    "https://fastapi.tiangolo.com/tutorial/query-params-str-validations/#custom-validation"
+   ],
+   "retrieved": [
+    "tutorial/query-param-models.md#3",
+    "tutorial/handling-errors.md#9",
+    "tutorial/query-params-str-validations.md#21",
+    "advanced/path-operation-advanced-configuration.md#11",
+    "how-to/custom-request-and-route.md#8"
+   ]
+  },
+  {
+   "id": 15819,
+   "title": "FastAPI segfaults with Python 3.14.0 on MacOS",
+   "tag": "other-library",
+   "gold_pages": [],
+   "search_found_gold": false,
+   "pass": false,
+   "answer": "The issue might be related to the Pydantic version. Try to update Pydantic to the latest version, as mentioned in Excerpt 5.",
+   "sources": [
+    "https://fastapi.tiangolo.com/#create-it",
+    "https://fastapi.tiangolo.com/tutorial/#install-fastapi",
+    "https://fastapi.tiangolo.com/deployment/docker/#create-the-fastapi-code",
+    "https://fastapi.tiangolo.com/#example-upgrade",
+    "https://fastapi.tiangolo.com/release-notes/"
+   ],
+   "retrieved": [
+    "index.md#16",
+    "tutorial/index.md#4",
+    "deployment/docker.md#7",
+    "index.md#22",
+    "release-notes.md#371"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,30 @@
+{
+ "graded_on": "2026-10-21",
+ "method": "Each answer to the 20 docs questions in the seed-0 sample was read against the accepted forum answer and the gold docs page. correct = right and useful; partly = right direction but incomplete or mixed with wrong claims; wrong = misleading or false; idk = said I don't know.",
+ "systems": {
+  "pinpoint": "evals/eval_llama3.2_graded.json (hybrid search + YES/NO check + llama3.2)",
+  "alone": "evals/baseline_llama3.2.json (llama3.2, no retrieval)"
+ },
+ "grades": [
+  {"id": 13608, "pinpoint": "idk", "alone": "idk", "why": "Accepted: the token endpoint must return access_token and token_type. Neither answered."},
+  {"id": 13449, "pinpoint": "idk", "alone": "wrong", "why": "Accepted: move request.state access into a dependency and override it. Alone suggests a MockRequest subclass fixture instead."},
+  {"id": 16376, "pinpoint": "partly", "alone": "wrong", "why": "Accepted: override app.openapi as in the docs. Pinpoint shows get_openapi and cites the right sections but says setting openapi_schema works. Alone tells the user to do what already fails."},
+  {"id": 14889, "pinpoint": "idk", "alone": "idk", "why": "Accepted: query models with Depends were never supported, use Query(). Neither answered."},
+  {"id": 14012, "pinpoint": "idk", "alone": "wrong", "why": "Accepted: use Annotated[Model, Query()]. Alone says Query would expect a JSON payload, which is false."},
+  {"id": 14082, "pinpoint": "partly", "alone": "partly", "why": "Accepted: no, lifespan runs once per worker. Both say no without the real reason."},
+  {"id": 14311, "pinpoint": "idk", "alone": "wrong", "why": "Accepted: dataclass with Query is unsupported, use a Pydantic model or Depends. Alone invents a fix."},
+  {"id": 13538, "pinpoint": "idk", "alone": "wrong", "why": "Accepted: BackgroundTasks, or a task queue. Alone's ThreadPoolExecutor code blocks on exit and uses attributes that do not exist."},
+  {"id": 13245, "pinpoint": "partly", "alone": "partly", "why": "Accepted: FastAPI checks with inspect.iscoroutinefunction and runs sync ones in a thread. Both get the check right and add confused claims."},
+  {"id": 14698, "pinpoint": "idk", "alone": "wrong", "why": "Accepted: raise WebSocketException after accept. Alone raises the same error and puts code after the raise."},
+  {"id": 14094, "pinpoint": "partly", "alone": "wrong", "why": "Accepted: dev binds 127.0.0.1 with reload, run binds 0.0.0.0 without. Pinpoint says dev vs production mode and shows 127.0.0.1 but misses the host difference. Alone only repeats the reload difference the asker excluded."},
+  {"id": 14363, "pinpoint": "correct", "alone": "partly", "why": "Accepted: upgrade, or serve ReDoc from a pinned or custom source as in the docs. Pinpoint gives the docs' self-hosting fix. Alone repeats the asker's idea without saying how to apply it."},
+  {"id": 13842, "pinpoint": "idk", "alone": "wrong", "why": "Accepted: app.get was not used as a decorator. Alone suggests an openapi_url setting."},
+  {"id": 15084, "pinpoint": "idk", "alone": "wrong", "why": "Accepted: --root-path assumes a proxy that strips the prefix. Alone invents a --app_root_path flag."},
+  {"id": 13261, "pinpoint": "wrong", "alone": "wrong", "why": "Accepted: returning a Response directly bypasses response_model. Both say it still validates."},
+  {"id": 15846, "pinpoint": "correct", "alone": "partly", "why": "Accepted: already documented in dependencies with yield. Pinpoint explains and cites that page, plus one made-up release-notes link. Alone explains correctly but recommends a docs change."},
+  {"id": 14719, "pinpoint": "idk", "alone": "wrong", "why": "Accepted: the release notes are right, uvicorn came in later. Alone invents pip install fastapi[uvicorn]."},
+  {"id": 13238, "pinpoint": "idk", "alone": "partly", "why": "Accepted: an exception before yield is swallowed, re-raise it. Alone finds the cause but suggests yielding a default value."},
+  {"id": 16085, "pinpoint": "correct", "alone": "idk", "why": "Accepted: intentional, generic return types use the Pydantic fast path. Pinpoint says this from the docs."},
+  {"id": 13812, "pinpoint": "idk", "alone": "wrong", "why": "Accepted: c is a query parameter unless marked Body(). Alone says nested JSON is not supported."}
+ ]
+}
