@@ -2331,7 +2331,7 @@
         "tutorial/dependencies/dependencies-with-yield.md"
       ],
       "why": "Early closing is now Depends(scope=\"function\"), explained on this page",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 14137,
@@ -2349,7 +2349,7 @@
         "tutorial/dependencies/dependencies-with-yield.md"
       ],
       "why": "Answer links the \"Early exit and scope\" section",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 14118,
@@ -2393,7 +2393,7 @@
         "fastapi-cli.md"
       ],
       "why": "Docs say fastapi dev enables reload on 127.0.0.1 and fastapi run disables it on 0.0.0.0",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 14085,
@@ -2423,7 +2423,7 @@
         "deployment/concepts.md"
       ],
       "why": "Docs say previous steps should run once in a single process",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 14071,
@@ -2523,7 +2523,7 @@
         "tutorial/query-param-models.md"
       ],
       "why": "Answer: the official way is Annotated[Model, Query()], shown on this page",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 14002,
@@ -2595,7 +2595,7 @@
         "async.md"
       ],
       "why": "Blocking code inside async def blocks the event loop; use def instead",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13989,
@@ -2653,7 +2653,7 @@
         "async.md"
       ],
       "why": "Docs say def dependencies run in the threadpool, async def ones on the event loop",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13972,
@@ -2711,7 +2711,7 @@
         "advanced/custom-response.md"
       ],
       "why": "Docs at 0.150.0 say a declared return type is serialized directly by Pydantic",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13945,
@@ -2937,7 +2937,7 @@
         "tutorial/body.md"
       ],
       "why": "Docs say model fields without a default are required",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13860,
@@ -3014,7 +3014,7 @@
         "tutorial/first-steps.md"
       ],
       "why": "Answer: use @app.get as a path operation decorator, explained on this page",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13836,
@@ -3030,7 +3030,7 @@
         "tutorial/path-params-numeric-validations.md"
       ],
       "why": "Docs say a path parameter is always required",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13828,
@@ -3060,7 +3060,7 @@
         "tutorial/body-multiple-params.md"
       ],
       "why": "Docs section \"Singular values in body\" says to use Body()",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13811,
@@ -3152,7 +3152,7 @@
         "tutorial/query-params-str-validations.md"
       ],
       "why": "Answer links both pages",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13789,
@@ -3182,7 +3182,7 @@
         "fastapi-cli.md"
       ],
       "why": "Docs say use fastapi run for production; it runs on production-ready Uvicorn",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13779,
@@ -3352,7 +3352,7 @@
         "tutorial/dependencies/dependencies-with-yield.md"
       ],
       "why": "Docs say a generator dependency becomes a context manager; no decorator needed",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13722,
@@ -3382,7 +3382,7 @@
         "advanced/path-operation-advanced-configuration.md"
       ],
       "why": "Answer: use openapi_extra on the path decorator, covered on this page",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13720,
@@ -3510,7 +3510,7 @@
         "tutorial/query-param-models.md"
       ],
       "why": "Answer: use Annotated[Model, Query()], shown on this page",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13690,
@@ -3554,7 +3554,7 @@
         "tutorial/middleware.md"
       ],
       "why": "Docs section \"Multiple middleware execution order\" explains the stack",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13675,
@@ -3570,7 +3570,7 @@
         "advanced/response-cookies.md"
       ],
       "why": "Docs say a Response returned directly is used as is, so the Response parameter is ignored",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13673,
@@ -3601,7 +3601,7 @@
         "advanced/stream-data.md"
       ],
       "why": "Docs explain StreamingResponse and the Stream Data style",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13658,
@@ -3691,7 +3691,7 @@
         "fastapi-cli.md"
       ],
       "why": "Answer links the fastapi dev section: it listens on 127.0.0.1",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13638,
@@ -3821,7 +3821,7 @@
         "tutorial/security/simple-oauth2.md"
       ],
       "why": "Docs say the token response must have access_token and token_type",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13602,
@@ -4122,7 +4122,7 @@
         "tutorial/background-tasks.md"
       ],
       "why": "Docs cover BackgroundTasks and suggest Celery for heavy work",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13523,
@@ -4194,7 +4194,7 @@
         "tutorial/query-param-models.md"
       ],
       "why": "Query parameter models exist since 0.115.0, shown on this page",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13485,
@@ -4283,7 +4283,7 @@
         "tutorial/request-files.md"
       ],
       "why": "Docs show File plus Form params; a JSON body can't be combined with files",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13455,
@@ -4313,7 +4313,7 @@
         "advanced/testing-dependencies.md"
       ],
       "why": "Answer: wrap state access in a dependency and override it in tests",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13447,
@@ -4345,7 +4345,7 @@
         "tutorial/body.md"
       ],
       "why": "Answer links \"Declare it as a parameter\"",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13431,
@@ -4445,7 +4445,7 @@
         "async.md"
       ],
       "why": "Docs say def dependencies run in the threadpool, which affects ContextVars",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13380,
@@ -4475,7 +4475,7 @@
         "advanced/response-headers.md"
       ],
       "why": "Docs show the Response parameter from fastapi, not fastapi.openapi.models",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13373,
@@ -4561,7 +4561,7 @@
         "async.md"
       ],
       "why": "Blocking sync code inside async def blocks the event loop; docs explain def vs async def",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13353,
@@ -4675,7 +4675,7 @@
         "async.md"
       ],
       "why": "Answer explains the \"In a hurry\" section of this page",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13332,
@@ -4747,7 +4747,7 @@
         "tutorial/handling-errors.md"
       ],
       "why": "Docs show overriding RequestValidationError with a PlainTextResponse handler",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13277,
@@ -4805,7 +4805,7 @@
         "advanced/response-directly.md"
       ],
       "why": "Docs say returning a Response directly skips data conversion and validation",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13258,
@@ -4863,7 +4863,7 @@
         "tutorial/metadata.md"
       ],
       "why": "Docs show disabling docs by passing docs_url=None to FastAPI()",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13247,
@@ -4879,7 +4879,7 @@
         "tutorial/header-params.md"
       ],
       "why": "Answer: read the extra token with a Header parameter",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13246,
@@ -4909,7 +4909,7 @@
         "async.md"
       ],
       "why": "Docs say async dependencies are awaited and def ones run in the threadpool",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13243,
@@ -4969,7 +4969,7 @@
         "tutorial/dependencies/dependencies-with-yield.md"
       ],
       "why": "Answer links \"Dependencies with yield and except\"",
-      "tagged_by": "draft"
+      "tagged_by": "checked"
     },
     {
       "id": 13206,
