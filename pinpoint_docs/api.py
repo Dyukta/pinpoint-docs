@@ -1,17 +1,25 @@
+import asyncio
 import json
-from collections import Counter
+import threading
+import time
+from collections import Counter, defaultdict
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from pinpoint_docs.answer import answer
+from pinpoint_docs.answer import answer, answer_events
 from pinpoint_docs.index import ROOT
 from pinpoint_docs.stats import load_traces, seconds, summarize
 
 EVAL_RUN = ROOT / "evals" / "eval_test_llama3.2.json"
 NO_CHECK_RUN = ROOT / "evals" / "eval_test_no-check_llama3.2.json"
 DASHBOARD = ROOT / "dashboard" / "dist"
+LIMIT = 10
+WINDOW_SECONDS = 60
+recent = defaultdict(list)
+recent_lock = threading.Lock()
 
 app = FastAPI(
     title="Pinpoint", summary="Answers FastAPI questions from the FastAPI docs, with links, or says I don't know."
@@ -29,9 +37,49 @@ class Answer(BaseModel):
     cached: bool
 
 
-@app.post("/ask")
+def rate_limit(request: Request):
+    now = time.monotonic()
+    ip = request.client.host if request.client else "unknown"
+    with recent_lock:
+        times = [t for t in recent[ip] if now - t < WINDOW_SECONDS]
+        if len(times) >= LIMIT:
+            recent[ip] = times
+            raise HTTPException(
+                status_code=429,
+                detail=f"At most {LIMIT} questions per minute",
+                headers={"Retry-After": str(WINDOW_SECONDS)},
+            )
+        recent[ip] = [*times, now]
+
+
+@app.post("/ask", dependencies=[Depends(rate_limit)])
 def ask(body: Question) -> Answer:
     return Answer(**answer(body.question))
+
+
+@app.post("/ask/stream", dependencies=[Depends(rate_limit)])
+def ask_stream(body: Question):
+    cancel = threading.Event()
+
+    async def sse():
+        loop = asyncio.get_running_loop()
+        events = asyncio.Queue()
+
+        def produce():
+            for event in answer_events(body.question, cancel=cancel):
+                loop.call_soon_threadsafe(events.put_nowait, event)
+
+        threading.Thread(target=produce, daemon=True).start()
+        try:
+            kind = None
+            while kind != "done":
+                kind, value = await events.get()
+                data = Answer(**value).model_dump() if kind == "done" else value
+                yield f"event: {kind}\ndata: {json.dumps(data)}\n\n"
+        finally:
+            cancel.set()
+
+    return StreamingResponse(sse(), media_type="text/event-stream")
 
 
 @app.get("/stats")

@@ -19,6 +19,24 @@ def test_parse():
     assert parse("Sure! Here is the answer.", HITS) == (IDK, [])
 
 
+def test_answer_keeps_only_links_found_in_the_excerpts():
+    hits = [{"url": "https://fastapi.tiangolo.com/tutorial/body/", "text": "See https://docs.pydantic.dev/latest/."}]
+    reply = "EXCERPTS: 1\nANSWER: Read https://docs.pydantic.dev/latest/ and http://evil.example/login now."
+    text, urls = parse(reply, hits)
+    assert text == "Read https://docs.pydantic.dev/latest/ and [link removed] now."
+    assert urls == ["https://fastapi.tiangolo.com/tutorial/body/"]
+
+
+def test_redact_hides_secrets_but_keeps_code():
+    question = (
+        "My key api_key=sk-12345 and token: abc fail, mail me at a.b@example.com. Using response_model_exclude_unset"
+    )
+    assert answer_module.redact(question) == (
+        "My key api_key=[redacted] and token: [redacted] fail, mail me at [email] Using response_model_exclude_unset"
+    )
+    assert answer_module.redact("id 3f9a1c2b7d4e5f60718293a4b5c6d7e8 here") == "id [redacted] here"
+
+
 def test_answer_logs_errors_instead_of_crashing(tmp_path, monkeypatch):
     def down(*args):
         raise ConnectionError("ollama is not running")
@@ -53,20 +71,53 @@ def test_cache_returns_only_near_identical_questions_with_the_same_settings(monk
     assert answer_module.cached_answer([1.0, 0.0, 0.0], answer_module.settings_key("llama3.2", 5)) is None
 
 
-def test_no_check_skips_the_yes_no_call(monkeypatch):
-    calls = []
-    hits = [
-        {"id": "body#1", "url": "https://a/", "title": "Body", "section": "Body", "text": "Use a model.", "score": 0.03}
-    ]
-    monkeypatch.setattr(answer_module, "embed_question", lambda q: [1.0, 0.0])
-    monkeypatch.setattr(answer_module, "search", lambda q, k, vector: hits)
+HIT = {"id": "body#1", "url": "https://a/", "title": "Body", "section": "Body", "text": "Use a model.", "score": 0.03}
 
-    def fake_chat(model, system, user, **options):
+
+def streamed(*pieces):
+    parts = [{"message": {"content": p}, "done": False} for p in pieces]
+    return iter([*parts, {"message": {"content": ""}, "done": True, "prompt_eval_count": 10, "eval_count": 5}])
+
+
+def fake_pipeline(monkeypatch, calls, *pieces):
+    monkeypatch.setattr(answer_module, "embed_question", lambda q: [1.0, 0.0])
+    monkeypatch.setattr(answer_module, "search", lambda q, k, vector: [HIT])
+
+    def fake_chat(model, system, user, history=(), stream=False, **options):
         calls.append(system)
-        return {"message": {"content": "EXCERPTS: 1\nANSWER: Use a model."}, "prompt_eval_count": 10, "eval_count": 5}
+        return streamed(*pieces)
 
     monkeypatch.setattr(answer_module, "chat", fake_chat)
-    result = answer_module.respond("How do I declare a body?", 5, "llama3.2", use_cache=False, check=False)
+
+
+def test_no_check_skips_the_yes_no_call(monkeypatch):
+    calls = []
+    fake_pipeline(monkeypatch, calls, "EXCERPTS: 1\nANSWER: Use a model.")
+    *_, (kind, result) = answer_module.respond("How do I declare a body?", 5, "llama3.2", use_cache=False, check=False)
     assert calls == [answer_module.SYSTEM]
-    assert result["answer"] == "Use a model." and result["check"] is False
+    assert kind == "result" and result["answer"] == "Use a model." and result["check"] is False
     assert answer_module.settings_key("llama3.2", 5, check=False) != answer_module.settings_key("llama3.2", 5)
+
+
+def test_only_the_answer_text_is_streamed(monkeypatch):
+    fake_pipeline(monkeypatch, [], "EXCER", "PTS: 1\nANS", "WER: Use ", "a mod", "el.")
+    events = list(answer_module.respond("How do I declare a body?", 5, "llama3.2", use_cache=False, check=False))
+    tokens = [value for kind, value in events if kind == "token"]
+    assert "".join(tokens) == "Use a model."
+    assert events[-1][1]["sources"] == ["https://a/"]
+
+
+def test_cancel_stops_the_answer_and_logs_it(tmp_path, monkeypatch):
+    import threading
+
+    fake_pipeline(monkeypatch, [], "EXCERPTS: 1\nANSWER: Use ", "a ", "model.")
+    monkeypatch.setattr(answer_module, "TRACES", tmp_path / "traces.jsonl")
+    cancel = threading.Event()
+    seen = []
+    for event in answer_module.answer_events("How do I declare a body?", use_cache=False, check=False, cancel=cancel):
+        seen.append(event)
+        if event[0] == "token":
+            cancel.set()
+    assert [kind for kind, _ in seen].count("token") == 1
+    assert seen[-1][0] == "done" and seen[-1][1]["error"] == "cancelled"
+    assert json.loads((tmp_path / "traces.jsonl").read_text(encoding="utf-8"))["error"] == "cancelled"

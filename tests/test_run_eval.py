@@ -54,3 +54,16 @@ def test_judge_verdict_parsing():
     assert verdict("YES.") == "yes" and verdict(" partly, mostly") == "partly" and verdict("No") == "no"
     assert verdict("Maybe") == "unclear" and verdict("") == "unclear"
     assert agreement([("yes", "yes"), ("partly", "no"), ("no", "no")]) == "exact 2/3, yes vs not-yes 3/3"
+
+
+def test_fresh_sample_never_uses_dev_or_test_questions():
+    import json
+
+    from scripts.run_eval import ROOT, fresh_sample
+
+    split = json.loads((ROOT / "evals" / "split.json").read_text(encoding="utf-8"))
+    questions, seed = fresh_sample(seed=7)
+    assert seed == 7 and len(questions) == 40
+    assert not {q["id"] for q in questions} & (set(split["dev"]) | set(split["test"]))
+    assert {q["tag"] for q in questions} <= {"bug", "other-library"}
+    assert fresh_sample(seed=7)[0] == questions

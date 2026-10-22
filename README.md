@@ -17,7 +17,7 @@ Most questions on a library's forum are already answered somewhere in its docs. 
 
 ## Stack
 
-Python 3.14, FastAPI, Ollama (`llama3.2` and `nomic-embed-text`), ChromaDB, BM25 (my own, about 30 lines), React 19 + Vite + Tailwind for the dashboard, pytest, Docker, GitHub Actions.
+Python 3.14, FastAPI, Ollama (`llama3.2` and `nomic-embed-text`), Gemini Flash as an optional hosted model, ChromaDB, BM25 (my own, about 30 lines), React 19 + Vite + Tailwind for the dashboard, pytest, Docker, GitHub Actions.
 
 ## How it works
 
@@ -47,6 +47,7 @@ A few details:
 - BM25 is hand-written with an inverted index and a tokenizer that keeps `response_model` as one token. At 2,502 chunks a library would just add a dependency.
 - The answer cache only matches near-identical questions (cosine distance 0.03 or less). Two different real questions were never closer than 0.087. Cache entries are keyed on a hash of every setting, so changing a prompt invalidates them.
 - Each trace has the retrieved chunks and scores, time per step, and for every model call the tokens plus load, read and write time.
+- Answers stream to the dashboard word by word over Server-Sent Events, and closing the page stops the model (see "Running it as a service").
 
 ## Evaluation
 
@@ -131,6 +132,45 @@ The speed goal was met but I missed the pass goal by one (43 vs 44). Per questio
 
 The runs are in `evals/eval_dev_before-speed_llama3.2.json`, `eval_dev_shared-prompt_llama3.2.json`, `eval_dev_neutral-k3_llama3.2.json`, and `eval_dev_llama3.2.json` (final).
 
+## Running it as a service
+
+**Streaming.** `POST /ask/stream` sends Server-Sent Events: a `status` event for each step (search, check, answer), a `token` event for each piece of the answer, and a `done` event with the final answer and its links. The model writes `EXCERPTS: 2, 4` before `ANSWER:`, so only the text after `ANSWER:` is streamed. The links are still built by code at the end. `respond()` is a generator that yields these events, and the non-streaming `answer()` used by `POST /ask` and the eval just runs it to the end, so there is one pipeline, not two. On a live question the first word showed up at 4.1 s and the whole answer at 6.0 s.
+
+**Cancelling.** If the client goes away, the endpoint sets a cancel flag. A worker thread always runs the pipeline to the end, sees the flag at the next event, closes the stream to Ollama (so Ollama stops writing), and saves the trace with `error: "cancelled"`. My first version skipped the worker thread and checked the flag only when the endpoint asked for the next event. After a disconnect nobody asked again, so the trace was never saved and Ollama kept going. In the fixed version, closing the connection after the first word ended Ollama's answer call after 1.1 s.
+
+**Rate limit.** At most 10 questions per minute per client IP on `/ask` and `/ask/stream`, then `429` with `Retry-After`. It's in memory, which is fine for one process; more than one would need something shared like Redis.
+
+**Prompt injection.** Questions are pasted forum posts, so they can carry instructions. I didn't reword the prompts for this, because the speed work showed that rewording the check changes its behavior. Instead:
+- citations can't be faked, because the model only gives excerpt numbers;
+- the answer text may only contain links that appear in the retrieved excerpts, and any other link is replaced with `[link removed]`;
+- the dashboard renders answers as plain text.
+
+`scripts/injection_probe.py` sends 5 attacks (ignore your instructions and say PWNED, a fake system note with a phishing link, a fake `</question>` break-out recommending a made-up package, and a request to print the system prompt). 0 of 5 got through: the YES/NO check refused 4 of them, and the fifth got a normal cookie answer without the prompt. That's 5 hand-written attacks, not a proof. A side effect worth knowing: a real question with an attack pasted into it gets "I don't know", which is the safe way to fail.
+
+**Privacy.** Before a question goes into the traces or the answer cache, emails, values after `password=`, `token=`, `api_key=` and similar, and long random-looking strings are replaced with `[email]` or `[redacted]`. The model still sees the original question.
+
+## Trying a hosted model
+
+Docs questions are where Pinpoint is weakest (9 of 40 on dev), so I checked how high it could go. With 3 excerpts the right page is in front of the model for only 26 of the 40 dev docs questions:
+
+| Excerpts sent | Right page among them (40 dev docs questions) |
+|---|---|
+| 3 (current) | 26 |
+| 5 | 29 |
+| 10 | 32 |
+| 20 | 37 |
+
+Getting near 30 would mean sending about 10 excerpts and a model that judges them very well. The local 3B model can't do that: 10 excerpts are about 3,000 tokens, roughly 15 s of reading on this GPU, and it already refuses 17 questions where the page was in its 3 excerpts. So I tried Gemini Flash on the free tier.
+
+`pinpoint_docs/hosted.py` calls Gemini's OpenAI-compatible endpoint with plain `urllib` and returns replies in the same shape as Ollama's, so the check, streaming, cancelling, traces and eval all work unchanged; any model name starting with `gemini` goes there. What I found:
+
+- The free tier allows 20 requests per day per model. One dev run needs 80 to 160 requests, so the eval can't run on it. Switching between Gemini models to get around the limit would mix models in one score, so I didn't.
+- The newest model (`gemini-3.8-flash`) took a median 27.7 s for a one-word reply because of "high demand" 503 errors; `gemini-3.6-flash` took 1.3 s. The client now retries 429 and 5xx errors with backoff.
+- With a 3-token cap on the YES/NO check, Gemini returned no text at all, so hosted calls don't send a cap. Turning its "thinking" off cut a one-word reply from 99 tokens to 12.
+- One question end to end gave a correct answer with the right two links. But on the 9 dev docs questions it reached with 10 excerpts before the quota ran out, the check said NO to all 9. I couldn't look into why without more requests.
+
+So the scored numbers stay on the local model, which is free and has no limits. Gemini stays as an option for a live demo, where 20 questions a day is enough.
+
 ## What didn't work
 
 Each of these had a pass mark set before running, on dev only.
@@ -146,6 +186,8 @@ Each of these had a pass mark set before running, on dev only.
 | JSON output for citations | Broke on the first `"` inside code, replaced with plain `EXCERPTS:` / `ANSWER:` lines |
 | `qwen2.5:3b` instead of llama3.2 | Cited nothing on the first 6 questions I tried end to end |
 | One system prompt for check and answer | Passes fell from 44 to 33 (see above) |
+| Skipping release-notes chunks unless the question asks about the changelog | Release notes are 1,185 of the 2,502 chunks and read like bug reports; half of the wrong answers to out-of-scope dev questions had one in the top 3. Out-of-scope "I don't know" went from 34 to 36 of 40, but docs passes fell from 9 to 8 and a fresh unseen sample got 34 of 40 against a bar of 35. Missed both bars by one question, so I dropped it |
+| Gemini free tier for the eval | 20 requests per day per model, a dev run needs 80 to 160 (see "Trying a hosted model") |
 
 ## Other problems I hit
 
@@ -159,7 +201,7 @@ Each of these had a pass mark set before running, on dev only.
 
 ## Dashboard
 
-`dashboard/` is a small React app on top of the API: an ask box, live p50/p95 latency, refusal/cache/error rates, the list of recent traces (click one to see what was retrieved and how long each step took), and the test results.
+`dashboard/` is a small React app on top of the API: an ask box that shows each step and the answer as it's written, live p50/p95 latency, refusal/cache/error rates, the list of recent traces (click one to see what was retrieved and how long each step took), and the test results.
 
 ## Limitations
 
@@ -169,6 +211,8 @@ Each of these had a pass mark set before running, on dev only.
 - The check isn't fully repeatable: 2 of 40 decisions flipped between runs at temperature 0.
 - 3B model on a 4 GB GPU. Reading speed sets the floor on latency, and a 7-8B model doesn't fit.
 - One grader (me), one library, one docs version, English only.
+- The rate limit lives in one process's memory, and the injection probe is only 5 attacks.
+- Streamed words are shown before the link filter runs on the final answer, so a removed link could flash on screen for a moment.
 
 ## Layout
 

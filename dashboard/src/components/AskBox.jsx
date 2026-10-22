@@ -1,11 +1,20 @@
 import { useRef, useState } from "react";
 import { CircleSlash, Loader2, Search } from "lucide-react";
+import { streamEvents } from "../api";
 import { IDK, section } from "../format";
 import { Steps } from "./ui";
+
+const STATUS = {
+  search: "Searching the docs...",
+  check: "Checking whether the excerpts answer it...",
+  answer: "Writing the answer...",
+};
 
 export default function AskBox() {
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState(null);
+  const [draft, setDraft] = useState("");
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
   const [trace, setTrace] = useState(null);
@@ -15,23 +24,23 @@ export default function AskBox() {
     e.preventDefault();
     if (question.trim().length < 3 || busy) return;
     setBusy(true);
+    setStatus(null);
+    setDraft("");
     setError(null);
     setResult(null);
     setTrace(null);
     controller.current = new AbortController();
     const { signal } = controller.current;
     try {
-      const response = await fetch("/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
-        signal,
-      });
-      if (!response.ok) throw new Error(response.status >= 500 ? "the API is not running" : `HTTP ${response.status}`);
-      const body = await response.json();
-      setResult(body);
-      const detail = await fetch(`/traces/${body.trace_id}`, { signal });
-      if (detail.ok) setTrace(await detail.json());
+      for await (const [kind, data] of streamEvents("/ask/stream", { question }, signal)) {
+        if (kind === "status") setStatus(data);
+        if (kind === "token") setDraft((text) => text + data);
+        if (kind === "done") {
+          setResult(data);
+          const detail = await fetch(`/traces/${data.trace_id}`, { signal });
+          if (detail.ok) setTrace(await detail.json());
+        }
+      }
     } catch (err) {
       if (err.name !== "AbortError") setError(err.message);
     } finally {
@@ -70,10 +79,15 @@ export default function AskBox() {
           </button>
         )}
       </form>
-      {busy && (
-        <p className="mt-4 text-sm text-indigo-100">
-          Searching the docs, checking the excerpts, then answering. About 20 seconds on a local 3B model.
-        </p>
+      {busy && !result && (
+        <div className="mt-4 space-y-3">
+          <p className="text-sm text-indigo-100">{STATUS[status] ?? "Sending..."}</p>
+          {draft && (
+            <pre className="whitespace-pre-wrap break-words rounded-xl bg-white/10 p-4 font-sans text-sm leading-relaxed">
+              {draft}
+            </pre>
+          )}
+        </div>
       )}
       {error && <p className="mt-4 text-sm text-rose-200">Request failed: {error}.</p>}
       {result && (

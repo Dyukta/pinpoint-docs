@@ -49,10 +49,10 @@ def grade(q, result):
     return row
 
 
-def run(questions, model, name, check=True):
+def run(questions, model, name, check=True, k=3):
     results = []
     for n, q in enumerate(questions, 1):
-        result = answer(query_text(q, full=True), model=model, use_cache=False, check=check)
+        result = answer(query_text(q, full=True), k=k, model=model, use_cache=False, check=check)
         row = {
             "id": q["id"],
             "title": q["title"],
@@ -124,6 +124,14 @@ def load_split(name):
     return [by_id[i] for i in ids]
 
 
+def fresh_sample(n=40, seed=None):
+    seed = random.randrange(10_000) if seed is None else seed
+    split = json.loads((ROOT / "evals" / "split.json").read_text(encoding="utf-8"))
+    used = set(split["dev"]) | set(split["test"])
+    pool = [q for q in load_questions() if q["tag"] in ("bug", "other-library") and q["id"] not in used]
+    return random.Random(seed).sample(pool, n), seed
+
+
 def regrade(file_name):
     path = ROOT / "evals" / file_name
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -143,10 +151,16 @@ def regrade(file_name):
 def main():
     if sys.argv[1:2] == ["regrade"]:
         return regrade(sys.argv[2])
+    if sys.argv[1:2] == ["fresh"]:
+        questions, seed = fresh_sample(seed=int(sys.argv[2]) if len(sys.argv) > 2 else None)
+        print(f"fresh sample, seed {seed}: {len(questions)} questions not in dev or test\n")
+        return run(questions, MODEL, f"eval_fresh-{seed}")
     name = sys.argv[1] if len(sys.argv) > 1 else "test"
-    model = next((a for a in sys.argv[2:] if a != "no-check"), MODEL)
+    model = next((a for a in sys.argv[2:] if a != "no-check" and not a.startswith("k=")), MODEL)
+    k = int(next((a[2:] for a in sys.argv[2:] if a.startswith("k=")), 3))
     check = "no-check" not in sys.argv
-    run(load_split(name), model, f"eval_{name}" + ("" if check else "_no-check"), check)
+    out = f"eval_{name}" + ("" if check else "_no-check") + ("" if k == 3 else f"_k{k}")
+    run(load_split(name), model, out, check, k)
 
 
 if __name__ == "__main__":

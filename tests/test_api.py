@@ -25,6 +25,37 @@ def test_ask_returns_answer_and_sources(monkeypatch):
     }
 
 
+def test_ask_stream_sends_server_sent_events(monkeypatch):
+    done = {"trace_id": "abc123", "answer": "Use a model.", "sources": ["https://a/"], "cached": False, "error": None}
+
+    def fake_events(question, cancel):
+        yield "status", "search"
+        yield "token", "Use a model."
+        yield "done", done
+
+    monkeypatch.setattr(api, "answer_events", fake_events)
+    response = client.post("/ask/stream", json={"question": "How do I declare a body?"})
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert response.text.split("\n\n")[:3] == [
+        'event: status\ndata: "search"',
+        'event: token\ndata: "Use a model."',
+        'event: done\ndata: {"trace_id": "abc123", "answer": "Use a model.", "sources": ["https://a/"], "cached": false}',
+    ]
+
+
+def test_ask_is_rate_limited_per_client(monkeypatch):
+    from collections import defaultdict
+
+    monkeypatch.setattr(api, "recent", defaultdict(list))
+    monkeypatch.setattr(
+        api, "answer", lambda question: {"trace_id": "a", "answer": "x", "sources": [], "cached": False}
+    )
+    codes = [
+        client.post("/ask", json={"question": "How do I declare a body?"}).status_code for _ in range(api.LIMIT + 1)
+    ]
+    assert codes == [200] * api.LIMIT + [429]
+
+
 def test_ask_rejects_empty_question():
     assert client.post("/ask", json={"question": ""}).status_code == 422
     assert client.post("/ask", json={}).status_code == 422

@@ -16,14 +16,23 @@ EMBED_MODEL = "nomic-embed-text"
 BATCH = 64
 
 
-def ollama(path, payload):
-    req = urllib.request.Request(
+def request(path, payload):
+    return urllib.request.Request(
         f"{OLLAMA}{path}",
         json.dumps({"keep_alive": -1, **payload}).encode(),
         {"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req) as r:
+
+
+def ollama(path, payload):
+    with urllib.request.urlopen(request(path, payload)) as r:
         return json.load(r)
+
+
+def ollama_stream(path, payload):
+    with urllib.request.urlopen(request(path, payload)) as r:
+        for line in r:
+            yield json.loads(line)
 
 
 def embed(texts, **options):

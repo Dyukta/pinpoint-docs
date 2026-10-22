@@ -9,7 +9,8 @@ from functools import cache
 
 import chromadb
 
-from pinpoint_docs.index import CACHE, COLLECTION, DB, ROOT, ollama
+from pinpoint_docs import hosted
+from pinpoint_docs.index import CACHE, COLLECTION, DB, ROOT, ollama, ollama_stream
 from pinpoint_docs.search import embed_question, search
 
 TRACES = ROOT / "data" / "traces.jsonl"
@@ -46,6 +47,28 @@ CHECK_ASK = "Do these excerpts contain the answer to the question? Reply YES or 
 ANSWER_ASK = f"Now answer the question from the excerpts.\n\n{SYSTEM}"
 OPTIONS = {"temperature": 0, "num_ctx": 8192, "num_gpu": 99}
 REPLY = re.compile(r"EXCERPTS:(.*?)\n\s*ANSWER:(.*)", re.S | re.I)
+ANSWER_START = re.compile(r"ANSWER:\s*", re.I)
+LINK = re.compile(r"https?://[^\s)\]>\"'`]*[^\s)\]>\"'`.,;:!?]")
+SECRETS = [
+    (re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+"), "[email]"),
+    (re.compile(r"(?i)\b(password|passwd|secret|token|api[_-]?key)(\s*[=:]\s*)\S+"), r"\1\2[redacted]"),
+    (re.compile(r"\b(?=[\w-]*\d)(?=[\w-]*[A-Za-z])[\w-]{24,}\b"), "[redacted]"),
+]
+
+
+class Cancelled(Exception):
+    pass
+
+
+def redact(text):
+    for pattern, replacement in SECRETS:
+        text = pattern.sub(replacement, text)
+    return text
+
+
+def strip_links(text, hits):
+    allowed = {c["url"] for c in hits} | {url for c in hits for url in LINK.findall(c.get("text", ""))}
+    return LINK.sub(lambda m: m[0] if m[0] in allowed else "[link removed]", text)
 
 
 def sources(numbers, hits):
@@ -57,7 +80,7 @@ def parse(reply, hits):
     if not match:
         return IDK, []
     urls = sources([int(n) for n in re.findall(r"\d+", match.group(1))], hits)
-    text = match.group(2).strip()
+    text = strip_links(match.group(2).strip(), hits)
     if not urls or "don't know" in text.lower():
         return IDK, []
     return text, urls
@@ -67,16 +90,12 @@ def excerpts(hits):
     return "\n\n".join(f"Excerpt {i} ({c['title']} > {c['section']}):\n{c['text']}" for i, c in enumerate(hits, 1))
 
 
-def chat(model, system, user, history=(), **options):
-    return ollama(
-        "/api/chat",
-        {
-            "model": model,
-            "messages": [{"role": "system", "content": system}, *history, {"role": "user", "content": user}],
-            "stream": False,
-            "options": {**OPTIONS, **options},
-        },
-    )
+def chat(model, system, user, history=(), stream=False, **options):
+    messages = [{"role": "system", "content": system}, *history, {"role": "user", "content": user}]
+    if hosted.is_hosted(model):
+        return hosted.chat(model, messages, stream)
+    payload = {"model": model, "messages": messages, "stream": stream, "options": {**OPTIONS, **options}}
+    return ollama_stream("/api/chat", payload) if stream else ollama("/api/chat", payload)
 
 
 def to_seconds(nanoseconds):
@@ -103,14 +122,25 @@ def is_answerable(question, context, model=MODEL):
     return reply["message"]["content"].strip().upper().startswith("YES"), reply
 
 
-def write_answer(question, context, model, verdict=None):
-    if not verdict:
-        return chat(model, SYSTEM, prompt(question, context))
-    history = [
-        {"role": "user", "content": f"{prompt(question, context)}\n\n{CHECK_ASK}"},
-        {"role": "assistant", "content": verdict["message"]["content"]},
-    ]
-    return chat(model, CHECK, ANSWER_ASK, history=history)
+def stream_answer(question, context, model, verdict=None):
+    if verdict:
+        history = [
+            {"role": "user", "content": f"{prompt(question, context)}\n\n{CHECK_ASK}"},
+            {"role": "assistant", "content": verdict["message"]["content"]},
+        ]
+        parts = chat(model, CHECK, ANSWER_ASK, history=history, stream=True)
+    else:
+        parts = chat(model, SYSTEM, prompt(question, context), stream=True)
+    text, sent = "", 0
+    for part in parts:
+        text += part["message"]["content"]
+        start = ANSWER_START.search(text)
+        if start and len(text) - start.end() > sent:
+            yield "token", text[start.end() + sent :]
+            sent = len(text) - start.end()
+        if part["done"]:
+            return {**part, "message": {"role": "assistant", "content": text}}
+    raise ConnectionError("Ollama stream ended before the answer was done")
 
 
 @cache
@@ -141,7 +171,7 @@ def remember(vector, key, question, result):
     answer_cache().add(
         ids=[uuid.uuid4().hex],
         embeddings=[vector],
-        documents=[question],
+        documents=[redact(question)],
         metadatas=[
             {
                 "settings": key,
@@ -153,39 +183,59 @@ def remember(vector, key, question, result):
     )
 
 
-def answer(question, k=3, model=MODEL, use_cache=True, check=True):
+def answer_events(question, k=3, model=MODEL, use_cache=True, check=True, cancel=None):
     trace = {
         "trace_id": uuid.uuid4().hex[:12],
         "time": datetime.now(UTC).isoformat(timespec="seconds"),
         "model": model,
-        "question": question,
+        "question": redact(question),
     }
     try:
-        trace |= respond(question, k, model, use_cache, check)
+        events = respond(question, k, model, use_cache, check)
+        for kind, value in events:
+            if cancel and cancel.is_set():
+                events.close()
+                raise Cancelled
+            if kind == "result":
+                trace |= value
+            else:
+                yield kind, value
         trace["error"] = None
+    except Cancelled:
+        trace |= {**EMPTY, "error": "cancelled"}
     except Exception as e:
         trace |= {**EMPTY, "error": f"{type(e).__name__}: {e}"}
     with TRACES.open("a", encoding="utf-8") as f:
         f.write(json.dumps(trace, ensure_ascii=False) + "\n")
+    yield "done", trace
+
+
+def answer(question, k=3, model=MODEL, use_cache=True, check=True):
+    *_, (_, trace) = answer_events(question, k, model, use_cache, check)
     return trace
 
 
 def respond(question, k, model, use_cache, check=True):
     start = time.perf_counter()
+    yield "status", "search"
     vector = embed_question(question)
     key = settings_key(model, k, check)
     hit = cached_answer(vector, key) if use_cache else None
     if hit:
-        return {**EMPTY, **hit, "cached": True, "search_seconds": round(time.perf_counter() - start, 2)}
+        yield "result", {**EMPTY, **hit, "cached": True, "search_seconds": round(time.perf_counter() - start, 2)}
+        return
     hits = search(question, k, vector=vector)
     searched = time.perf_counter()
     context = excerpts(hits)
+    if check:
+        yield "status", "check"
     ok, verdict = is_answerable(question, context, model) if check else (True, {})
     checked = time.perf_counter()
     calls = [timing("check", verdict)] if check else []
     text, urls = IDK, []
     if ok:
-        reply = write_answer(question, context, model, verdict)
+        yield "status", "answer"
+        reply = yield from stream_answer(question, context, model, verdict)
         calls.append(timing("answer", reply))
         text, urls = parse(reply["message"]["content"], hits)
     result = {
@@ -205,7 +255,7 @@ def respond(question, k, model, use_cache, check=True):
     }
     if use_cache:
         remember(vector, key, question, result)
-    return result
+    yield "result", result
 
 
 def main():

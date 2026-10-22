@@ -1,0 +1,1839 @@
+{
+ "model": "llama3.2",
+ "results": [
+  {
+   "id": 13380,
+   "title": "[bug] Impossible to have checkbox in form with default `True` value",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": false,
+   "pass": false,
+   "failure": "answered_unanswerable",
+   "trace_id": "571e112e77d6",
+   "time": "2026-10-22T06:57:12+00:00",
+   "model": "llama3.2",
+   "question": "[bug] Impossible to have checkbox in form with default `True` value\n\nThis has an open PR here: https://github.com/fastapi/fastapi/pull/13464\r\n\r\n---\r\n\r\n### First Check\r\n\r\n- [X] I added a very descriptive title here.\r\n- [X] I used the GitHub search to find a similar question and didn't find it.\r\n- [X] I searched the FastAPI documentation, with the integrated search.\r\n- [X] I already searched in Google \"How to X in FastAPI\" and didn't find any information.\r\n- [X] I already read and followed all the tutorial in the docs and didn't find an answer.\r\n- [X] I already checked if it is not related to FastAPI but to [Pydantic](https://github.com/pydantic/pydantic).\r\n- [X] I already checked if it is not related to FastAPI but to [Swagger UI](https://github.com/swagger-api/swagger-ui).\r\n- [X] I already checked if it is not related to FastAPI but to [ReDoc](https://github.com/Redocly/redoc).\r\n\r\n### Commit to Help\r\n\r\n- [X] I commit to help with one of those options 👆\r\n\r\n### Example Code\r\n\r\n```python\r\nfrom pydantic import BaseModel, Field\r\nfrom fastapi import FastAPI, Form\r\n\r\nclass MyModel(BaseModel):\r\n    checkbox: bool = True\r\n\r\napp = FastAPI()\r\n\r\n@app.post(\"/\")\r\ndef form_endpoint(model: Annotated[MyModel, Form()]):\r\n    # doesn't matter what happens here, bug is during model instantiation\r\n    pass\r\n```\r\n\r\n\r\n### Description\r\n\r\nThis is distinct from these prior issues -\r\n- https://github.com/fastapi/fastapi/discussions/11852\r\n- https://github.com/fastapi/fastapi/discussions/9409\r\n- https://stackoverflow.com/questions/73078330/fastapi-request-body-returns-null-from-checkbox-html-tag\r\n\r\nHTML forms submit no value when a checkbox is unchecked, and submit a string (default `\"on\"` when checked). By the time the value is received by the pydantic model, either through a field or a model validator, it either is a) the explicitly provided string value, or b) the default value. \r\n\r\nIf the default value is `True`, it is impossible to differentiate an explicit `True` from a default `True` in the model itself, so one can't write a model validator that can be used both with the form input case and programmatic usage. \r\n\r\nSince the problem is a matter of the HTML standards not providing a bool, checkboxes are unambiguously booleans, the boolean status is invisible at the point of model instantiation but NOT at the point that FastAPI parses the form data (not present is `False` and a string is `True`), it should be the FastAPI form handling logic that casts it to a bool prior to reaching the model. This would resolve the above issues as well without needing to resort to awkward workarounds. \r\n\r\nThe prior workarounds do not apply to this case, since there either were no defaults or the defaults were `False` - the problem in this case is specifically that a default of `True` is not possible with form inputs.\r\n\r\nI am more than happy to write a PR for this if maintainers agree :)\r\n\r\nThis is the only way i have found to make it work, but it is very not DRY to have to do this for every checkbox in a way that is not bundled with the model.\r\n\r\n```python\r\n@app.post(\"/form\")\r\nasync def endpoint(\r\n    request: Request,\r\n    model: Annotated[MyModel, Form()],\r\n):\r\n    form = await request.form()\r\n    model.checkbox = \"checkbox\" in form\r\n```\r\n\r\n### Operating System\r\n\r\nmacOS\r\n\r\n### Operating System Details\r\n\r\n_No response_\r\n\r\n### FastAPI Version\r\n\r\n0.115.8\r\n\r\n### Pydantic Version\r\n\r\n2.10.6\r\n\r\n### Python Version\r\n\r\nPython 3.13.1\r\n\r\n### Additional Context\r\n\r\n_No response_",
+   "answer": "When a default value of `True` is used for a form field, it is treated as `False` and is considered explicitly set. This is because omitted boolean form fields are now interpreted as `False`, matching unchecked HTML checkboxes.",
+   "sources": [
+    "https://fastapi.tiangolo.com/release-notes/"
+   ],
+   "retrieved": [
+    "release-notes.md#9",
+    "tutorial/request-form-models.md#3",
+    "release-notes.md#7"
+   ],
+   "scores": [
+    0.0315,
+    0.0296,
+    0.0286
+   ],
+   "answerable": true,
+   "check": true,
+   "cached": false,
+   "search_seconds": 2.66,
+   "check_seconds": 8.11,
+   "answer_seconds": 2.0,
+   "prompt_tokens": 3220,
+   "output_tokens": 64,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1537,
+     "output_tokens": 2,
+     "load_seconds": 0.01,
+     "read_seconds": 7.77,
+     "write_seconds": 0.02
+    },
+    {
+     "step": "answer",
+     "prompt_tokens": 1683,
+     "output_tokens": 62,
+     "load_seconds": 0.0,
+     "read_seconds": 0.87,
+     "write_seconds": 1.12
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 14071,
+   "title": "Duplicate and verbose exception stacktrace if middleware exits",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "58468a21c64e",
+   "time": "2026-10-22T06:57:25+00:00",
+   "model": "llama3.2",
+   "question": "Duplicate and verbose exception stacktrace if middleware exits\n\n\n```python\nimport fastapi\r\nimport uvicorn\r\nfrom fastapi import Request\r\n\r\napp = fastapi.FastAPI()\r\n\r\n@app.get(\"/\")\r\nasync def root():\r\n    raise Exception(\"test\")\r\n\r\n@app.middleware(\"http\")\r\nasync def do_nothing(request: Request, call_next):\r\n    response = await call_next(request)\r\n    return response\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    uvicorn.run(\r\n        \"main:app\",\r\n        host=\"0.0.0.0\",\r\n        port=8000,\r\n        reload=True,\r\n    )\n```\n\n\n\n\nWhen i call http://localhost:8000/ I got very long stacktrace looks like duplicate\r\n\r\n```\r\nINFO:     127.0.0.1:40278 - \"GET / HTTP/1.1\" 500 Internal Server Error\r\nERROR:    Exception in ASGI application\r\n  + Exception Group Traceback (most recent call last):\r\n  |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/_utils.py\", line 79, in collapse_excgroups\r\n  |     yield\r\n  |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/base.py\", line 183, in __call__\r\n  |     async with anyio.create_task_group() as task_group:\r\n  |                ~~~~~~~~~~~~~~~~~~~~~~~^^\r\n  |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/anyio/_backends/_asyncio.py\", line 772, in __aexit__\r\n  |     raise BaseExceptionGroup(\r\n  |         \"unhandled errors in a TaskGroup\", self._exceptions\r\n  |     ) from None\r\n  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)\r\n  +-+---------------- 1 ----------------\r\n    | Traceback (most recent call last):\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/uvicorn/protocols/http/httptools_impl.py\", line 409, in run_asgi\r\n    |     result = await app(  # type: ignore[func-returns-value]\r\n    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n    |         self.scope, self.receive, self.send\r\n    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n    |     )\r\n    |     ^\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py\", line 60, in __call__\r\n    |     return await self.app(scope, receive, send)\r\n    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/fastapi/applications.py\", line 1054, in __call__\r\n    |     await super().__call__(scope, receive, send)\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/applications.py\", line 113, in __call__\r\n    |     await self.middleware_stack(scope, receive, send)\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/errors.py\", line 186, in __call__\r\n    |     raise exc\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/errors.py\", line 164, in __call__\r\n    |     await self.app(scope, receive, _send)\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/base.py\", line 182, in __call__\r\n    |     with recv_stream, send_stream, collapse_excgroups():\r\n    |                                    ~~~~~~~~~~~~~~~~~~^^\r\n    |   File \"/home/vladimir/.local/share/uv/python/cpython-3.13.1-linux-x86_64-gnu/lib/python3.13/contextlib.py\", line 162, in __exit__\r\n    |     self.gen.throw(value)\r\n    |     ~~~~~~~~~~~~~~^^^^^^^\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/_utils.py\", line 85, in collapse_excgroups\r\n    |     raise exc\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/base.py\", line 184, in __call__\r\n    |     response = await self.dispatch_func(request, call_next)\r\n    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/main.py\", line 14, in do_nothing\r\n    |     response = await call_next(request)\r\n    |                ^^^^^^^^^^^^^^^^^^^^^^^^\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/base.py\", line 159, in call_next\r\n    |     raise app_exc\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/base.py\", line 144, in coro\r\n    |     await self.app(scope, receive_or_disconnect, send_no_error)\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py\", line 63, in __call__\r\n    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\r\n    |     raise exc\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\r\n    |     await app(scope, receive, sender)\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/routing.py\", line 716, in __call__\r\n    |     await self.middleware_stack(scope, receive, send)\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/routing.py\", line 736, in app\r\n    |     await route.handle(scope, receive, send)\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/routing.py\", line 290, in handle\r\n    |     await self.app(scope, receive, send)\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/routing.py\", line 78, in app\r\n    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\r\n    |     raise exc\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\r\n    |     await app(scope, receive, sender)\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/routing.py\", line 75, in app\r\n    |     response = await f(request)\r\n    |                ^^^^^^^^^^^^^^^^\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/fastapi/routing.py\", line 302, in app\r\n    |     raw_response = await run_endpoint_function(\r\n    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n    |     ...<3 lines>...\r\n    |     )\r\n    |     ^\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/fastapi/routing.py\", line 213, in run_endpoint_function\r\n    |     return await dependant.call(**values)\r\n    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n    |   File \"/home/vladimir/develop/rogii/fastapitracing/main.py\", line 10, in root\r\n    |     raise Exception(\"test\")\r\n    | Exception: test\r\n    +------------------------------------\r\n\r\nDuring handling of the above exception, another exception occurred:\r\n\r\nTraceback (most recent call last):\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/uvicorn/protocols/http/httptools_impl.py\", line 409, in run_asgi\r\n    result = await app(  # type: ignore[func-returns-value]\r\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n        self.scope, self.receive, self.send\r\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n    )\r\n    ^\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py\", line 60, in __call__\r\n    return await self.app(scope, receive, send)\r\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/fastapi/applications.py\", line 1054, in __call__\r\n    await super().__call__(scope, receive, send)\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/applications.py\", line 113, in __call__\r\n    await self.middleware_stack(scope, receive, send)\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/errors.py\", line 186, in __call__\r\n    raise exc\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/errors.py\", line 164, in __call__\r\n    await self.app(scope, receive, _send)\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/base.py\", line 182, in __call__\r\n    with recv_stream, send_stream, collapse_excgroups():\r\n                                   ~~~~~~~~~~~~~~~~~~^^\r\n  File \"/home/vladimir/.local/share/uv/python/cpython-3.13.1-linux-x86_64-gnu/lib/python3.13/contextlib.py\", line 162, in __exit__\r\n    self.gen.throw(value)\r\n    ~~~~~~~~~~~~~~^^^^^^^\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/_utils.py\", line 85, in collapse_excgroups\r\n    raise exc\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/base.py\", line 184, in __call__\r\n    response = await self.dispatch_func(request, call_next)\r\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/main.py\", line 14, in do_nothing\r\n    response = await call_next(request)\r\n               ^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/base.py\", line 159, in call_next\r\n    raise app_exc\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/base.py\", line 144, in coro\r\n    await self.app(scope, receive_or_disconnect, send_no_error)\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py\", line 63, in __call__\r\n    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\r\n    raise exc\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\r\n    await app(scope, receive, sender)\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/routing.py\", line 716, in __call__\r\n    await self.middleware_stack(scope, receive, send)\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/routing.py\", line 736, in app\r\n    await route.handle(scope, receive, send)\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/routing.py\", line 290, in handle\r\n    await self.app(scope, receive, send)\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/routing.py\", line 78, in app\r\n    await wrap_app_handling_exceptions(app, request)(scope, receive, send)\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\r\n    raise exc\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\r\n    await app(scope, receive, sender)\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/starlette/routing.py\", line 75, in app\r\n    response = await f(request)\r\n               ^^^^^^^^^^^^^^^^\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/fastapi/routing.py\", line 302, in app\r\n    raw_response = await run_endpoint_function(\r\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n    ...<3 lines>...\r\n    )\r\n    ^\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/.venv/lib/python3.13/site-packages/fastapi/routing.py\", line 213, in run_endpoint_function\r\n    return await dependant.call(**values)\r\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"/home/vladimir/develop/rogii/fastapitracing/main.py\", line 10, in root\r\n    raise Exception(\"test\")\r\nException: test\r\n```\r\n\r\nIf i remove middleware Stacktrace reduces to minimal one. I have already read couple of threads with similar disscussions - only advice here not to throw exception in middleware. But i reduced it the bare minimum  - this middleware do  nothing.  \r\n\r\nIt's look like bug for me. Or the middlewares should be written in another way\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/handling-errors.md#15",
+    "how-to/custom-request-and-route.md#8",
+    "tutorial/handling-errors.md#6"
+   ],
+   "scores": [
+    0.032,
+    0.031,
+    0.0309
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 4.9,
+   "check_seconds": 26.85,
+   "answer_seconds": null,
+   "prompt_tokens": 4460,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 4460,
+     "output_tokens": 2,
+     "load_seconds": 0.01,
+     "read_seconds": 26.43,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13855,
+   "title": "Proposal: Extract fastapi.status into a standalone package",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": false,
+   "pass": false,
+   "failure": "answered_unanswerable",
+   "trace_id": "6cf3e0ff21e3",
+   "time": "2026-10-22T06:57:57+00:00",
+   "model": "llama3.2",
+   "question": "Proposal: Extract fastapi.status into a standalone package\n\n\n```python\nNone\n```\n\n\n\n\nI’d like to propose extracting the fastapi.status module into its own standalone package (e.g. fastapi-status) that can be installed and imported separately from FastAPI.\r\n\r\nMotivation:\r\n- Many projects outside FastAPI want to use HTTP status codes like `status.HTTP_200_OK `for readability and consistency.\r\n- Python’s standard library http.HTTPStatus is less ergonomic, using names like HTTPStatus.OK instead of `HTTP_200_OK`.\r\n- Keeping status in FastAPI means that unrelated projects must install all of FastAPI just to access these constants.\n",
+   "answer": "The fastapi.status module can be extracted into a standalone package, and it can be imported separately from FastAPI. This allows projects outside FastAPI to use HTTP status codes consistently. The status codes can be accessed using autocompletion, and they can be used in path operations with the `status_code` parameter. For example: `from fastapi import status; status.HTTP_200_OK`",
+   "sources": [
+    "https://fastapi.tiangolo.com/reference/status/",
+    "https://fastapi.tiangolo.com/tutorial/response-status-code/#response-status-code"
+   ],
+   "retrieved": [
+    "reference/status.md#0",
+    "advanced/additional-status-codes.md#1",
+    "tutorial/response-status-code.md#0"
+   ],
+   "scores": [
+    0.0328,
+    0.031,
+    0.031
+   ],
+   "answerable": true,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.48,
+   "check_seconds": 5.32,
+   "answer_seconds": 2.49,
+   "prompt_tokens": 2200,
+   "output_tokens": 96,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1027,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 4.89,
+     "write_seconds": 0.02
+    },
+    {
+     "step": "answer",
+     "prompt_tokens": 1173,
+     "output_tokens": 94,
+     "load_seconds": 0.0,
+     "read_seconds": 0.82,
+     "write_seconds": 1.66
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 14451,
+   "title": "Computed fields support breaks with mixed route types",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "dbb3a460130d",
+   "time": "2026-10-22T06:58:05+00:00",
+   "model": "llama3.2",
+   "question": "Computed fields support breaks with mixed route types\n\n### First Check\r\n\r\n- [X] I added a very descriptive title here.\r\n- [X] I used the GitHub search to find a similar question and didn't find it.\r\n- [X] I searched the FastAPI documentation, with the integrated search.\r\n- [X] I already searched in Google \"How to X in FastAPI\" and didn't find any information.\r\n- [X] I already read and followed all the tutorial in the docs and didn't find an answer.\r\n- [X] I already checked if it is not related to FastAPI but to [Pydantic](https://github.com/pydantic/pydantic).\r\n- [X] I already checked if it is not related to FastAPI but to [Swagger UI](https://github.com/swagger-api/swagger-ui).\r\n- [X] I already checked if it is not related to FastAPI but to [ReDoc](https://github.com/Redocly/redoc).\r\n\r\n### Commit to Help\r\n\r\n- [X] I commit to help with one of those options 👆\r\n\r\n### Example Code\r\n\r\n```python\r\nfrom fastapi import FastAPI\r\nfrom fastapi.openapi.utils import get_openapi\r\nfrom pydantic import BaseModel, computed_field\r\n\r\nclass ModelWithComputedField(BaseModel):\r\n    name: str\r\n\r\n    @computed_field\r\n    @property\r\n    def computed_name(self) -> str:\r\n        return f\"computed_{self.name}\"\r\n\r\nclass SimpleModel(BaseModel):\r\n      value: str\r\n\r\napp = FastAPI()\r\n\r\n@app.get(\"/with-computed\")\r\ndef route_with_computed() -> ModelWithComputedField:\r\n    \"\"\"Route returning a model with computed fields.\"\"\"\r\n    return ModelWithComputedField(name=\"test\")\r\n\r\n@app.get(\"/without-computed\")\r\ndef route_without_computed() -> SimpleModel:\r\n    \"\"\"Route returning a simple model (no computed fields).\"\"\"\r\n    return SimpleModel(value=\"test\")\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    # This will raise KeyError when both routes are present\r\n    schema = get_openapi(\r\n        title=\"Test App\",\r\n        version=\"1.0.0\",\r\n        routes=app.routes,\r\n        separate_input_output_schemas=False,  # Bug only occurs with False\r\n    )\r\n```\r\n\r\n\r\n### Description\r\n\r\nFastAPI 0.123.4 added support for computed fields in OpenAPI schemas (#13207) when `separate_input_output_schemas=False`, but the implementation has a bug where the schema generation crashes with a `KeyError` if the FastAPI app contains both:\r\n\r\n1. Routes with response models that have computed fields\r\n2. Routes with response models that don't have computed fields (e.g., dict responses or BaseModels without computed fields)\r\n\r\n### Expected Behavior\r\n\r\n  OpenAPI schema should generate successfully with computed fields included in models that have them, regardless of mixing route types.\r\n\r\n### Current Behavior\r\n\r\n  ```python\r\n  File \"../python3.13/site-packages/fastapi/_compat/v2.py\", line 192, in get_schema_from_model_field\r\n    json_schema = field_mapping[(field, override_mode or field.mode)]\r\n                  ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\nKeyError: (ModelField(field_info=FieldInfo(annotation=SimpleModel, required=True), name='Response_route_without_computed_without_computed_get', mode='serialization'), 'validation')\r\n```\r\n\r\n### Operating System\r\n\r\nmacOS\r\n\r\n### Operating System Details\r\n\r\n_No response_\r\n\r\n### FastAPI Version\r\n\r\n0.123.4 \r\n\r\n### Pydantic Version\r\n\r\n2.12.4\r\n\r\n### Python Version\r\n\r\n3.13.8\r\n\r\n### Additional Context\r\n\r\nWorkaround: Generate schemas separately for routes with and without computed fields, then merge them.\r\n\r\nLooking at the PR that introduced this (#13207), the tests don't cover the scenario of mixing routes with and without computed fields, which is why this bug wasn't caught.\r\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "how-to/separate-openapi-schemas.md#8",
+    "how-to/separate-openapi-schemas.md#4",
+    "how-to/extending-openapi.md#1"
+   ],
+   "scores": [
+    0.0299,
+    0.0296,
+    0.0296
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 2.08,
+   "check_seconds": 8.73,
+   "answer_seconds": null,
+   "prompt_tokens": 1659,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1659,
+     "output_tokens": 2,
+     "load_seconds": 0.01,
+     "read_seconds": 8.42,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13741,
+   "title": "Empty response on 500 status code in Angular response",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "08fdfb22e15a",
+   "time": "2026-10-22T06:58:16+00:00",
+   "model": "llama3.2",
+   "question": "Empty response on 500 status code in Angular response\n\n\n```python\nfrom fastapi import FastAPI\r\nfrom pydantic import BaseModel\r\n\r\napp = FastAPI(\r\n    docs_url=\"/docs\" if Config.DEBUG else None,\r\n    redoc_url=None\r\n)\r\n\r\nclass NextErrorDto(BaseModel):\r\n    code: int = Field(description=\"The status code of request\")\r\n    message: str = Field(description=\"The error message for developer\")\r\n    ui_message: str | None = Field(description=\"The error message for UI\", default=None)\r\n\r\nclass NextErrorResponse(JSONResponse):\r\n    def __init__(self, status_code: status, message: str, ui_message: str | None = None,\r\n                 headers: Mapping[str, str] | None = None):\r\n        super().__init__(status_code=status_code,\r\n                         content=NextErrorDto(code=status_code, message=message, ui_message=ui_message).model_dump(by_alias=True), headers=headers)\r\n\r\nclass GeneralExceptionMiddleware(BaseHTTPMiddleware):\r\n    async def dispatch(self, request: Request, call_next):\r\n        try:\r\n            return await call_next(request)\r\n        except Exception as exc:\r\n            host = getattr(getattr(request, \"client\", None), \"host\", None)\r\n            port = getattr(getattr(request, \"client\", None), \"port\", None)\r\n            url = f\"{request.url.path}?{request.query_params}\" if request.query_params else request.url.path\r\n            exception_type, exception_value, _ = sys.exc_info()\r\n            exception_name = getattr(exception_type, \"__name__\", None)\r\n\r\n            logger.error(f'[General Exception] {host}:{port} - \"{request.method} {url}\" <{exception_name}: {exception_value}>')\r\n            return NextErrorResponse(status.[redacted], str(exc))\r\n\r\napp.add_middleware(GeneralExceptionMiddleware)\n```\n\n\n\n\n![image](https://github.com/user-attachments/assets/[redacted])\r\n\r\nIf I have a 500 error and try to read the response from Angular, I have no body.\r\n\r\nIf I make the api call from swagger instead I see the json correctly\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "how-to/custom-request-and-route.md#8",
+    "tutorial/handling-errors.md#13",
+    "advanced/additional-responses.md#7"
+   ],
+   "scores": [
+    0.0299,
+    0.0299,
+    0.0295
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 1.09,
+   "check_seconds": 6.82,
+   "answer_seconds": null,
+   "prompt_tokens": 1377,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1377,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 6.6,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 15204,
+   "title": "Dependant object has no attribute 'security_requirements'",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "b2a33d694984",
+   "time": "2026-10-22T06:58:24+00:00",
+   "model": "llama3.2",
+   "question": "Dependant object has no attribute 'security_requirements'\n\n\n```python\nfrom fastapi.dependencies.models import Dependant\r\n\r\ndependant = Dependant()\r\ntry:\r\n    scopes = dependant.security_requirements\r\n    print(\"Success:\", scopes)\r\nexcept AttributeError as e:\r\n    print(f\"ERROR: {e}\")\n```\n\n\n\n\nBefore PR #14459:\r\nThe public attribute `dependant.security_requirements` existed and worked normally.\r\n\r\nAfter PR #14459:\r\n Accessing `dependant.security_requirements` raises AttributeError.\r\n Error message: 'Dependant' object has no attribute 'security_requirements'\r\n\r\nRoot cause:\r\nThe public field `security_requirements` was directly removed from the Dependant class in dataclass definition, without any backward compatibility, deprecation warning, or fallback property.\r\n\r\nThis is a regression bug and API breaking change.\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/dependencies/dependencies-with-yield.md#7",
+    "advanced/advanced-dependencies.md#12",
+    "advanced/security/oauth2-scopes.md#13"
+   ],
+   "scores": [
+    0.028,
+    0.0259,
+    0.0229
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.39,
+   "check_seconds": 3.95,
+   "answer_seconds": null,
+   "prompt_tokens": 822,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 822,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 3.74,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 14861,
+   "title": "Access to UID of client when using Unix domain sockets",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "be719593a97b",
+   "time": "2026-10-22T06:58:28+00:00",
+   "model": "llama3.2",
+   "question": "Access to UID of client when using Unix domain sockets\n\n\n```python\nnone\n```\n\n\n\n\nI am using FastAPI in a server that is set up with Unix domain sockets. In a logon API call, I want to get the real UID of the user of the client process in order to generate a JWT from it.\r\n\r\nThis is possible if one has the underlying socket object. However, FastAPI does not seem to provide a means to get hold of the socket object.\r\n\r\nI found only complex approaches for that, e.g. to run a socket based server for the logon API call, or to wrapper the socket/app for FastAPI.\r\n\r\nI think that FastAPI should provide a convenient way to access the underlying socket object.\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "index.md#26",
+    "how-to/extending-openapi.md#1",
+    "advanced/openapi-webhooks.md#3"
+   ],
+   "scores": [
+    0.0276,
+    0.0272,
+    0.0255
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.33,
+   "check_seconds": 6.39,
+   "answer_seconds": null,
+   "prompt_tokens": 1292,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1292,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 6.23,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 14955,
+   "title": "Ability to mark a single item in a union type as deprecated in openapi spec.",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "f741614c7b6a",
+   "time": "2026-10-22T06:58:35+00:00",
+   "model": "llama3.2",
+   "question": "Ability to mark a single item in a union type as deprecated in openapi spec.\n\n\n```python\nfrom fastapi import FastAPI\r\n\r\napp = FastAPI()\r\n\r\n@app.get(\"/{uuid_or_str}\")\r\ndef fetch(uuid_or_str: UUID | str):\r\n    return {\"hello\": \"world\"}\n```\n\n\n\n\nUsing a path parameter with simple type union, I can not see if there is any way to flag one of the types as deprecated.\r\n\r\nThis is a valid api definition in openapi spec that I am attempting to replicate purely with FastAPI.\r\n\r\n```\r\n          \"schema\": {\r\n            \"oneOf\": [\r\n              {\r\n                \"type\": \"string\",\r\n                \"title\": \"Code\",\r\n              },\r\n              {\r\n                \"type\": \"string\",\r\n                \"format\": \"uuid\",\r\n                \"title\": \"ID\",\r\n                \"deprecated\": true,              }\r\n            ],\r\n          },\r\n          \"name\": \"uuid_or_str\",\r\n          \"in\": \"path\"\r\n        }\r\n```\r\n\r\nFastAPI generates the following schema:\r\n```\r\n            \"schema\": {\r\n              \"anyOf\": [\r\n                {\r\n                  \"type\": \"string\",\r\n                  \"format\": \"uuid\"\r\n                },\r\n                {\r\n                  \"type\": \"string\"\r\n                }\r\n              ],\r\n```\r\n\r\nIs there a way to flag the UUID as deprecated, or a way to override the generated schema for a simple type union to manually specify the deprecated flag?\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/extra-models.md#6",
+    "release-notes.md#916",
+    "advanced/path-operation-advanced-configuration.md#9"
+   ],
+   "scores": [
+    0.0299,
+    0.029,
+    0.0287
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.64,
+   "check_seconds": 6.06,
+   "answer_seconds": null,
+   "prompt_tokens": 1253,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1253,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 5.9,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 15637,
+   "title": "UploadFile Swagger regression since v0.129.1",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "bc4127ecf30b",
+   "time": "2026-10-22T06:58:42+00:00",
+   "model": "llama3.2",
+   "question": "UploadFile Swagger regression since v0.129.1\n\n\n```python\nfrom fastapi import FastAPI, File, UploadFile\r\n\r\napp = FastAPI()\r\n\r\n@app.post(\"/process_images\")\r\nasync def process_images(images: list[UploadFile] = File(...)):\r\n    return {\"Hello\": \"World\"}\n```\n\n\n\n\nIn `v0.129.1`, File Selection field shows garbage:\r\n\r\n<img width=\"613\" height=\"406\" alt=\"image\" src=\"https://github.com/user-attachments/assets/[redacted]\" />\r\n\r\nIn `v0.129.0` and before, it works correctly:\r\n<img width=\"629\" height=\"398\" alt=\"image\" src=\"https://github.com/user-attachments/assets/[redacted]\" />\r\n\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/request-files.md#1",
+    "tutorial/request-files.md#3",
+    "tutorial/request-files.md#9"
+   ],
+   "scores": [
+    0.032,
+    0.0315,
+    0.0308
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.64,
+   "check_seconds": 4.94,
+   "answer_seconds": null,
+   "prompt_tokens": 1004,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1004,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 4.78,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 16331,
+   "title": "Direct mutation of APIRouter.routes bypasses the routes-version cache, causing stale/ghost routes",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": false,
+   "pass": false,
+   "failure": "answered_unanswerable",
+   "trace_id": "9483c004eab4",
+   "time": "2026-10-22T06:58:47+00:00",
+   "model": "llama3.2",
+   "question": "Direct mutation of APIRouter.routes bypasses the routes-version cache, causing stale/ghost routes\n\nFound via a property-based audit (copy/clone independence, cache-invalidation consistency) run across several widely-used Python libraries; repro was written and independently re-run twice (identical output both times) before filing.\n\n## Description\n\nSince the lazy/cached router-inclusion rewrite (#15745), `_IncludedRouter.effective_candidates()` (`fastapi/routing.py`) rebuilds and caches a resolved route list, gated by a version counter (`APIRouter._routes_version`, bumped by `_mark_routes_changed()`). Every *tracked* mutator (`add_route`, `add_api_route`, `add_websocket_route`, `add_api_websocket_route`, `include_router`) correctly bumps the counter, including recursively through nested includes.\n\nHowever, `APIRouter.routes` is still a plain public `list` (inherited from `starlette.routing.Router`), and direct mutation of it is a documented pattern elsewhere (e.g. `app.router.routes = [...]` to remove routes). Directly mutating that list -- `router.routes.append(...)`, `.remove(...)`, `.clear()` -- does not call `_mark_routes_changed()`, so a parent router that already dispatched at least one request against an included child keeps serving from the stale cached candidate list, silently diverging from the router's actual current `.routes` contents.\n\nThis is a different root cause from #15974 (a concurrent-rebuild race, already fixed with `_effective_routes_lock`) -- that lock does nothing here, since the problem isn't concurrent rebuilding, it's that the version counter is never incremented at all for direct list mutation.\n\n## Minimal repro\n\n```python\nfrom fastapi import APIRouter, FastAPI\nfrom fastapi.routing import APIRoute\nfrom starlette.testclient import TestClient\n\napp = FastAPI()\nchild = APIRouter()\n\n@child.get(\"/child\")\ndef read_child():\n    return {\"msg\": \"v1-original\"}\n\napp.include_router(child, prefix=\"/api\")\nclient = TestClient(app)\n\n# Trigger dispatch once so the parent's _IncludedRouter builds and caches\n# effective_candidates() at the current routes_version.\nclient.get(\"/api/child\")\n\n# Direction A: add a route directly to child.routes (bypass add_api_route).\ndef read_child2():\n    return {\"msg\": \"v2-added-directly\"}\n\nnew_route = APIRoute(\"/child2\", read_child2, methods=[\"GET\"])\nchild.routes.append(new_route)  # no _mark_routes_changed() call happens here\n\nr1 = client.get(\"/api/child2\")\nprint(r1.status_code)  # actual: 404 -- expected: 200, it's literally in child.routes\n\n# Direction B: remove the original route directly from child.routes.\noriginal = [rt for rt in child.routes if getattr(rt, \"path\", None) == \"/child\"][0]\nchild.routes.remove(original)\n\nr2 = client.get(\"/api/child\")\nprint(r2.status_code)  # actual: 200 (ghost route) -- expected: 404, it was just removed\n```\n\nOutput (run twice, identical both times):\n```\nafter direct-append GET /api/child2 -> 404\nafter direct-remove GET /api/child -> 200\n```\n\n## Expected behavior\n\nThe parent router's effective route resolution should reflect the current contents of `child.routes` at request time.\n\n## Actual behavior\n\nDirect mutation of `.routes` after a router has been included and has served at least one request is silently ignored by the lazy cache -- an added route is invisible (404), and a removed route keeps being served as a \"ghost\" route (200).\n\n## Versions\n\nfastapi 0.140.0 (also confirmed present in `fastapi/routing.py` on `master` as of 2026-09-04), Python 3.12.10, Windows 11.\n",
+   "answer": "Direct mutation of `APIRouter.routes` bypasses the routes-version cache, causing stale/ghost routes. This is because `APIRouter.routes` is a plain public `list` (inherited from `starlette.routing.Router`) and direct mutation of it does not call `_mark_routes_changed()`.",
+   "sources": [
+    "https://fastapi.tiangolo.com/release-notes/"
+   ],
+   "retrieved": [
+    "release-notes.md#134",
+    "tutorial/bigger-applications.md#28",
+    "release-notes.md#135"
+   ],
+   "scores": [
+    0.0325,
+    0.0323,
+    0.0313
+   ],
+   "answerable": true,
+   "check": true,
+   "cached": false,
+   "search_seconds": 2.15,
+   "check_seconds": 9.02,
+   "answer_seconds": 2.33,
+   "prompt_tokens": 3616,
+   "output_tokens": 77,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1735,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 8.83,
+     "write_seconds": 0.02
+    },
+    {
+     "step": "answer",
+     "prompt_tokens": 1881,
+     "output_tokens": 75,
+     "load_seconds": 0.0,
+     "read_seconds": 0.9,
+     "write_seconds": 1.41
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13425,
+   "title": "How to customize HTTPBearer to parse data?",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "d4b21a13b2f6",
+   "time": "2026-10-22T06:59:01+00:00",
+   "model": "llama3.2",
+   "question": "How to customize HTTPBearer to parse data?\n\n\n```python\nSECRET_KEY = \"11111111111111111111111\"\r\nALGORITHM = \"HS256\"\r\nACCESS_TOKEN_EXPIRE_MINUTES = 10\r\noauth2_scheme = HTTPBearer()\r\n\r\n\r\ndef verify_token(token: [redacted]\r\n    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])\r\n    print('payload:', payload)\r\n    return payload\r\n\r\n\r\ndef get_current_user(credential: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):\r\n    print('token:[redacted] credential.credentials)\r\n    return verify_token(credential.credentials)\r\n\r\n@router.post(\"/imgExtractFeatures\")\r\nasync def img_extract_features(file: UploadFile = File(...), token= [redacted]\r\n    pass\r\n```\n```\n\n\n\n\nI don't know why it went wrong? I generated JWT using C # and I want to parse it using Python\r\n\r\n<img width=\"764\" alt=\"image\" src=\"https://github.com/user-attachments/assets/[redacted]\" />\r\n\r\n```\r\n    raise InvalidAudienceError(\"Invalid audience\")\r\njwt.exceptions.InvalidAudienceError: Invalid audience\r\n```\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/security/oauth2-jwt.md#10",
+    "tutorial/security/oauth2-jwt.md#14",
+    "tutorial/security/oauth2-jwt.md#7"
+   ],
+   "scores": [
+    0.0328,
+    0.032,
+    0.032
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.71,
+   "check_seconds": 20.06,
+   "answer_seconds": null,
+   "prompt_tokens": 3516,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 3516,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 19.81,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 15979,
+   "title": "app.frontend() with fallback=\"index.html\" returns 404 for client side routes that have a dot in the last path segment (like /users/john.doe or /v/1.2.3)",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "f994e1264652",
+   "time": "2026-10-22T06:59:21+00:00",
+   "model": "llama3.2",
+   "question": "app.frontend() with fallback=\"index.html\" returns 404 for client side routes that have a dot in the last path segment (like /users/john.doe or /v/1.2.3)\n\n\n```python\nimport os\nimport tempfile\n\nfrom fastapi import FastAPI\nfrom fastapi.testclient import TestClient\n\ndist = tempfile.mkdtemp()\nwith open(os.path.join(dist, \"index.html\"), \"w\") as f:\n    f.write(\"<html>SPA shell</html>\")\n\napp = FastAPI()\napp.frontend(\"/\", directory=dist, fallback=\"index.html\")\n\nclient = TestClient(app)\n\n# The Accept header a browser sends on a normal top level navigation.\nbrowser_nav = {\n    \"accept\": \"text/html,application/xhtml+xml,application/xml;q=0.9,\"\n    \"image/avif,image/webp,image/apng,*/*;q=0.8\"\n}\n\nprint(client.get(\"/users/john\", headers=browser_nav).status_code)      # 200, serves index.html\nprint(client.get(\"/users/john.doe\", headers=browser_nav).status_code)  # 404\nprint(client.get(\"/v/1.2.3\", headers=browser_nav).status_code)         # 404\n```\n\n\n\nHi 👋\n\nI have been trying out the new `app.frontend()` helper to serve a single page app, using `fallback=\"index.html\"` so that client side routes fall back to the shell and the frontend router can take over. This is the behavior described in the \"Client side routing\" part of the docs, and it works fine for a path like `/dashboard` or `/dashboard/settings`.\n\nThe problem shows up when a client side route has a dot in its last path segment. Plenty of real apps have these, for example a profile at `/users/john.doe`, a version deep link at `/v/1.2.3`, or a slug like `/files/report.2024`. When I open one of those directly, or just hit refresh while I am already on that page, I get a 404 instead of the `index.html` shell, so the app never loads and the client router never gets a chance to handle the route.\n\nThe part that surprised me is that setting `fallback=\"index.html\"` explicitly does not change this. As far as I can tell there is currently no way to get these routes to fall back to the shell.\n\nI spent some time reading the code and I think it comes from `_is_frontend_navigation_request()` in `fastapi/routing.py`. It takes the last path segment and if `os.path.splitext(...)` finds an extension it returns early and treats the request as an asset request, before it ever looks at the `Accept` header. Because `os.path.splitext(\"john.doe\")` returns `.doe`, any segment with a dot in it is treated as a file and never gets the `index.html` fallback, even when the browser clearly asked for `text/html`.\n\nWhat makes me think this is fixable without regressions is that the two situations are easy to tell apart. A real browser navigation sends `Accept: text/html`, while a missing asset requested from a script tag, an image tag, or a fetch call sends `*/*` or a specific type like `text/css`. If I request a genuinely missing asset such as `/assets/missing.js` with `Accept: */*` it still returns 404 as expected, so checking the `Accept` header first would fix the navigation case and keep the asset case working.\n\nI did notice there is already a test that pins the current behavior. `test_index_fallback_does_not_handle_asset_like_or_non_html_requests` has a `(\"/users/jane.doe\", \"text/html\")` case that expects a 404, so before proposing a change I wanted to ask whether the current behavior is intentional. If the idea is that dotted client routes should be servable, would a change that treats an explicit `Accept: text/html` request as navigation regardless of the path be acceptable? Or would you rather keep the extension heuristic as the default for `fallback=\"auto\"` and add an opt in for apps that use dotted client side routes?\n\nI am happy to open a PR with a failing test and the change for whichever direction you prefer. Thanks a lot for the work on this feature.\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/frontend.md#2",
+    "tutorial/frontend.md#4",
+    "tutorial/frontend.md#3"
+   ],
+   "scores": [
+    0.0328,
+    0.0323,
+    0.0317
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 2.21,
+   "check_seconds": 8.44,
+   "answer_seconds": null,
+   "prompt_tokens": 1580,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1580,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 8.06,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 16213,
+   "title": "app.frontend()'s fallback existence check (_fallback_file_exists) blocks the event loop with synchronous I/O",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "adfbe0d8d5a8",
+   "time": "2026-10-22T06:59:32+00:00",
+   "model": "llama3.2",
+   "question": "app.frontend()'s fallback existence check (_fallback_file_exists) blocks the event loop with synchronous I/O\n\n\n```python\nimport os\r\nimport time\r\nfrom pathlib import Path\r\n\r\n_original_stat = os.stat\r\n\r\n\r\ndef _slow_stat(*args, **kwargs):\r\n    time.sleep(0.2)  # simulate a slow filesystem stat() call\r\n    return _original_stat(*args, **kwargs)\r\n\r\n\r\nos.stat = _slow_stat\r\n\r\nfrom fastapi import FastAPI  # noqa: E402\r\n\r\nDIST_DIR = Path(__file__).parent / \"dist\"\r\nDIST_DIR.mkdir(exist_ok=True)\r\n(DIST_DIR / \"index.html\").write_text(\"app shell\")\r\n\r\napp = FastAPI()\r\n\r\n\r\n@app.get(\"/api/fast\")\r\nasync def fast_endpoint():\r\n    return {\"ok\": True}\r\n\r\n\r\napp.frontend(\"/\", directory=DIST_DIR, fallback=\"auto\")\n```\n\n\n\n\nThe `_FrontendStaticFiles` class in `fastapi/routing.py` has a method `_fallback_file_exists`, used when `fallback=\"auto\"` (the default) to check whether `404.html`/`index.html` exists in the frontend directory. This method calls `self.lookup_path(fallback)` directly, without `await`, which blocks the `asyncio` event loop for the duration of the filesystem call.\r\n\r\nThe sibling method `_lookup_path` (used for normal static file serving in the same class) offloads the equivalent filesystem call to a worker thread via `await run_in_threadpool(self.lookup_path, path)`. `_fallback_file_exists` does not follow the same pattern.\r\n\r\n**What I expected**: since `fallback=\"auto\"` is the default, and `_lookup_path` already offloads filesystem access to a thread pool elsewhere in the same class, I expected `_fallback_file_exists` to do the same.\r\n\r\n**What's currently happening**: `_fallback_file_exists` runs `self.lookup_path()` synchronously inside an `async def` method with no `await`. On filesystems with meaningfully slow stat() calls (network filesystems, container overlay filesystems, etc.), a single request to a missing path can block every other request being served on the same event loop — including completely unrelated API endpoints — for the duration of the filesystem call.\r\n\r\nRun the example code with `uvicorn repro:app --workers 1`, then send a burst of concurrent requests to a missing path (e.g. `/dashboard`) while measuring the latency of `/api/fast`. In my testing, `/api/fast` latency degraded substantially (hundreds of ms to multiple seconds) compared to a baseline with no concurrent frontend traffic. Happy to share the full benchmark harness and methodology if useful.\r\n\r\nProposed fix:\r\n\r\n    async def _fallback_file_exists(self, fallback: str) -> bool:\r\n        _, stat_result = await run_in_threadpool(self.lookup_path, fallback)\r\n        return stat_result is not None and stat.S_ISREG(stat_result.st_mode)\r\n\r\nThe two call sites inside `get_response` would need an added `await`. `run_in_threadpool` is already imported in this file. Note: `_check_fallback_file` (called once at construction time for the startup-time directory check) is not part of the per-request hot path, so it's out of scope for this fix.\r\n\r\nIf this direction looks acceptable to the maintainers, I'd be happy to open a Pull Request with this change.\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/frontend.md#4",
+    "tutorial/frontend.md#2",
+    "tutorial/frontend.md#3"
+   ],
+   "scores": [
+    0.0325,
+    0.0318,
+    0.0317
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 1.87,
+   "check_seconds": 7.01,
+   "answer_seconds": null,
+   "prompt_tokens": 1364,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1364,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 6.8,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13336,
+   "title": "How does async __call__ work in HTTPBearer and where is it invoked?",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": false,
+   "pass": false,
+   "failure": "answered_unanswerable",
+   "trace_id": "8c7e293c3065",
+   "time": "2026-10-22T06:59:41+00:00",
+   "model": "llama3.2",
+   "question": "How does async __call__ work in HTTPBearer and where is it invoked?\n\n### First Check\r\n\r\n- [X] I added a very descriptive title here.\r\n- [X] I used the GitHub search to find a similar question and didn't find it.\r\n- [X] I searched the FastAPI documentation, with the integrated search.\r\n- [X] I already searched in Google \"How to X in FastAPI\" and didn't find any information.\r\n- [X] I already read and followed all the tutorial in the docs and didn't find an answer.\r\n- [X] I already checked if it is not related to FastAPI but to [Pydantic](https://github.com/pydantic/pydantic).\r\n- [X] I already checked if it is not related to FastAPI but to [Swagger UI](https://github.com/swagger-api/swagger-ui).\r\n- [X] I already checked if it is not related to FastAPI but to [ReDoc](https://github.com/Redocly/redoc).\r\n\r\n### Commit to Help\r\n\r\n- [X] I commit to help with one of those options 👆\r\n\r\n### Example Code\r\n\r\n```python\r\nfrom typing import Annotated\r\n\r\nfrom fastapi import Depends\r\nfrom fastapi.security import HTTPAuthorizationCredentials, HTTPBearer\r\n\r\nclass ValidateHTTPBearer(HTTPBearer):\r\n    async def validate_parse_token(self, token: [redacted]\r\n        ...\r\n\r\n    async def validate_current_user(self, parsed_token: dict):\r\n        ...\r\n\r\n    async def __call__(self, request: Request):\r\n        ...\r\n        parsed_token = await self.validate_parse_token(\"token\")\r\n        await self.validate_current_user(parsed_token)\r\n        ...\r\n\r\nWhoAreYou = Depends(ValidateHTTPBearer())\r\nCurrentUser = Annotated[HTTPAuthorizationCredentials, WhoAreYou]\r\n```\r\n\r\n\r\n### Description\r\n\r\nI have seen HTTPBearer class in fastapi and it uses Async __call__ method and then use dependency injection. I have created a sub-class using HTTPBearer having additional validation logic at dependency level.\r\n\r\nDo we invoke in __call__ that inherits async class like `await super().__call__()`? \r\n\r\n1) Now I want to understand how is Async call being invoked and from where it is awaited?\r\n\r\n2) Feature Request: Can we pass optional additional validation logic in HTTPBearer as parameter? If yes, pass custom class or list of methods that would \r\n - validate token\r\n - validate current user\r\n\r\nIf token is valid check then validate user\r\nIf user exists in the db return that current user \r\nOtherwise throw 403\r\n\r\n\r\n\r\n### Operating System\r\n\r\nLinux\r\n\r\n### Operating System Details\r\n\r\nFedora 41\r\n\r\n### FastAPI Version\r\n\r\n0.115.7\r\n\r\n### Pydantic Version\r\n\r\n2.10\r\n\r\n### Python Version\r\n\r\n3.12\r\n\r\n### Additional Context\r\n\r\n_No response_",
+   "answer": "The `__call__` method in `HTTPBearer` is invoked when the dependency is called, and it is awaited by the `super().__call__()` call in the `ValidateHTTPBearer` class. This allows the dependency to perform additional validation logic. The `yield` keyword in the dependency is used to allow the exception to be caught and handled. \n\nExample from excerpt 1:\n```python\ndef __call__(self, q: str = \"\"):\n    if q:\n        return self.fixed_content in q\n    return False\n```",
+   "sources": [
+    "https://fastapi.tiangolo.com/advanced/advanced-dependencies/#a-callable-instance",
+    "https://fastapi.tiangolo.com/tutorial/dependencies/dependencies-with-yield/#dependencies-with-yield-and-except"
+   ],
+   "retrieved": [
+    "advanced/advanced-dependencies.md#2",
+    "tutorial/dependencies/dependencies-in-path-operation-decorators.md#6",
+    "tutorial/dependencies/dependencies-with-yield.md#7"
+   ],
+   "scores": [
+    0.0272,
+    0.023,
+    0.0229
+   ],
+   "answerable": true,
+   "check": true,
+   "cached": false,
+   "search_seconds": 1.34,
+   "check_seconds": 7.01,
+   "answer_seconds": 3.22,
+   "prompt_tokens": 2970,
+   "output_tokens": 128,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1412,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 6.83,
+     "write_seconds": 0.02
+    },
+    {
+     "step": "answer",
+     "prompt_tokens": 1558,
+     "output_tokens": 126,
+     "load_seconds": 0.01,
+     "read_seconds": 0.87,
+     "write_seconds": 2.32
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13710,
+   "title": "Dependency Caching For External HTTP calls",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": false,
+   "pass": false,
+   "failure": "answered_unanswerable",
+   "trace_id": "2389ce50eecb",
+   "time": "2026-10-22T06:59:53+00:00",
+   "model": "llama3.2",
+   "question": "Dependency Caching For External HTTP calls\n\n### First Check\r\n\r\n- [X] I added a very descriptive title here.\r\n- [X] I used the GitHub search to find a similar question and didn't find it.\r\n- [X] I searched the FastAPI documentation, with the integrated search.\r\n- [X] I already searched in Google \"How to X in FastAPI\" and didn't find any information.\r\n- [X] I already read and followed all the tutorial in the docs and didn't find an answer.\r\n- [X] I already checked if it is not related to FastAPI but to [Pydantic](https://github.com/pydantic/pydantic).\r\n- [X] I already checked if it is not related to FastAPI but to [Swagger UI](https://github.com/swagger-api/swagger-ui).\r\n- [X] I already checked if it is not related to FastAPI but to [ReDoc](https://github.com/Redocly/redoc).\r\n\r\n### Commit to Help\r\n\r\n- [X] I commit to help with one of those options 👆\r\n\r\n### Example Code\r\n\r\n```python\r\ndef get_token():\r\n    # tokens have a 2 hour lifetime\r\n    import uuid\r\n\r\n    LOGGER.warning(\"new token\") # prints every request\r\n    return str(uuid.uuid4())\r\n\r\n\r\ndef get_connection(token: [redacted] Depends(get_token]):\r\n    import requests\r\n\r\n    LOGGER.warning(\"new session %s\", token) # prints every request with different token\r\n    with requests.Session() as s:\r\n        yield s\r\n\r\n\r\nrouter = APIRouter(prefix=\"/\")\r\n\r\n\r\n@router.get(path=\"/check2\")\r\ndef check_deps_2(r_session=Depends(get_connection)):\r\n    return r_session.get(\"http://jsonplaceholder.typicode.com/posts/2\").json()\r\n\r\n\r\n@router.get(path=\"/check\")\r\ndef check_deps_1(r_session=Depends(get_connection)):\r\n    return r_session.get(\"http://jsonplaceholder.typicode.com/posts/1\").json()\r\n```\r\n\r\n\r\n### Description\r\n\r\nHello, \r\n\r\nmy TLDR is I want to query an external api that requires token auth without refreshing my token every call. I wanted to know best practices for this if any?\r\n\r\nI would like to make an External HTTP call that relies on a token -- this is a toy example of course, I noticed when I use dependencies I get a new token every time and a new session every time. \r\n\r\nMy expectations that at least immediate subsequent calls are cached and not recalled. In the example I provided each request has a new token (less than ideal), and a a new session (that is okay). I wanted to avoid flooding my lifetime dependencies with any external connection but I do not want to have to make new tokens for any type of outgoing request each time. \r\n\r\nI have a feeling I am doing something wrong or its as simple as making an LRU cache with TTL for `get_tokens()`\r\n\r\nWhat I would like to know is \r\n1. Best practices with external HTTP calls and if there is a recommendation to use session (request) or AsyncClient (httpx)\r\n    - Is it better to initialize these in the lifetime dep or in path dependencies\r\n2. Best practices for cacheing dependencies -- I know if multiple dependencies call a similar sub dependency they are [cached](https://fastapi.tiangolo.com/tutorial/dependencies/sub-dependencies/#using-the-same-dependency-multiple-times) but are there recommendations or \"gotchas\" to cacheing a dep yourself?\r\n\r\n### Operating System\r\n\r\nmacOS\r\n\r\n### Operating System Details\r\n\r\n_No response_\r\n\r\n### FastAPI Version\r\n\r\n0.115.8\r\n\r\n### Pydantic Version\r\n\r\n3.10.6\r\n\r\n### Python Version\r\n\r\nPython 3.12.9\r\n\r\n### Additional Context\r\n\r\n_No response_",
+   "answer": "You should use `Depends` with `use_cache=False` if you need to call a dependency multiple times in the same request. This allows you to bypass caching and ensure the dependency is called again. \n\n```python\nasync def needy_dependency(fresh_value: str = Depends(get_value, use_cache=False)):\n    return {\"fresh_value\": fresh_value}\n```",
+   "sources": [
+    "https://fastapi.tiangolo.com/tutorial/dependencies/sub-dependencies/#using-the-same-dependency-multiple-times",
+    "https://fastapi.tiangolo.com/tutorial/dependencies/#create-a-dependency-or-dependable"
+   ],
+   "retrieved": [
+    "tutorial/dependencies/sub-dependencies.md#4",
+    "tutorial/dependencies/index.md#3",
+    "tutorial/dependencies/dependencies-with-yield.md#7"
+   ],
+   "scores": [
+    0.0323,
+    0.0271,
+    0.0271
+   ],
+   "answerable": true,
+   "check": true,
+   "cached": false,
+   "search_seconds": 1.81,
+   "check_seconds": 9.43,
+   "answer_seconds": 2.58,
+   "prompt_tokens": 3748,
+   "output_tokens": 90,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1801,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 9.22,
+     "write_seconds": 0.02
+    },
+    {
+     "step": "answer",
+     "prompt_tokens": 1947,
+     "output_tokens": 88,
+     "load_seconds": 0.0,
+     "read_seconds": 0.91,
+     "write_seconds": 1.66
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 14207,
+   "title": "No such option: --forwarded-allow-ips",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": false,
+   "pass": false,
+   "failure": "answered_unanswerable",
+   "trace_id": "b4e375fa4cca",
+   "time": "2026-10-22T07:00:06+00:00",
+   "model": "llama3.2",
+   "question": "No such option: --forwarded-allow-ips\n\n### First Check\r\n\r\n- [X] I added a very descriptive title here.\r\n- [X] I used the GitHub search to find a similar question and didn't find it.\r\n- [X] I searched the FastAPI documentation, with the integrated search.\r\n- [X] I already searched in Google \"How to X in FastAPI\" and didn't find any information.\r\n- [X] I already read and followed all the tutorial in the docs and didn't find an answer.\r\n- [X] I already checked if it is not related to FastAPI but to [Pydantic](https://github.com/pydantic/pydantic).\r\n- [X] I already checked if it is not related to FastAPI but to [Swagger UI](https://github.com/swagger-api/swagger-ui).\r\n- [X] I already checked if it is not related to FastAPI but to [ReDoc](https://github.com/Redocly/redoc).\r\n\r\n### Commit to Help\r\n\r\n- [X] I commit to help with one of those options 👆\r\n\r\n### Example Code\r\n\r\n```python\r\nNo such option: --forwarded-allow-ips\r\n```\r\n\r\n\r\n### Description\r\n\r\nHello,\r\n\r\nOn the documentation: https://fastapi.tiangolo.com/advanced/behind-a-proxy/ , it's mentionned that i should use \r\n```\r\nfastapi run --forwarded-allow-ips=\"*\"\r\n```\r\n\r\nHowever,  when i use this:\r\n```\r\n/app # fastapi run --forwarded-allow-ips='*'\r\nUsage: fastapi run [OPTIONS] [PATH]\r\nTry 'fastapi run --help' for help.\r\n╭─ Error ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮\r\n│ No such option: --forwarded-allow-ips                                                                                                                                                                         │\r\n╰───────────────────────────────────────────\r\n````\r\n\r\n### Operating System\r\n\r\nLinux\r\n\r\n### Operating System Details\r\n\r\n_No response_\r\n\r\n### FastAPI Version\r\n\r\n0.119.0\r\n\r\n### Pydantic Version\r\n\r\n2.11.7\r\n\r\n### Python Version\r\n\r\n3.13.5\r\n\r\n### Additional Context\r\n\r\n_No response_",
+   "answer": "To enable proxy forwarded headers, you can use the `--forwarded-allow-ips` CLI option and pass `*` as the value, like this: `fastapi run --forwarded-allow-ips=\"*\"`.\n\n```console\n$ uv run fastapi run --forwarded-allow-ips=\"*\"\n```",
+   "sources": [
+    "https://fastapi.tiangolo.com/advanced/behind-a-proxy/#enable-proxy-forwarded-headers",
+    "https://fastapi.tiangolo.com/deployment/https/#proxy-forwarded-headers"
+   ],
+   "retrieved": [
+    "advanced/behind-a-proxy.md#2",
+    "advanced/behind-a-proxy.md#14",
+    "deployment/https.md#17"
+   ],
+   "scores": [
+    0.0325,
+    0.031,
+    0.0302
+   ],
+   "answerable": true,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.85,
+   "check_seconds": 7.14,
+   "answer_seconds": 2.42,
+   "prompt_tokens": 2960,
+   "output_tokens": 85,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1407,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 6.89,
+     "write_seconds": 0.02
+    },
+    {
+     "step": "answer",
+     "prompt_tokens": 1553,
+     "output_tokens": 83,
+     "load_seconds": 0.0,
+     "read_seconds": 0.88,
+     "write_seconds": 1.52
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13731,
+   "title": "Incorrect response status code in case of bad or missing auth creds.",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "46d5e8a3bfaa",
+   "time": "2026-10-22T07:00:17+00:00",
+   "model": "llama3.2",
+   "question": "Incorrect response status code in case of bad or missing auth creds.\n\n### First Check\r\n\r\n- [X] I added a very descriptive title here.\r\n- [X] I used the GitHub search to find a similar question and didn't find it.\r\n- [X] I searched the FastAPI documentation, with the integrated search.\r\n- [X] I already searched in Google \"How to X in FastAPI\" and didn't find any information.\r\n- [X] I already read and followed all the tutorial in the docs and didn't find an answer.\r\n- [X] I already checked if it is not related to FastAPI but to [Pydantic](https://github.com/pydantic/pydantic).\r\n- [X] I already checked if it is not related to FastAPI but to [Swagger UI](https://github.com/swagger-api/swagger-ui).\r\n- [X] I already checked if it is not related to FastAPI but to [ReDoc](https://github.com/Redocly/redoc).\r\n\r\n### Commit to Help\r\n\r\n- [X] I commit to help with one of those options 👆\r\n\r\n### Example Code\r\n\r\n```python\r\nfrom fastapi import FastAPI,APIRouter\r\nfrom fastapi import Depends, HTTPException\r\nfrom fastapi.security import HTTPBearer, HTTPAuthorizationCredentials\r\n\r\noauth2_scheme = HTTPBearer()\r\n\r\ntoken = [redacted]\r\n\r\napp = FastAPI()\r\n\r\n\r\nasync def validate_token(\r\n    credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme),\r\n):\r\n    if credentials.credentials != token:\r\n        [redacted] HTTPException(\r\n            status_code=401,\r\n            detail=\"Invalid authentication credentials\",\r\n        )\r\n    return credentials.credentials\r\n\r\nrouter = APIRouter(dependencies=[Depends(validate_token)],tags=[\"Secure Endpoints\"])\r\n\r\n@router.get(\"/test\")\r\nasync def root():\r\n    return {\"message\": \"Hello World\"}\r\n\r\napp.include_router(router)\r\n```\r\n\r\n\r\n### Description\r\n\r\nWhen making api request don't put in any auth and check the response. \r\nIt gives 403 : Forbidden and body\r\n````\r\n{\r\n  \"detail\": \"Not authenticated\"\r\n}\r\n````\r\n\r\nAnother scenario you can test using curl\r\n````\r\ncurl -X 'GET' \\          \r\n  'http://127.0.0.1:8000/test' \\\r\n  -H 'accept: application/json' \\\r\n  -H 'Authoration: Beare beas aa'\r\n````\r\nWhere the headers are not correct. Still it gives 403.\r\n\r\n403 means you are authenticated but don't have necessary authorization (role access) to fetch a particular resource. \r\nAll of the cases within FastAPI where we are having the case where we don't have a user authenticated we should always give 401 status code not 403. \r\n\r\nSo just wanna ask why are we displaying 403 response codes with the body of a 401 status code ?\r\n\r\n### Operating System\r\n\r\nmacOS\r\n\r\n### Operating System Details\r\n\r\n_No response_\r\n\r\n### FastAPI Version\r\n\r\n0.115.12\r\n\r\n### Pydantic Version\r\n\r\n2.11.4\r\n\r\n### Python Version\r\n\r\nPython 3.11.9\r\n\r\n### Additional Context\r\n\r\n_No response_",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "how-to/authentication-error-status-code.md#1",
+    "how-to/authentication-error-status-code.md#0",
+    "advanced/security/http-basic-auth.md#6"
+   ],
+   "scores": [
+    0.0328,
+    0.0313,
+    0.0285
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 1.38,
+   "check_seconds": 7.1,
+   "answer_seconds": null,
+   "prompt_tokens": 1416,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1416,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 6.9,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 15767,
+   "title": "SSE contentSchema missing in OpenAPI after route is included via include_router",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "a7c3d4885799",
+   "time": "2026-10-22T07:00:25+00:00",
+   "model": "llama3.2",
+   "question": "SSE contentSchema missing in OpenAPI after route is included via include_router\n\n\n```python\nimport json\r\nfrom collections.abc import AsyncIterator\r\n\r\nimport fastapi\r\nfrom fastapi import APIRouter, FastAPI\r\nfrom fastapi.sse import EventSourceResponse\r\nfrom pydantic import BaseModel\r\n\r\n\r\nclass MyEvent(BaseModel):\r\n    type: str\r\n    content: str\r\n\r\nprint(fastapi.__version__)\r\n\r\nprint(\"#\" * 80)\r\nprint(\"direct\")\r\nprint(\"#\" * 80)\r\n\r\napp = FastAPI()\r\n\r\n@app.post(\"/direct\", response_class=EventSourceResponse)\r\nasync def direct() -> AsyncIterator[MyEvent]:\r\n    yield MyEvent(type=\"a\", content=\"b\")\r\n\r\nprint(json.dumps(app.openapi(), indent=2))\r\n\r\nprint(\"#\" * 80)\r\nprint(\"nested\")\r\nprint(\"#\" * 80)\r\n\r\napp = FastAPI()\r\nrouter = APIRouter()\r\n\r\n@router.post(\"/nested\", response_class=EventSourceResponse)\r\nasync def nested() -> AsyncIterator[MyEvent]:\r\n    yield MyEvent(type=\"a\", content=\"b\")\r\n\r\napp.include_router(router)\r\n\r\nprint(json.dumps(app.openapi(), indent=2))\n```\n\n\n\n\nWhen an SSE endpoint (`response_class=EventSourceResponse`) is defined on an `APIRouter`, and that router is included into a parent router via `include_router` (with or without a prefix), the `_EffectiveRouteContext`\r\n\r\nhttps://github.com/fastapi/fastapi/blob/[redacted]/fastapi/routing.py#L1315\r\n\r\ncreated during the include loses `stream_item_type`. As a result, the OpenAPI schema for the included endpoint shows only the generic SSE envelope (`data: string`) instead of including a `contentSchema` that references the actual event type.\r\n\r\n**Expected:** Both `/direct` and `/nested` should include `contentSchema` in the OpenAPI `text/event-stream` entry.\r\n\r\n**Actual:**\r\n\r\n<details><summary>Full script output</summary>\r\n<p>\r\n\r\n```\r\n################################################################################\r\ndirect\r\n################################################################################\r\n{\r\n  \"openapi\": \"3.1.0\",\r\n  \"info\": {\r\n    \"title\": \"FastAPI\",\r\n    \"version\": \"0.1.0\"\r\n  },\r\n  \"paths\": {\r\n    \"/direct\": {\r\n      \"post\": {\r\n        \"summary\": \"Direct\",\r\n        \"operationId\": \"direct_direct_post\",\r\n        \"responses\": {\r\n          \"200\": {\r\n            \"description\": \"Successful Response\",\r\n            \"content\": {\r\n              \"text/event-stream\": {\r\n                \"itemSchema\": {\r\n                  \"type\": \"object\",\r\n                  \"properties\": {\r\n                    \"data\": {\r\n                      \"type\": \"string\",\r\n                      \"contentMediaType\": \"application/json\",\r\n                      \"contentSchema\": {\r\n                        \"$ref\": \"#/components/schemas/MyEvent\"\r\n                      }\r\n                    },\r\n                    \"event\": {\r\n                      \"type\": \"string\"\r\n                    },\r\n                    \"id\": {\r\n                      \"type\": \"string\"\r\n                    },\r\n                    \"retry\": {\r\n                      \"type\": \"integer\",\r\n                      \"minimum\": 0\r\n                    }\r\n                  },\r\n                  \"required\": [\r\n                    \"data\"\r\n                  ]\r\n                }\r\n              }\r\n            }\r\n          }\r\n        }\r\n      }\r\n    }\r\n  },\r\n  \"components\": {\r\n    \"schemas\": {\r\n      \"MyEvent\": {\r\n        \"properties\": {\r\n          \"type\": {\r\n            \"type\": \"string\",\r\n            \"title\": \"Type\"\r\n          },\r\n          \"content\": {\r\n            \"type\": \"string\",\r\n            \"title\": \"Content\"\r\n          }\r\n        },\r\n        \"type\": \"object\",\r\n        \"required\": [\r\n          \"type\",\r\n          \"content\"\r\n        ],\r\n        \"title\": \"MyEvent\"\r\n      }\r\n    }\r\n  }\r\n}\r\n################################################################################\r\nnested\r\n################################################################################\r\n{\r\n  \"openapi\": \"3.1.0\",\r\n  \"info\": {\r\n    \"title\": \"FastAPI\",\r\n    \"version\": \"0.1.0\"\r\n  },\r\n  \"paths\": {\r\n    \"/nested\": {\r\n      \"post\": {\r\n        \"summary\": \"Nested\",\r\n        \"operationId\": \"nested_nested_post\",\r\n        \"responses\": {\r\n          \"200\": {\r\n            \"description\": \"Successful Response\",\r\n            \"content\": {\r\n              \"text/event-stream\": {\r\n                \"itemSchema\": {\r\n                  \"type\": \"object\",\r\n                  \"properties\": {\r\n                    \"data\": {\r\n                      \"type\": \"string\"\r\n                    },\r\n                    \"event\": {\r\n                      \"type\": \"string\"\r\n                    },\r\n                    \"id\": {\r\n                      \"type\": \"string\"\r\n                    },\r\n                    \"retry\": {\r\n                      \"type\": \"integer\",\r\n                      \"minimum\": 0\r\n                    }\r\n                  }\r\n                }\r\n              }\r\n            }\r\n          }\r\n        }\r\n      }\r\n    }\r\n  }\r\n}\r\n```\r\n\r\n</p>\r\n</details> \r\n\r\n```\r\n[...]\r\n################################################################################\r\ndirect\r\n################################################################################\r\n[...]\r\n            \"content\": {\r\n              \"text/event-stream\": {\r\n                \"itemSchema\": {\r\n                  \"type\": \"object\",\r\n                  \"properties\": {\r\n                    \"data\": {\r\n                      \"type\": \"string\",\r\n                      \"contentMediaType\": \"application/json\",\r\n                      \"contentSchema\": {\r\n                        \"$ref\": \"#/components/schemas/MyEvent\"\r\n                      }\r\n                    },\r\n                    \"event\": {\r\n                      \"type\": \"string\"\r\n                    },\r\n                    \"id\": {\r\n                      \"type\": \"string\"\r\n                    },\r\n                    \"retry\": {\r\n                      \"type\": \"integer\",\r\n                      \"minimum\": 0\r\n                    }\r\n                  },\r\n                  \"required\": [\r\n                    \"data\"\r\n                  ]\r\n[...]\r\n################################################################################\r\nnested\r\n################################################################################\r\n[...]\r\n            \"content\": {\r\n              \"text/event-stream\": {\r\n                \"itemSchema\": {\r\n                  \"type\": \"object\",\r\n                  \"properties\": {\r\n                    \"data\": {\r\n                      \"type\": \"string\"\r\n                    },\r\n                    \"event\": {\r\n                      \"type\": \"string\"\r\n                    },\r\n                    \"id\": {\r\n                      \"type\": \"string\"\r\n                    },\r\n                    \"retry\": {\r\n                      \"type\": \"integer\",\r\n                      \"minimum\": 0\r\n                    }\r\n[...]\r\n```\r\n\r\n`_populate_api_route_state()`\r\n\r\nhttps://github.com/fastapi/fastapi/blob/[redacted]/fastapi/routing.py#L897\r\n\r\nextracts `stream_item_type` from the return annotation only when `response_model` is a `DefaultPlaceholder`\r\n\r\nhttps://github.com/fastapi/fastapi/blob/[redacted]/fastapi/routing.py#L933\r\n\r\nThe first `__init__` correctly does this (since `response_model=Default(None)` is the default). However, inside the `__init__`, `response_model` is then set to `None`.\r\n\r\nWhen `_EffectiveRouteContext.from_api_route()`\r\n\r\nhttps://github.com/fastapi/fastapi/blob/[redacted]/fastapi/routing.py#L1367\r\n\r\nlater re-creates the route during `include_router`, it passes `response_model=route.response_model`\r\n\r\nhttps://github.com/fastapi/fastapi/blob/[redacted]/fastapi/routing.py#L1379\r\n\r\n which is now `None` (not `DefaultPlaceholder`). The second call to `_populate_api_route_state` skips the extraction entirely, leaving `stream_item_type` and `stream_item_field` as `None`. The OpenAPI generator\r\n\r\nhttps://github.com/fastapi/fastapi/blob/[redacted]/fastapi/openapi/utils.py#L376\r\n\r\nthen falls back to the plain SSE envelope.\r\n\r\nThe fix is in `from_api_route()` (or the `_populate_api_route_state()` call site within it): when `route.response_model` is `None` but the route is an SSE stream, `Default(None)` should be passed instead to preserve the original intent.\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/server-sent-events.md#2",
+    "tutorial/server-sent-events.md#6",
+    "advanced/path-operation-advanced-configuration.md#9"
+   ],
+   "scores": [
+    0.0323,
+    0.032,
+    0.0306
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 4.42,
+   "check_seconds": 14.42,
+   "answer_seconds": null,
+   "prompt_tokens": 2646,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 2646,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 14.2,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 14197,
+   "title": "RecursionError when endpoint returns State stored in dataclass",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "61444e09a123",
+   "time": "2026-10-22T07:00:44+00:00",
+   "model": "llama3.2",
+   "question": "RecursionError when endpoint returns State stored in dataclass\n\n\n```python\nimport uvicorn\r\nfrom dataclasses import dataclass\r\nfrom fastapi import FastAPI, Request\r\nfrom fastapi.datastructures import State\r\n\r\napp = FastAPI()\r\n\r\n@dataclass\r\nclass Wrapper:\r\n    s: State\r\n\r\n@app.get(\"/\")\r\nasync def index(request: Request):\r\n    return Wrapper(s=request.state)\r\n\r\nuvicorn.run(app)\n```\n\n\n\n\n- start the server and visit `/` in any browser\r\n- RecursionError\r\n\r\n```\r\nFile \"~/.pyenv/versions/3.12.6/lib/python3.12/site-packages/fastapi/routing.py\", line 327, in app\r\n    content = await serialize_response(\r\n              ^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"~/.pyenv/versions/3.12.6/lib/python3.12/site-packages/fastapi/routing.py\", line 201, in serialize_response\r\n    return jsonable_encoder(response_content)\r\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"~/.pyenv/versions/3.12.6/lib/python3.12/site-packages/fastapi/encoders.py\", line 244, in jsonable_encoder\r\n    obj_dict = dataclasses.asdict(obj)\r\n               ^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"~/.pyenv/versions/3.12.6/lib/python3.12/dataclasses.py\", line 1329, in asdict\r\n    return _asdict_inner(obj, dict_factory)\r\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"~/.pyenv/versions/3.12.6/lib/python3.12/dataclasses.py\", line 1339, in _asdict_inner\r\n    f.name: _asdict_inner(getattr(obj, f.name), dict)\r\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"~/.pyenv/versions/3.12.6/lib/python3.12/dataclasses.py\", line 1386, in _asdict_inner\r\n    return copy.deepcopy(obj)\r\n           ^^^^^^^^^^^^^^^^^^\r\n  File \"~/.pyenv/versions/3.12.6/lib/python3.12/copy.py\", line 162, in deepcopy\r\n    y = _reconstruct(x, memo, *rv)\r\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"~/.pyenv/versions/3.12.6/lib/python3.12/copy.py\", line 260, in _reconstruct\r\n    if hasattr(y, '__setstate__'):\r\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"~/.pyenv/versions/3.12.6/lib/python3.12/site-packages/starlette/datastructures.py\", line 668, in __getattr__\r\n    return self._state[key]\r\n           ^^^^^^^^^^^\r\n  File \"~/.pyenv/versions/3.12.6/lib/python3.12/site-packages/starlette/datastructures.py\", line 668, in __getattr__\r\n    return self._state[key]\r\n           ^^^^^^^^^^^\r\n  File \"~/.pyenv/versions/3.12.6/lib/python3.12/site-packages/starlette/datastructures.py\", line 668, in __getattr__\r\n    return self._state[key]\r\n           ^^^^^^^^^^^\r\n  [Previous line repeated 967 more times]\r\nRecursionError: maximum recursion depth exceeded\r\n```\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "advanced/dataclasses.md#1",
+    "index.md#16",
+    "deployment/manually.md#7"
+   ],
+   "scores": [
+    0.0301,
+    0.0289,
+    0.0284
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 2.05,
+   "check_seconds": 8.01,
+   "answer_seconds": null,
+   "prompt_tokens": 1519,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1519,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 7.71,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13398,
+   "title": "Is there any plan to document that CORS headers are not applied in ServerErrorMiddleware?",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "dc5cb8be538f",
+   "time": "2026-10-22T07:00:54+00:00",
+   "model": "llama3.2",
+   "question": "Is there any plan to document that CORS headers are not applied in ServerErrorMiddleware?\n\n### First Check\r\n\r\n- [X] I added a very descriptive title here.\r\n- [X] I used the GitHub search to find a similar question and didn't find it.\r\n- [X] I searched the FastAPI documentation, with the integrated search.\r\n- [X] I already searched in Google \"How to X in FastAPI\" and didn't find any information.\r\n- [X] I already read and followed all the tutorial in the docs and didn't find an answer.\r\n- [X] I already checked if it is not related to FastAPI but to [Pydantic](https://github.com/pydantic/pydantic).\r\n- [X] I already checked if it is not related to FastAPI but to [Swagger UI](https://github.com/swagger-api/swagger-ui).\r\n- [X] I already checked if it is not related to FastAPI but to [ReDoc](https://github.com/Redocly/redoc).\r\n\r\n### Commit to Help\r\n\r\n- [X] I commit to help with one of those options 👆\r\n\r\n### Example Code\r\n\r\n```python\r\nfrom fastapi import FastAPI, status, HTTPException, Request, Response\r\n\r\napp = FastAPI(title=\"FastAPI CORS Test\", version=\"0.1.0\")\r\n\r\nfrom fastapi.middleware.cors import CORSMiddleware\r\n\r\napp.add_middleware(CORSMiddleware, allow_origins=[\"*\"], allow_credentials=False, allow_methods=[\"*\"], allow_headers=[\"*\"], )\r\n\r\n\r\n##################\r\n# exception case #\r\n##################\r\n@app.get(\"/exception\")\r\nasync def throws_exception():\r\n    # This will not show \"access-control-allow-origin: *\" header\r\n    raise Exception(\"No!\")\r\n\r\n#######################\r\n# http exception case #\r\n#######################\r\n@app.get(\"/exception/http\")\r\nasync def throws_http_exception():\r\n    # This will show \"access-control-allow-origin: *\" header\r\n    raise HTTPException(\r\n        status_code=status.[redacted],\r\n        detail=\"Go! HttpException!\"\r\n    )\r\n\r\n@app.exception_handler(Exception)\r\nasync def handle_general_exception(req: Request, exc: Exception):\r\n    return Response(status_code=status.[redacted],content=\"Go! Exception!\")\r\n```\r\n\r\n\r\n### Description\r\n\r\nThis issue was discussed in [8072](https://github.com/fastapi/fastapi/discussions/8027). I would like to ask if there is any official approach to address this problem or if there are any plans to document it in the official FastAPI documentation.\r\n\r\nThe root cause of this problem is that when configuring a Starlette app(by default), responses with a status code of 500 or exceptions that extend from [Exception](https://docs.python.org/3.13/library/exceptions.html#Exception) bypass the CORSMiddleware and are handled directly by ServerErrorMiddleware, resulting in the absence of the `access-control-allow-origin` header:\r\n\r\n![Starlette Middleware Chain](https://github.com/user-attachments/assets/[redacted])\r\n\r\n\r\nI was able to find the cause and workarounds for this issue in the `GitHub Issue`, but my colleagues have expressed concerns about this issue not being covered in the official FastAPI document.\r\n\r\nOne potential solution is to modify the exception handler for exceptions extending [Exception](https://docs.python.org/3.13/library/exceptions.html#Exception) so that it attaches a response containing the access-control-allow-origin header, thus enabling ServerErrorMiddleware to handle the response appropriately, like:\r\n\r\n```python\r\n@app.exception_handler(Exception)\r\nasync def handle_general_exception(req: Request, exc: Exception):\r\n    return Response(\r\n        status_code=status.[redacted],\r\n        content=\"Go! Exception!\",\r\n        headers={\"access-control-allow-origin\": \"*\"}\r\n    )\r\n```\r\n\r\n Would it be possible to add this as a `known issue` or `tip` in the [handling errors](https://fastapi.tiangolo.com/tutorial/handling-errors/) document or another official document?\r\n\r\nIf needed, I’d be happy to help with this.\r\n\r\n### Operating System\r\n\r\nmacOS\r\n\r\n### Operating System Details\r\n\r\n_No response_\r\n\r\n### FastAPI Version\r\n\r\n0.115.8\r\n\r\n### Pydantic Version\r\n\r\n2.10.6\r\n\r\n### Python Version\r\n\r\n3.12.7\r\n\r\n### Additional Context\r\n\r\n_No response_",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/cors.md#4",
+    "tutorial/handling-errors.md#6",
+    "tutorial/handling-errors.md#5"
+   ],
+   "scores": [
+    0.0325,
+    0.0315,
+    0.0304
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 2.38,
+   "check_seconds": 9.51,
+   "answer_seconds": null,
+   "prompt_tokens": 1832,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1832,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 9.31,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 14037,
+   "title": "Form field alias is not respected in Swagger UI",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "f25c5faaace4",
+   "time": "2026-10-22T07:01:06+00:00",
+   "model": "llama3.2",
+   "question": "Form field alias is not respected in Swagger UI\n\n\n```python\nfrom fastapi import FastAPI, UploadFile, File, Form, APIRouter\r\n\r\nrouter = APIRouter()\r\n\r\n@router.post(\"/upload\")\r\nasync def test(\r\n    myfile: UploadFile = File(..., description=\"File to upload\"),\r\n    user_id: int = Form(..., description=\"User ID\", alias=\"userId\"),\r\n):\r\n    return {\"user_id\": user_id}\n```\n\n\n\n\nI’ve noticed that when using `Form` parameters with an `alias`, the alias is not displayed in Swagger UI. Instead, the original Python name is shown.  \r\n\r\n**Expected behavior**\r\nIn the generated Swagger UI, the parameter should be displayed as userId (the alias).\r\n\r\n**Actual behavior**\r\nSwagger shows the parameter as user_id (the original field name).\r\n\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/request-forms.md#2",
+    "tutorial/request-forms-and-files.md#2",
+    "tutorial/request-files.md#2"
+   ],
+   "scores": [
+    0.0318,
+    0.0288,
+    0.0257
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.38,
+   "check_seconds": 5.09,
+   "answer_seconds": null,
+   "prompt_tokens": 1039,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1039,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 4.94,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13566,
+   "title": "Can I use more than 1 Query Parameter Model",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "5c75b39041a0",
+   "time": "2026-10-22T07:01:12+00:00",
+   "model": "llama3.2",
+   "question": "Can I use more than 1 Query Parameter Model\n\n\n```python\nfrom typing import Annotated, Literal\r\n\r\nfrom fastapi import FastAPI, Query\r\nfrom pydantic import BaseModel, Field\r\n\r\napp = FastAPI()\r\n\r\n\r\nclass FilterParams(BaseModel):\r\n    limit: int = Field(100, gt=0, le=100)\r\n    offset: int = Field(0, ge=0)\r\n    order_by: Literal[\"created_at\", \"updated_at\"] = \"created_at\"\r\n    tags: list[str] = []\r\n\r\n\r\nclass MoreParams(BaseModel):\r\n    extra_param: str = Field(\r\n        ...,\r\n        description=\"An extra parameter\",\r\n    )\r\n    another_param: str = Field(\r\n        None,\r\n        alias=\"identifier\",\r\n        description=\"Another Parameter\",\r\n    )\r\n\r\n@app.get(\"/items/\")\r\nasync def read_items(\r\n        filter_params: Annotated[FilterParams, Query()],\r\n        more_params: Annotated[MoreParams, Query()]\r\n    ) -> str:\r\n        return \"NA\"\n```\n\n\n\n\nI'm having trouble getting multiple query parameter objects to work using the method described in the docs. \r\nWhen I try the example code included in this post the OpenAPI docs look like this:\r\n![image](https://github.com/user-attachments/assets/[redacted])\r\n\r\n\r\nI've had this working in past versions of FastAPI using Depends() like this:\r\n\r\n```\r\nfrom typing import Literal\r\n\r\nfrom fastapi import Depends, FastAPI\r\nfrom pydantic import BaseModel, Field\r\n\r\napp = FastAPI()\r\n\r\n\r\nclass FilterParams(BaseModel):\r\n    limit: int = Field(100, gt=0, le=100)\r\n    offset: int = Field(0, ge=0)\r\n    order_by: Literal[\"created_at\", \"updated_at\"] = \"created_at\"\r\n    tags: list[str] = []\r\n\r\n\r\nclass MoreParams(BaseModel):\r\n    extra_param: str = Field(\r\n        ...,\r\n        description=\"An extra parameter\",\r\n    )\r\n    another_param: str = Field(\r\n        None,\r\n        alias=\"identifier\",\r\n        description=\"Another Parameter\",\r\n    )\r\n\r\n@app.get(\"/items/\")\r\nasync def read_items(\r\n        filter_params: FilterParams = Depends(),\r\n        more_params: MoreParams = Depends()\r\n    ) -> str:\r\n        return \"NA\"\r\n\r\n```\r\nHowever, this doesn't seem to work correctly. Note that the \"tags\" parameter is missing from the docs.\r\n![image](https://github.com/user-attachments/assets/[redacted])\r\n\r\n\r\nI'm not sure what I'm doing wrong here and to be honest I am not understanding the difference in semantics between using Query() and using Depends().\r\n\r\nAny help will be much appreciated. Thank you.\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/query-param-models.md#1",
+    "tutorial/query-param-models.md#3",
+    "release-notes.md#536"
+   ],
+   "scores": [
+    0.0328,
+    0.032,
+    0.0318
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 1.47,
+   "check_seconds": 7.9,
+   "answer_seconds": null,
+   "prompt_tokens": 1579,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1579,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 7.75,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13811,
+   "title": "Using type alias with Annotated + Depends breaks when returning a Pydantic model — is this expected?",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "baa65b449c00",
+   "time": "2026-10-22T07:01:21+00:00",
+   "model": "llama3.2",
+   "question": "Using type alias with Annotated + Depends breaks when returning a Pydantic model — is this expected?\n\n\n```python\nfrom fastapi import FastAPI, Depends, HTTPException\r\nfrom typing import Annotated\r\nfrom pydantic import BaseModel\r\n\r\napp = FastAPI()\r\n\r\nclass TokenModel(BaseModel):\r\n    token: [redacted]\r\n\r\ndef token_dep(token: [redacted] -> TokenModel:\r\n    if token != \"valid\":\r\n        raise HTTPException(status_code=400, detail=\"Invalid token\")\r\n    return TokenModel(token=[redacted]\r\n\r\n# This works\r\nTokenDep = Annotated[TokenModel, Depends(token_dep)]\r\n\r\n@app.get(\"/ok\")\r\ndef ok_route(dep: TokenDep):\r\n    return dep\r\n\r\n# This breaks\r\ntype TokenDepType = Annotated[TokenModel, Depends(token_dep)]\r\n\r\n@app.get(\"/fail\")\r\ndef fail_route(dep: TokenDepType):\r\n    return dep\n```\n\n\n\n\nI’m experimenting with Python 3.12 and the new [type alias syntax from PEP 695](https://peps.python.org/pep-0695/). I’m running into an issue when combining it with FastAPI’s dependency injection and Pydantic models.\r\n\r\nUsing `Annotated[Model, Depends(func)]` with a regular assignment works fine. But when I replace it with a type alias, it silently fails and produces a 422 Unprocessable Entity if the dependency returns a Pydantic model. Without Pydantic, it behaves as expected.\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/dependencies/dependencies-in-path-operation-decorators.md#6",
+    "tutorial/dependencies/dependencies-in-path-operation-decorators.md#5",
+    "tutorial/dependencies/dependencies-in-path-operation-decorators.md#4"
+   ],
+   "scores": [
+    0.032,
+    0.032,
+    0.0308
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.63,
+   "check_seconds": 4.67,
+   "answer_seconds": null,
+   "prompt_tokens": 960,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 960,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 4.53,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 16466,
+   "title": "Telemetry: a request left out with exclude still records into the outer request's telemetry when nested in it",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "8d8cf83012e6",
+   "time": "2026-10-22T07:01:26+00:00",
+   "model": "llama3.2",
+   "question": "Telemetry: a request left out with exclude still records into the outer request's telemetry when nested in it\n\n\n```python\nimport asyncio\r\nimport sys\r\n\r\nimport fastapi\r\nimport httpx\r\nfrom fastapi import FastAPI\r\nfrom fastapi.telemetry import get_telemetry_data\r\nfrom opentelemetry import _logs, metrics, trace\r\nfrom opentelemetry.sdk._logs import LoggerProvider\r\nfrom opentelemetry.sdk._logs.export import InMemoryLogRecordExporter, SimpleLogRecordProcessor\r\nfrom opentelemetry.sdk.metrics import MeterProvider\r\nfrom opentelemetry.sdk.metrics.export import InMemoryMetricReader\r\nfrom opentelemetry.sdk.trace import TracerProvider\r\nfrom opentelemetry.sdk.trace.export import SimpleSpanProcessor\r\nfrom opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter\r\n\r\nspans = InMemorySpanExporter()\r\ntracer_provider = TracerProvider()\r\ntracer_provider.add_span_processor(SimpleSpanProcessor(spans))\r\ntrace.set_tracer_provider(tracer_provider)\r\nreader = InMemoryMetricReader()\r\nmetrics.set_meter_provider(MeterProvider(metric_readers=[reader]))\r\nlogs = InMemoryLogRecordExporter()\r\nlogger_provider = LoggerProvider()\r\nlogger_provider.add_log_record_processor(SimpleLogRecordProcessor(logs))\r\n_logs.set_logger_provider(logger_provider)\r\n\r\n\r\ndef is_internal(scope) -> bool:\r\n    # httpx's ASGITransport puts the base URL's host into scope[\"server\"]\r\n    return (scope.get(\"server\") or (None,))[0] == \"internal.local\"\r\n\r\n\r\napp = FastAPI(telemetry={\"auto_configure\": False, \"exclude\": is_internal})\r\n# an in-process client to the same app, e.g. an MCP server or a BFF calling its own API\r\ninternal = httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=\"http://internal.local\")\r\n\r\n\r\n@app.get(\"/inner\")\r\ndef inner(n: int) -> dict:\r\n    return {\"n\": n}\r\n\r\n\r\n@app.get(\"/outer\")\r\nasync def outer(n: str) -> dict:\r\n    response = await internal.get(\"/inner\", params={\"n\": n})\r\n    data = get_telemetry_data()\r\n    return {\"inner_status\": response.status_code, \"outer_request_url\": str(data.request.url)}\r\n\r\n\r\nasync def main() -> None:\r\n    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=\"http://testserver\") as client:\r\n        print(\"/outer?n=1  ->\", (await client.get(\"/outer\", params={\"n\": \"1\"})).json())\r\n        print(\"/outer?n=x  ->\", (await client.get(\"/outer\", params={\"n\": \"x\"})).json())\r\n\r\n\r\nasyncio.run(main())\r\n\r\nprint(f\"\\nfastapi {fastapi.__version__}, Python {sys.version.split()[0]}\")\r\nprint(\"\\nspans (name, parent span name):\")\r\nby_id = {span.context.span_id: span.name for span in spans.get_finished_spans()}\r\nfor span in spans.get_finished_spans():\r\n    print(f\"  {span.name:24} parent={by_id.get(span.parent.span_id) if span.parent else None}\")\r\nprint(\"\\nhttp.server.request.duration by route:\")\r\nfor resource in reader.get_metrics_data().resource_metrics:\r\n    for scope in resource.scope_metrics:\r\n        for metric in scope.metrics:\r\n            if metric.name == \"http.server.request.duration\":\r\n                for point in metric.data.data_points:\r\n                    print(f\"  {point.attributes.get('http.route')}: {point.count}\")\r\nprint(\"\\nlog records:\")\r\nfor record in logs.get_finished_logs():\r\n    log = record.log_record\r\n    print(f\"  {log.event_name}: {log.body!r} attributes={dict(log.attributes or {})}\")\n```\n\n\n\n\nI call my own FastAPI app in-process (an MCP server calling its REST API through `httpx.ASGITransport`) and leave those inner requests out of the native telemetry with `telemetry={\"exclude\": ...}`. The inner request then gets no server span and no duration metric, as expected. But because it runs inside the outer request's OpenTelemetry context, three things still land on the outer request:\r\n\r\n- its operation spans (`fastapi.dependencies`, `fastapi.endpoint`, `fastapi.serialization`) are recorded under the outer request's span;\r\n- its request data overwrites the outer request's `TelemetryData`: `get_telemetry_data()` in `/outer` returns the inner request's URL;\r\n- its validation failure is logged as `fastapi.validation.failed` with `http.route=/outer`, although `/outer` was valid.\r\n\r\nOutput of the example:\r\n\r\n```\r\n/outer?n=1  -> {'inner_status': 200, 'outer_request_url': 'http://internal.local/inner?n=1'}\r\n/outer?n=x  -> {'inner_status': 422, 'outer_request_url': 'http://internal.local/inner?n=x'}\r\n\r\nfastapi 0.142.2, Python 3.13.3\r\n\r\nspans (name, parent span name):\r\n  fastapi.dependencies     parent=GET /outer\r\n  fastapi.dependencies     parent=fastapi.endpoint\r\n  fastapi.endpoint         parent=fastapi.endpoint\r\n  fastapi.serialization    parent=fastapi.endpoint\r\n  fastapi.endpoint         parent=GET /outer\r\n  fastapi.serialization    parent=GET /outer\r\n  GET /outer               parent=None\r\n  fastapi.dependencies     parent=GET /outer\r\n  fastapi.dependencies     parent=fastapi.endpoint\r\n  fastapi.endpoint         parent=GET /outer\r\n  fastapi.serialization    parent=GET /outer\r\n  GET /outer               parent=None\r\n\r\nhttp.server.request.duration by route:\r\n  /outer: 2\r\n\r\nlog records:\r\n  fastapi.validation.failed: 'Request validation failed' attributes={'fastapi.validation.error_count': 1, 'http.route': '/outer'}\r\n```\r\n\r\nI expected an excluded request to be invisible to fastapi's telemetry, including these context-based lookups, while the current span stays in place so other instrumentation still nests under the outer span. If inheriting is intended, it would help to document that `exclude` only covers the server span, the metrics and the exception log.\r\n\r",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "advanced/opentelemetry.md#12",
+    "advanced/opentelemetry.md#7",
+    "advanced/opentelemetry.md#9"
+   ],
+   "scores": [
+    0.0325,
+    0.032,
+    0.0318
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 3.73,
+   "check_seconds": 10.99,
+   "answer_seconds": null,
+   "prompt_tokens": 2087,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 2087,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 10.79,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13373,
+   "title": "Incorrect response status code with missing token",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "c175d65fba38",
+   "time": "2026-10-22T07:01:41+00:00",
+   "model": "llama3.2",
+   "question": "Incorrect response status code with missing token\n\n\n```python\nfrom fastapi import Depends, FastAPI\r\nfrom fastapi.security import APIKeyQuery\r\n\r\napp = FastAPI()\r\n\r\nquery_scheme = APIKeyQuery(name=\"api_key\")\r\n\r\n\r\n@app.get(\"/items/\")\r\nasync def read_items(api_key: [redacted] = Depends(query_scheme)):\r\n    return {\"api_key\": api_key}\n```\n\n\n\n\n1. Run the attached example\r\n2. Make a request without passing `api_key`\r\n\r\n**The expected behavior**\r\nResponse with status code 401. \r\n\r\n**Actual behavior** \r\nResponse with status code 403.\r\n\r\n\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/security/first-steps.md#2",
+    "how-to/authentication-error-status-code.md#1",
+    "reference/status.md#1"
+   ],
+   "scores": [
+    0.0311,
+    0.0286,
+    0.0281
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.25,
+   "check_seconds": 2.58,
+   "answer_seconds": null,
+   "prompt_tokens": 556,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 556,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 2.4,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13873,
+   "title": "Bug with Pydantic Alias Validation",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "7bcd71fb451b",
+   "time": "2026-10-22T07:01:44+00:00",
+   "model": "llama3.2",
+   "question": "Bug with Pydantic Alias Validation\n\n\n```python\nfrom typing import Annotated\r\n\r\nfrom fastapi import FastAPI, Query\r\nfrom pydantic import AliasChoices, BaseModel, ConfigDict, Field\r\n\r\napp = FastAPI()\r\n\r\n\r\nclass QueryParams(BaseModel):\r\n    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)\r\n    my_field = Field(alias=\"myFieldAlias\", validation_alias=AliasChoices(\"myFieldAlias\", \"my_field\"))\r\n\r\n\r\n@app.get(\"/\")\r\ndef test(query_params: Annotated[QueryParams, Query()]):\r\n    return query_params\n```\n\n\n\n\nI would expect the validate_by_name and validate_by_alias features from Pydantic's Field to work as expected when parsing Query parameters.\r\n\r\nFor example, using the alias works\r\n```\r\ncurl \"http://localhost:8000/?myFieldAlias=abc\"\r\n```\r\n\r\nBut using the field name results in a validation error, despite validate_by_name being true.\r\n```\r\ncurl \"http://localhost:8000/?my_field=abc\"\r\n```\r\n\r\nFurther, if one just instantiates Pydantic instances in code, both of the following work as expected\r\n```\r\nQueryParams(my_field=\"abc\")\r\nQueryParams(myFieldAlias=\"abc\")\r\n```\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/query-params-str-validations.md#17",
+    "tutorial/query-param-models.md#3",
+    "tutorial/body-fields.md#2"
+   ],
+   "scores": [
+    0.0328,
+    0.031,
+    0.0306
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.67,
+   "check_seconds": 6.06,
+   "answer_seconds": null,
+   "prompt_tokens": 1242,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1242,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 5.94,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 14424,
+   "title": "starlette dependnecy seems to have been found with a CVE-2025-62727. Why does fastapi still allow the vulnerable version?",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "a651acd03244",
+   "time": "2026-10-22T07:01:50+00:00",
+   "model": "llama3.2",
+   "question": "starlette dependnecy seems to have been found with a CVE-2025-62727. Why does fastapi still allow the vulnerable version?\n\n\n```python\nNA\n```\n\n\n\n\nFast API pinned depndencies : https://github.com/fastapi/fastapi/blob/[redacted]/pyproject.toml#L48\r\n\r\nStarlette vulnerablitiy patch : https://github.com/advisories/GHSA-7f5h-v6xp-fcq8\r\n\r\nWhy does fastapi still allow the vulnerable version?\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "release-notes.md#1013",
+    "deployment/versions.md#0",
+    "release-notes.md#794"
+   ],
+   "scores": [
+    0.0274,
+    0.0265,
+    0.026
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.53,
+   "check_seconds": 2.65,
+   "answer_seconds": null,
+   "prompt_tokens": 572,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 572,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 2.53,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13776,
+   "title": "Query Parameters with a Pydantic Model with alias broken",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "c3857c236647",
+   "time": "2026-10-22T07:01:54+00:00",
+   "model": "llama3.2",
+   "question": "Query Parameters with a Pydantic Model with alias broken\n\n\n```python\nfrom typing import Annotated, Literal\r\n\r\nfrom fastapi import FastAPI, Query\r\nfrom pydantic import BaseModel, Field\r\n\r\napp_test = FastAPI()\r\n\r\nclass FilterParams(BaseModel):\r\n    simple: str  = Field()\r\n    simple2: str  = Field(alias=\"aliasname\",)\r\n\r\n@app_test.get(\"/items/\")\r\nasync def read_items(filter_query: Annotated[FilterParams, Query()]):\r\n    return filter_query\r\n\r\nasync def test_example(*mocks):\r\n    client = TestClient(app_test)\r\n\r\n    res = client.get(\r\n        \"items/?simple=aa&aliasname=bbb\"\r\n    )\r\n    assert res.status_code == 422\r\n    # This is the error response\r\n    assert res.json() == {\r\n       'detail': [\r\n           {\r\n               'input': {\r\n                   'simple': 'aa',\r\n                   'simple2': 'bbb',\r\n               },\r\n               'loc': [\r\n                   'query',\r\n                   'aliasname',\r\n               ],\r\n               'msg': 'Field required',\r\n               'type': 'missing',\r\n           },\r\n       ],\r\n    }\r\n\r\n    # I would have expected this\r\n    # assert res.json() == {\r\n    #     \"simple\": \"aa\",\r\n    #     \"simple2\": \"bbb\"\r\n    # }\n```\n\n\n\n\nFrom the error response \r\n``\r\n'input': {\r\n                   'simple': 'aa',\r\n                   'simple2': 'bbb',\r\n               },\r\n``\r\nit seems, that both parameters are correctly filled. Even the parameter with the alias.\r\nBut then somehow the alias is reported as missing.\r\n\r\nIn fastapi/dependencies/utils.py:797\r\n````python\r\n        v_, errors_ = _validate_value_with_model_field(\r\n            field=first_field, value=params_to_process, values=values, loc=loc\r\n        )\r\n````\r\nis the values correctly filled  but then the validate function reports an error.\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/query-param-models.md#1",
+    "tutorial/query-param-models.md#3",
+    "release-notes.md#537"
+   ],
+   "scores": [
+    0.0325,
+    0.0323,
+    0.0313
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.74,
+   "check_seconds": 6.76,
+   "answer_seconds": null,
+   "prompt_tokens": 1394,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1394,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 6.67,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13196,
+   "title": "jsonable_encoder fails to encode complex types inside union when the form is Type | list[Type]",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "c0d19fb6f1db",
+   "time": "2026-10-22T07:02:01+00:00",
+   "model": "llama3.2",
+   "question": "jsonable_encoder fails to encode complex types inside union when the form is Type | list[Type]\n\n### First Check\r\n\r\n- [X] I added a very descriptive title here.\r\n- [X] I used the GitHub search to find a similar question and didn't find it.\r\n- [X] I searched the FastAPI documentation, with the integrated search.\r\n- [X] I already searched in Google \"How to X in FastAPI\" and didn't find any information.\r\n- [X] I already read and followed all the tutorial in the docs and didn't find an answer.\r\n- [X] I already checked if it is not related to FastAPI but to [Pydantic](https://github.com/pydantic/pydantic).\r\n- [X] I already checked if it is not related to FastAPI but to [Swagger UI](https://github.com/swagger-api/swagger-ui).\r\n- [X] I already checked if it is not related to FastAPI but to [ReDoc](https://github.com/Redocly/redoc).\r\n\r\n### Commit to Help\r\n\r\n- [X] I commit to help with one of those options 👆\r\n\r\n### Example Code\r\n\r\n```python\r\nfrom typing import Union\r\nfrom pydantic import BaseModel\r\nfrom pydantic.networks import AnyUrl\r\n\r\nclass TestModel(BaseModel):\r\n  urlList: Union[AnyUrl, list[AnyUrl]]\r\n\r\na = TestModel(urlList=['http://example', 'http://example'])\r\njsonable_encoder(a)\r\n```\r\n\r\n\r\n### Description\r\n\r\nRunning the above code in python I get\r\n`{'urlList': \"[AnyUrl('http://example/'), AnyUrl('http://example/')]\"}`\r\nI'd expect to get\r\n`{'urlList': \"['http://example/', 'http://example/']\"}`\r\n\r\nIt seems to related to the form `Type | list[Type]`. In the above model for example, `Union[str, list[AnyUrl]]` returns the expected result.\r\n\r\n### Operating System\r\n\r\nLinux\r\n\r\n### Operating System Details\r\n\r\n_No response_\r\n\r\n### FastAPI Version\r\n\r\n0.115.6\r\n\r\n### Pydantic Version\r\n\r\n2.10.4\r\n\r\n### Python Version\r\n\r\nPython 3.13.1\r\n\r\n### Additional Context\r\n\r\n_No response_",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/extra-models.md#6",
+    "tutorial/response-model.md#18",
+    "tutorial/encoder.md#1"
+   ],
+   "scores": [
+    0.0325,
+    0.0313,
+    0.0305
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 1.01,
+   "check_seconds": 7.52,
+   "answer_seconds": null,
+   "prompt_tokens": 1506,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1506,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 7.32,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 14251,
+   "title": "APIRouter.include_router method should catch when its own object is passed",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "4d387505d1c6",
+   "time": "2026-10-22T07:02:10+00:00",
+   "model": "llama3.2",
+   "question": "APIRouter.include_router method should catch when its own object is passed\n\n### First Check\r\n\r\n- [X] I added a very descriptive title here.\r\n- [X] I used the GitHub search to find a similar question and didn't find it.\r\n- [X] I searched the FastAPI documentation, with the integrated search.\r\n- [X] I already searched in Google \"How to X in FastAPI\" and didn't find any information.\r\n- [X] I already read and followed all the tutorial in the docs and didn't find an answer.\r\n- [X] I already checked if it is not related to FastAPI but to [Pydantic](https://github.com/pydantic/pydantic).\r\n- [X] I already checked if it is not related to FastAPI but to [Swagger UI](https://github.com/swagger-api/swagger-ui).\r\n- [X] I already checked if it is not related to FastAPI but to [ReDoc](https://github.com/Redocly/redoc).\r\n\r\n### Commit to Help\r\n\r\n- [X] I commit to help with one of those options 👆\r\n\r\n### Example Code\r\n\r\n```python\r\nfrom fastapi import APIRouter\r\n\r\nrouter = APIRouter(prefix='/api')\r\n\r\nrouter.include_router(router) # Locks program\r\n```\r\n\r\n\r\n### Description\r\n\r\nPassing a router's own object into the `include_router` method results in FastAPI locking up, requiring the Python process to be terminated.\r\n\r\nThis should be resolved by checking `if router is self: ...` and then raising some error. This is preferred to the current implementation because currently type checkers will not raise any flags and may require some tedious debugging.\r\n\r\n### Operating System\r\n\r\nWindows, macOS\r\n\r\n### Operating System Details\r\n\r\n_No response_\r\n\r\n### FastAPI Version\r\n\r\n0.115.6\r\n\r\n### Pydantic Version\r\n\r\n2.10.3\r\n\r\n### Python Version\r\n\r\n3.13.3\r\n\r\n### Additional Context\r\n\r\n_No response_",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/bigger-applications.md#21",
+    "tutorial/bigger-applications.md#24",
+    "tutorial/bigger-applications.md#22"
+   ],
+   "scores": [
+    0.0298,
+    0.0297,
+    0.0291
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 1.02,
+   "check_seconds": 6.92,
+   "answer_seconds": null,
+   "prompt_tokens": 1398,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1398,
+     "output_tokens": 2,
+     "load_seconds": 0.02,
+     "read_seconds": 6.7,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 14044,
+   "title": "dependency_overrides not reflected in openapi",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "25ee9ce25fb4",
+   "time": "2026-10-22T07:02:18+00:00",
+   "model": "llama3.2",
+   "question": "dependency_overrides not reflected in openapi\n\n\r\n### Example Code\r\n\r\n```python\r\nimport uvicorn\r\nfrom fastapi import FastAPI, Depends\r\n\r\napp = FastAPI()\r\n\r\n\r\ndef getY(x: str):\r\n    return f'f({x})'\r\n\r\n\r\ndef getYOverride(x: int):\r\n    return f'f({x})'\r\n\r\n\r\n@app.get(\"/test\")\r\ndef test(y: str = Depends(getY)) -> str:\r\n    return y\r\n\r\napp.dependency_overrides[getY] = getYOverride\r\n\r\nif __name__ == '__main__':\r\n    uvicorn.run(\r\n        'main:app',\r\n        host='localhost',\r\n        port=45678,\r\n    )\r\n```\r\n\r\nWe can see in the documentation that the endpoint `/test` has a required query parameter `x` of type `str`, instead of `int`.\r\n\r\nIn `fastapi/openapi/utils.py`, in `get_fields_from_routes` we [can see](https://github.com/fastapi/fastapi/blob/[redacted]/fastapi/openapi/utils.py#L468) that the parameters are obtained from `route.dependant`. I suppose that if this function were given the `route` itself, it could use its `dependency_overrides_provider` to take into account the dependency_overrides.\r\n\r\n### Description\r\n\r\nThe OpenAPI specification generated by FastAPI doesn't seem to reflect the definitions in `dependency_overrides`.\r\n\r\n### Operating System\r\n\r\nLinux\r\n\r\n### Operating System Details\r\n\r\n_No response_\r\n\r\n### FastAPI Version\r\n\r\n0.116.1\r\n\r\n### Pydantic Version\r\n\r\n2.11.5\r\n\r\n### Python Version\r\n\r\n3.12\r\n\r\n### Additional Context\r\n\r\n_No response_",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/dependencies/index.md#3",
+    "tutorial/dependencies/index.md#6",
+    "tutorial/dependencies/classes-as-dependencies.md#5"
+   ],
+   "scores": [
+    0.0308,
+    0.0303,
+    0.0279
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.79,
+   "check_seconds": 6.8,
+   "answer_seconds": null,
+   "prompt_tokens": 1381,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1381,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 6.65,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 15547,
+   "title": "Custom APIRoute classes with explicit constructors fail after strict_content_type was added",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "d94f9472f2d8",
+   "time": "2026-10-22T07:02:25+00:00",
+   "model": "llama3.2",
+   "question": "Custom APIRoute classes with explicit constructors fail after strict_content_type was added\n\n### Summary\n\nRecent FastAPI versions added `strict_content_type` and now pass it through `APIRouter.add_api_route()` into the configured `route_class`. This breaks custom `APIRoute` subclasses that define an explicit constructor matching the previous public `APIRoute.__init__` signature.\n\nSubclasses that only override `get_route_handler()` still work, and subclasses using `**kwargs` still work. The regression affects subclasses that pinned the previously accepted constructor parameters and delegate them to `super().__init__()`.\n\n### Reproducer\n\n```python\nfrom enum import Enum\nfrom typing import Any, Callable, Sequence\n\nfrom fastapi import APIRouter, FastAPI, params\nfrom fastapi.datastructures import Default, DefaultPlaceholder\nfrom fastapi.responses import JSONResponse, Response\nfrom fastapi.routing import APIRoute\nfrom fastapi.types import IncEx\nfrom fastapi.utils import generate_unique_id\nfrom starlette.routing import BaseRoute\n\n\nclass LegacyRoute(APIRoute):\n    def __init__(\n        self,\n        path: str,\n        endpoint: Callable[..., Any],\n        *,\n        response_model: Any = Default(None),\n        status_code: int | None = None,\n        tags: list[str | Enum] | None = None,\n        dependencies: Sequence[params.Depends] | None = None,\n        summary: str | None = None,\n        description: str | None = None,\n        response_description: str = \"Successful Response\",\n        responses: dict[int | str, dict[str, Any]] | None = None,\n        deprecated: bool | None = None,\n        name: str | None = None,\n        methods: set[str] | list[str] | None = None,\n        operation_id: str | None = None,\n        response_model_include: IncEx | None = None,\n        response_model_exclude: IncEx | None = None,\n        response_model_by_alias: bool = True,\n        response_model_exclude_unset: bool = False,\n        response_model_exclude_defaults: bool = False,\n        response_model_exclude_none: bool = False,\n        include_in_schema: bool = True,\n        response_class: type[Response] | DefaultPlaceholder = Default(JSONResponse),\n        dependency_overrides_provider: Any | None = None,\n        callbacks: list[BaseRoute] | None = None,\n        openapi_extra: dict[str, Any] | None = None,\n        generate_unique_id_function: Callable[[APIRoute], str]\n        | DefaultPlaceholder = Default(generate_unique_id),\n    ) -> None:\n        super().__init__(\n            path,\n            endpoint,\n            response_model=response_model,\n            status_code=status_code,\n            tags=tags,\n            dependencies=dependencies,\n            summary=summary,\n            description=description,\n            response_description=response_description,\n            responses=responses,\n            deprecated=deprecated,\n            name=name,\n            methods=methods,\n            operation_id=operation_id,\n            response_model_include=response_model_include,\n            response_model_exclude=response_model_exclude,\n            response_model_by_alias=response_model_by_alias,\n            response_model_exclude_unset=response_model_exclude_unset,\n            response_model_exclude_defaults=response_model_exclude_defaults,\n            response_model_exclude_none=response_model_exclude_none,\n            include_in_schema=include_in_schema,\n            response_class=response_class,\n            dependency_overrides_provider=dependency_overrides_provider,\n            callbacks=callbacks,\n            openapi_extra=openapi_extra,\n            generate_unique_id_function=generate_unique_id_function,\n        )\n\n\napp = FastAPI()\nrouter = APIRouter(route_class=LegacyRoute)\n\n\n@router.get(\"/items\")\ndef read_items():\n    return {\"ok\": True}\n\n\napp.include_router(router)\n```\n\n### Current Behavior\n\nRoute registration fails with:\n\n```text\nTypeError: LegacyRoute.__init__() got an unexpected keyword argument 'strict_content_type'\n```\n\n### Expected Behavior\n\nExisting custom route classes that mirrored the previous `APIRoute.__init__` signature should continue to work, or FastAPI should make this breaking change explicit and document that custom route constructors must accept future keyword arguments.\n\n### Environment\n\n- FastAPI: current `master` at `e89a37e50`\n- Python: 3.13\n- Starlette: 1.0.0\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "how-to/custom-request-and-route.md#10",
+    "how-to/custom-request-and-route.md#9",
+    "how-to/custom-request-and-route.md#5"
+   ],
+   "scores": [
+    0.0328,
+    0.0313,
+    0.0305
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 2.25,
+   "check_seconds": 9.5,
+   "answer_seconds": null,
+   "prompt_tokens": 1800,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1800,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 9.32,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 15973,
+   "title": "Behavioral difference between standard `with`  and `contextmanager_in_threadpool`",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "13463031cc4b",
+   "time": "2026-10-22T07:02:37+00:00",
+   "model": "llama3.2",
+   "question": "Behavioral difference between standard `with`  and `contextmanager_in_threadpool`\n\n\n```python\nimport asyncio\r\nfrom fastapi.concurrency import contextmanager_in_threadpool\r\n\r\n\r\nclass TrackingCM:\r\n    \"\"\"Context manager that tracks whether __exit__ is called.\"\"\"\r\n    \r\n    def __init__(self, name: str):\r\n        self.name = name\r\n        self.exit_called = False\r\n    \r\n    def __enter__(self):\r\n        print(f\"  [{self.name}] __enter__ called\")\r\n        raise ValueError(\"setup failed\")\r\n    \r\n    def __exit__(self, exc_type, exc_val, exc_tb):\r\n        self.exit_called = True\r\n        print(f\"  [{self.name}] __exit__ called  <-- PEP 343 violation!\")\r\n\r\n\r\nasync def main():\r\n    print(\"=\" * 70)\r\n    print(\"Behavioral inconsistency with Python context manager protocol\")\r\n    print(\"=\" * 70)\r\n    \r\n    print(\"\\n1. Standard Python `with`:\")\r\n    cm1 = TrackingCM(\"standard\")\r\n    try:\r\n        with cm1:\r\n            pass\r\n    except ValueError:\r\n        pass\r\n    print(f\"   Result: exit_called = {cm1.exit_called}\")\r\n    print(f\"   OK: __exit__ NOT called when __enter__ raises\")\r\n    \r\n    print(\"\\n2. contextmanager_in_threadpool:\")\r\n    cm2 = TrackingCM(\"threadpool\")\r\n    try:\r\n        async with contextmanager_in_threadpool(cm2):\r\n            pass\r\n    except ValueError:\r\n        pass\r\n    print(f\"   Result: exit_called = {cm2.exit_called}\")\r\n    if cm2.exit_called:\r\n        print(f\"   FAIL: __exit__ IS called when __enter__ raises\")\r\n    \r\n    print(\"\\n\" + \"=\" * 70)\r\n    print(\"Root cause:\")\r\n    print(\"=\" * 70)\r\n    print(\"In fastapi/concurrency.py:\")\r\n    print(\"  try:\")\r\n    print(\"      yield await run_in_threadpool(cm.__enter__)  # if raises -> except\")\r\n    print(\"  except Exception as e:\")\r\n    print(\"      ok = bool(await anyio.to_thread.run_sync(cm.__exit__, ...))\")\r\n    print(\"\")\r\n    print(\"When __enter__ raises, the exception falls into `except`, and __exit__\")\r\n    print(\"is called. In standard Python `with`, if __enter__ raises, __exit__ is\")\r\n    print(\"NOT called (the context was never entered).\")\r\n    print(\"=\" * 70)\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    asyncio.run(main())\n```\n\n\n\n\nI`m wrapping a sync context manager with contextmanager_in_threadpool. When __enter__ raises, I expect __exit__ to NOT be called, per PEP 343 (the context was never entered). Instead, __exit__ IS called. See the Minimal Reproducible Example (MRE).\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/dependencies/dependencies-with-yield.md#17",
+    "advanced/events.md#5",
+    "tutorial/dependencies/dependencies-with-yield.md#16"
+   ],
+   "scores": [
+    0.0325,
+    0.0323,
+    0.0302
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 1.33,
+   "check_seconds": 7.78,
+   "answer_seconds": null,
+   "prompt_tokens": 1529,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1529,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 7.55,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 14326,
+   "title": "Incorrect handling of RootModel in fastapi/encoders.py",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "4988f7cac6a0",
+   "time": "2026-10-22T07:02:46+00:00",
+   "model": "llama3.2",
+   "question": "Incorrect handling of RootModel in fastapi/encoders.py\n\n\n```python\nfrom fastapi.encoders import jsonable_encoder\r\nfrom pydantic import RootModel\r\n\r\nclass Model(RootModel):\r\n    root: int\r\n\r\njsonable_encoder(Model(1))\n```\n\n\n\n\nIt seems like jsonable_encoder is mishandling Pydantic's new RootModel. The example raises\r\n\"argument of type 'int' is not iterable\", caused by this line:\r\n\r\nhttps://github.com/fastapi/fastapi/blob/[redacted]/fastapi/encoders.py#L241\r\n        if \"__root__\" in obj_dict:\r\n        \r\n__root__ is no longer used in Pydantic V2\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/encoder.md#1",
+    "how-to/migrate-from-pydantic-v1-to-pydantic-v2.md#7",
+    "how-to/migrate-from-pydantic-v1-to-pydantic-v2.md#5"
+   ],
+   "scores": [
+    0.0318,
+    0.0292,
+    0.0287
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.37,
+   "check_seconds": 5.49,
+   "answer_seconds": null,
+   "prompt_tokens": 1141,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1141,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 5.37,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 14366,
+   "title": "Request: dependency update starlette",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "68a061f93b95",
+   "time": "2026-10-22T07:02:52+00:00",
+   "model": "llama3.2",
+   "question": "Request: dependency update starlette\n\n\n```python\nNot relevant\n```\n\n\n\n\nStarlette 0.50.0 has been out for 2 weeks, but fastapi currently forces versions under this. \r\nPlease update the dependency requirements. \n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "release-notes.md#978",
+    "release-notes.md#1099",
+    "release-notes.md#969"
+   ],
+   "scores": [
+    0.0309,
+    0.0303,
+    0.0267
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.14,
+   "check_seconds": 2.9,
+   "answer_seconds": null,
+   "prompt_tokens": 625,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 625,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 2.78,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13637,
+   "title": "Post on a route with a get that has a variable in path results in method not allowed instead of 404",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "5c32d972cf3c",
+   "time": "2026-10-22T07:02:55+00:00",
+   "model": "llama3.2",
+   "question": "Post on a route with a get that has a variable in path results in method not allowed instead of 404\n\n\n```python\nimport uvicorn\r\nfrom fastapi import FastAPI\r\n\r\napp = FastAPI()\r\n\r\n\r\n@app.post(\"/test/test\")\r\ndef read_item():\r\n    return {\"post\": \"q\"}\r\n\r\n@app.get(\"/test/{item_id}\")\r\ndef read_root():\r\n    return {\"Hello\": \"World\"}\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    uvicorn.run(\"test:app\", reload=True, port=8000, host='127.0.0.1')\n```\n\n\n\n\nwhen theres a GET route that ends in a path variable and a post to a route that matches the get but with a fixed word in then it results in method not allowed 405.\r\n\r\n@app.get(\"/test/{item_id}\") \r\n@app.post(\"/test/test\") \r\n\r\ndoing a post to /test/test works fine\r\ndoing a post to /test/doesntexist returns method not allowed. \r\n\r\ni know its looking at the get route to match but obviously since its a post it throws the method not allowed error. \r\n\r\nshouldnt this rather throw a 404? \r\n\r\nwould the only way around it be to create a \"fake\" post route that raises a 404? ie\r\n\r\n```python\r\n@app.post(\"/test/test\")\r\ndef read_item():\r\n    return {\"post\": \"q\"}\r\n\r\n@app.get(\"/test/{item_id}\")\r\ndef read_root():\r\n    return {\"Hello\": \"World\"}\r\n\r\n@app.post(\"/test/{item_id}\", status_code=404, include_in_schema=False)\r\ndef faker_post_path():\r\n    raise HTTPException(status_code=404, detail=\"Path not found\")\r\n```\r\n\r\n\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/bigger-applications.md#8",
+    "tutorial/handling-errors.md#3",
+    "how-to/conditional-openapi.md#2"
+   ],
+   "scores": [
+    0.0317,
+    0.0305,
+    0.027
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.77,
+   "check_seconds": 6.74,
+   "answer_seconds": null,
+   "prompt_tokens": 1354,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1354,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 6.64,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 13372,
+   "title": "fastapi-cli major issue",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "2e7a0c1c116e",
+   "time": "2026-10-22T07:03:03+00:00",
+   "model": "llama3.2",
+   "question": "fastapi-cli major issue\n\n### First Check\r\n\r\n- [X] I added a very descriptive title here.\r\n- [X] I used the GitHub search to find a similar question and didn't find it.\r\n- [X] I searched the FastAPI documentation, with the integrated search.\r\n- [X] I already searched in Google \"How to X in FastAPI\" and didn't find any information.\r\n- [X] I already read and followed all the tutorial in the docs and didn't find an answer.\r\n- [X] I already checked if it is not related to FastAPI but to [Pydantic](https://github.com/pydantic/pydantic).\r\n- [X] I already checked if it is not related to FastAPI but to [Swagger UI](https://github.com/swagger-api/swagger-ui).\r\n- [X] I already checked if it is not related to FastAPI but to [ReDoc](https://github.com/Redocly/redoc).\r\n\r\n### Commit to Help\r\n\r\n- [X] I commit to help with one of those options 👆\r\n\r\n### Example Code\r\n\r\n```python\r\nfrom fastapi import FastAPI\r\n\r\napp = FastAPI()\r\n\r\nprint('test')\r\n```\r\n\r\n\r\n### Description\r\n\r\nIn any project that supports `fastapi dev main.py`, if you add a print line to the main.py, you'll find that the print in the main.py will be run twice.\r\n\r\nThis is a major issue; if the app route includes dynamic imports, it will cause the route to be included twice.\r\n\r\nPlease note: https://stackoverflow.com/questions/64003384\r\n\r\nI created this question here to attract more attention, sorry.\r\n\r\n### Operating System\r\n\r\nLinux, Windows, macOS, Other\r\n\r\n### Operating System Details\r\n\r\n_No response_\r\n\r\n### FastAPI Version\r\n\r\n0.111.0\r\n\r\n### Pydantic Version\r\n\r\n2.10.6\r\n\r\n### Python Version\r\n\r\nPython 3.10.11\r\n\r\n### Additional Context\r\n\r\n_No response_",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "release-notes.md#371",
+    "deployment/manually.md#7",
+    "deployment/docker.md#18"
+   ],
+   "scores": [
+    0.0323,
+    0.0296,
+    0.0224
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.81,
+   "check_seconds": 6.85,
+   "answer_seconds": null,
+   "prompt_tokens": 1384,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1384,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 6.67,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 15066,
+   "title": "Attach event data schema for sse endpoints",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": false,
+   "pass": false,
+   "failure": "answered_unanswerable",
+   "trace_id": "caebb998900d",
+   "time": "2026-10-22T07:03:10+00:00",
+   "model": "llama3.2",
+   "question": "Attach event data schema for sse endpoints\n\n\n```python\nfrom collections.abc import AsyncIterable\r\nfrom fastapi import APIRouter\r\nfrom fastapi.sse import EventSourceResponse\r\nfrom pydantic import BaseModel\r\n\r\nsse_router = APIRouter(tags=[\"stream\"])\r\n\r\nclass ExampleEvent(BaseModel):\r\n    message: str\r\n    id: int\r\n\r\n@sse_router.post(\r\n    \"/\",\r\n    response_class=EventSourceResponse,\r\n)\r\nasync def sse_endpoint() -> AsyncIterable[ExampleEvent]:\r\n    for i in range(10):\r\n        yield ExampleEvent(message=f\"Hello {i}\", id=i)\n```\n\n\n\n\nWith the sse endpoint above, the generated openapi definition does not contain the yielded event type `ExampleEvent`, and it just contains a very general definition like\r\n```\r\n    \"/api/events/\": {\r\n      \"post\": {\r\n        \"tags\": [\r\n          \"stream\"\r\n        ],\r\n        \"summary\": \"Sse Endpoint\",\r\n        \"operationId\": \"sse_endpoint\",\r\n        \"responses\": {\r\n          \"200\": {\r\n            \"description\": \"Successful Response\",\r\n            \"content\": {\r\n              \"text/event-stream\": {\r\n                \"itemSchema\": {\r\n                  \"type\": \"object\",\r\n                  \"properties\": {\r\n                    \"data\": {\r\n                      \"type\": \"string\"\r\n                    },\r\n                    \"event\": {\r\n                      \"type\": \"string\"\r\n                    },\r\n                    \"id\": {\r\n                      \"type\": \"string\"\r\n                    },\r\n                    \"retry\": {\r\n                      \"type\": \"integer\",\r\n                      \"minimum\": 0\r\n                    }\r\n                  }\r\n                }\r\n              }\r\n            }\r\n          },\r\n          \"400\": {\r\n...\r\n```\n",
+   "answer": "The generated OpenAPI definition for the sse endpoint does not contain the yielded event type `ExampleEvent`. To include the event type, you should declare the return type of the `sse_endpoint` function as `AsyncIterable[ExampleEvent]`. This will validate, document, and serialize the data using Pydantic. \n\nExample from excerpt 1:\n```python\nresponse_class=EventSourceResponse,\n```\n```python\nasync def sse_endpoint() -> AsyncIterable[ExampleEvent]:\n```",
+   "sources": [
+    "https://fastapi.tiangolo.com/tutorial/server-sent-events/#stream-sse-with-fastapi"
+   ],
+   "retrieved": [
+    "tutorial/server-sent-events.md#2",
+    "tutorial/server-sent-events.md#9",
+    "tutorial/server-sent-events.md#3"
+   ],
+   "scores": [
+    0.0325,
+    0.0323,
+    0.0315
+   ],
+   "answerable": true,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.68,
+   "check_seconds": 5.13,
+   "answer_seconds": 2.93,
+   "prompt_tokens": 2270,
+   "output_tokens": 117,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1062,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 4.95,
+     "write_seconds": 0.02
+    },
+    {
+     "step": "answer",
+     "prompt_tokens": 1208,
+     "output_tokens": 115,
+     "load_seconds": 0.0,
+     "read_seconds": 0.83,
+     "write_seconds": 2.06
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 14481,
+   "title": "newline characters have been added to the endpoint’s body since version 0.124.0",
+   "tag": "other-library",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "90d32d589d90",
+   "time": "2026-10-22T07:03:19+00:00",
+   "model": "llama3.2",
+   "question": "newline characters have been added to the endpoint’s body since version 0.124.0\n\n\n```python\nfrom fastapi.params import Query\r\nfrom fastapi import APIRouter\r\nfrom app.database import get_db\r\nfrom starlette.responses import JSONResponse, Response\r\n\r\nrouter = APIRouter()\r\n\r\n@router.post(\"/folders\")\r\ndef create_folder(\r\n    folder: FolderCreateSchema, db: Annotated[Session, Depends(get_db)]\r\n) -> Response:\r\n    try:\r\n        create_or_update_folder(db, **folder.model_dump())\r\n    except UserWithEmailNotFound as e:\r\n        return JSONResponse(status_code=409, content={\"detail\": str(e)})\r\n    return Response(status_code=201)\r\n\r\n\r\n[...]\r\n\r\n\r\ndef create_or_update_folder(...):\r\n    user = get_user_by_email(db, assigned_user_email)\r\n    if not user:\r\n        raise UserWithEmailNotFound(\r\n            f\"Assigned user with email {assigned_user_email} not found.\"\r\n        )\r\n\r\n\r\n[...]\r\n\r\n\r\ndef test_create_folder_with_unknown_email(self) -> None:\r\n    response = self.client.post(\r\n        \"/folders\",\r\n        json={\r\n            \"name\": \"New Folder\",\r\n            \"address\": \"123 New St\",\r\n            \"pdl_number\": \"PDLNEW\",\r\n            \"serial_number\": \"SNNEW\",\r\n            \"notes\": \"Some notes\",\r\n            \"assigned_user_email\": \"[email]\",\r\n        },\r\n    )\r\n    self.assertEqual(response.status_code, 409)\r\n    data = response.json()\r\n    self.assertIn(\"detail\", data)\r\n    self.assertEqual(\r\n        data[\"detail\"], \"Assigned user with email [email] not found.\"\r\n    )\n```\n\n\n\n\nHello\r\nI have an app with a lot of unit tests. When I call the POST /folders endpoint, with an unexisting email, an UserWithEmailNotFound exception is thrown by create_or_update_folder\r\n\r\ncreate_folder function is catching it, and then returns a JSONResponse with a comprehensive message in detail key.\r\n\r\nWith 0.123.10 version of FastAPI, everything is working well\r\nWhen I update to 0.124.0, a lot of newline characters are inserted in my error message:\r\n\r\n```\r\n>       self.assertEqual(\r\n            data[\"detail\"], \"Assigned user with email [email] not found.\"\r\n        )\r\nE       AssertionError: '53 validation errors:\\n  A\\n  s\\n  s\\n  i[241 chars]n  .' != 'Assigned user with email [email] not found.'\r\nE       + Assigned user with email [email] not found.\r\nE       - 53 validation errors:\r\nE       -   A\r\nE       -   s\r\nE       -   s\r\nE       -   i\r\nE       -   g\r\nE       -   n\r\nE       -   e\r\nE       -   d\r\n```\r\n\r\nI read the changelog of the 0.124.0 version, and I wonder if it can be a regression: the commit https://github.com/fastapi/fastapi/pull/14306 helps debugging by adding stacktrace in error messages\r\n\r\nI will try to analyze more, to see if I understand the root cause\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/handling-errors.md#6",
+    "tutorial/handling-errors.md#9",
+    "how-to/custom-request-and-route.md#8"
+   ],
+   "scores": [
+    0.0323,
+    0.0303,
+    0.0301
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 1.34,
+   "check_seconds": 7.98,
+   "answer_seconds": null,
+   "prompt_tokens": 1585,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1585,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 7.84,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  },
+  {
+   "id": 15044,
+   "title": "After upgrading FastAPI to version 0.135.1, garbled characters appear when testing multiple file uploads in Swagger UI",
+   "tag": "bug",
+   "gold_pages": [],
+   "said_idk": true,
+   "pass": true,
+   "failure": null,
+   "trace_id": "2208cd35247a",
+   "time": "2026-10-22T07:03:28+00:00",
+   "model": "llama3.2",
+   "question": "After upgrading FastAPI to version 0.135.1, garbled characters appear when testing multiple file uploads in Swagger UI\n\n\n```python\n@win7Controller.post(\"/uploadfile/\", summary=\"Single file upload\")\r\nasync def create_upload_files(\r\n        file: UploadFile = File(..., description='Single-file')\r\n):\r\n    \"\"\"\r\n    Single file upload\r\n    :param file:\r\n    :return:\r\n    \"\"\"\r\n    return {\"filename\": file.filename}\r\n\r\n\r\n@win7Controller.post(\"/uploadfiles/\", summary=\"Multiple file upload\")\r\nasync def create_upload_files(\r\n        files: list[UploadFile] = File(..., description='Multiple-file')\r\n):\r\n    \"\"\"\r\n    Multi file upload\r\n    :param files:\r\n    :return:\r\n    \"\"\"\r\n    return {\"filenames\": [file.filename for file in files]}\n```\n\n\n\n\nAfter I upgraded my FastAPI from version 0.129.0 to 0.135.1 yesterday, garbled characters occurred when testing multiple file uploads on the Swagger UI test page, while single file uploads worked correctly. Then, after downgrading back to version 0.129.0, multiple file uploads returned to normal! Below is the screenshot.\r\n<img width=\"2013\" height=\"945\" alt=\"2\" src=\"https://github.com/user-attachments/assets/[redacted]\" />\r\n<img width=\"2037\" height=\"1379\" alt=\"3\" src=\"https://github.com/user-attachments/assets/[redacted]\" />\r\n\r\nHow can I fix this problem?\n",
+   "answer": "I don't know.",
+   "sources": [],
+   "retrieved": [
+    "tutorial/request-files.md#10",
+    "tutorial/request-files.md#9",
+    "tutorial/request-files.md#3"
+   ],
+   "scores": [
+    0.0325,
+    0.0325,
+    0.0308
+   ],
+   "answerable": false,
+   "check": true,
+   "cached": false,
+   "search_seconds": 0.92,
+   "check_seconds": 6.56,
+   "answer_seconds": null,
+   "prompt_tokens": 1328,
+   "output_tokens": 2,
+   "calls": [
+    {
+     "step": "check",
+     "prompt_tokens": 1328,
+     "output_tokens": 2,
+     "load_seconds": 0.0,
+     "read_seconds": 6.42,
+     "write_seconds": 0.02
+    }
+   ],
+   "error": null
+  }
+ ]
+}
