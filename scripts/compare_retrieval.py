@@ -39,7 +39,7 @@ def fixed():
     out = []
     for p in by_page():
         for start in range(0, max(len(p["text"]) - WINDOW + STRIDE, 1), STRIDE):
-            out.append({**p, "text": p["text"][start:start + WINDOW]})
+            out.append({**p, "text": p["text"][start : start + WINDOW]})
     return out
 
 
@@ -60,7 +60,7 @@ def embed_all(texts):
     start = time.perf_counter()
     vectors = []
     for i in range(0, len(texts), BATCH):
-        vectors += embed(texts[i:i + BATCH])
+        vectors += embed(texts[i : i + BATCH])
     seconds = time.perf_counter() - start
     CACHE.mkdir(exist_ok=True)
     np.save(path, np.array(vectors, dtype=np.float32))
@@ -93,7 +93,11 @@ def score(ranking, chunks, gold, k_context=5):
 def main():
     split = sys.argv[1] if len(sys.argv) > 1 else "dev"
     ids = set(json.loads((ROOT / "evals" / "split.json").read_text(encoding="utf-8"))[split])
-    questions = [q for q in json.loads(QUESTIONS.read_text(encoding="utf-8"))["questions"] if q["tag"] == "docs" and q["id"] in ids]
+    questions = [
+        q
+        for q in json.loads(QUESTIONS.read_text(encoding="utf-8"))["questions"]
+        if q["tag"] == "docs" and q["id"] in ids
+    ]
     queries = {full: [query_text(q, full) for q in questions] for full in (False, True)}
     query_vecs = {full: normalize(embed_all([f"search_query: {t}" for t in qs])[0]) for full, qs in queries.items()}
 
@@ -118,16 +122,18 @@ def main():
                 for method, ranking in rankings:
                     results[method].append(score(ranking, chunks, gold))
             for method, scores in results.items():
-                rows.append({
-                    "chunking": name,
-                    "chunks": len(chunks),
-                    "embed_seconds": round(seconds, 1),
-                    "query": "title + body" if full else "title only",
-                    "search": method,
-                    **{m: round(statistics.mean(s[m] for s in scores), 3) for m in ("hit@1", "hit@5", "mrr@10")},
-                    "context_chars": round(statistics.median(s["context"] for s in scores)),
-                    "ranks": [s["rank"] for s in scores],
-                })
+                rows.append(
+                    {
+                        "chunking": name,
+                        "chunks": len(chunks),
+                        "embed_seconds": round(seconds, 1),
+                        "query": "title + body" if full else "title only",
+                        "search": method,
+                        **{m: round(statistics.mean(s[m] for s in scores), 3) for m in ("hit@1", "hit@5", "mrr@10")},
+                        "context_chars": round(statistics.median(s["context"] for s in scores)),
+                        "ranks": [s["rank"] for s in scores],
+                    }
+                )
         print(f"done: {name} ({len(chunks)} chunks, embedded in {seconds:.0f}s)", flush=True)
 
     out = ROOT / "evals" / f"retrieval_results_{split}.json"
@@ -136,7 +142,9 @@ def main():
     print("| chunking | query | search | hit@1 | hit@5 | MRR@10 | context chars (top 5) |")
     print("|---|---|---|---|---|---|---|")
     for r in rows:
-        print(f"| {r['chunking']} | {r['query']} | {r['search']} | {r['hit@1']:.2f} | {r['hit@5']:.2f} | {r['mrr@10']:.2f} | {r['context_chars']} |")
+        print(
+            f"| {r['chunking']} | {r['query']} | {r['search']} | {r['hit@1']:.2f} | {r['hit@5']:.2f} | {r['mrr@10']:.2f} | {r['context_chars']} |"
+        )
 
 
 if __name__ == "__main__":

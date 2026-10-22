@@ -2,8 +2,8 @@
  "graded_on": "2026-10-21",
  "method": "Each answer to the 20 docs questions in the seed-0 sample was read against the accepted forum answer and the gold docs page. correct = right and useful; partly = right direction but incomplete or mixed with wrong claims; wrong = misleading or false; idk = said I don't know.",
  "systems": {
-  "pinpoint": "evals/eval_llama3.2_graded.json (hybrid search + YES/NO check + llama3.2)",
-  "alone": "evals/baseline_llama3.2.json (llama3.2, no retrieval)"
+  "pinpoint": "evals/eval_graded_llama3.2.json (hybrid search + YES/NO check + llama3.2)",
+  "alone": "evals/baseline_graded_llama3.2.json (llama3.2, no retrieval)"
  },
  "grades": [
   {

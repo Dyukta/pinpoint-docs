@@ -13,18 +13,33 @@ def test_grade_docs_question():
     cited = result("Use a model.", ["https://fastapi.tiangolo.com/tutorial/body/#declare-it"])
     assert grade(DOCS_Q, cited)["pass"]
     assert not grade(DOCS_Q, result("Use a model.", ["https://fastapi.tiangolo.com/tutorial/"]))["pass"]
-    assert grade(DOCS_Q, result(IDK)) == {"said_idk": True, "search_found_gold": True, "cited_gold": False, "pass": False, "failure": "refused_with_gold"}
+    assert grade(DOCS_Q, result(IDK)) == {
+        "said_idk": True,
+        "search_found_gold": True,
+        "cited_gold": False,
+        "pass": False,
+        "failure": "refused_with_gold",
+    }
     assert grade(DOCS_Q, result(IDK, retrieved=["async.md#1"]))["failure"] == "search_missed_gold"
-    assert grade(DOCS_Q, result("Use a model.", ["https://fastapi.tiangolo.com/async/"]))["failure"] == "cited_wrong_page"
+    assert (
+        grade(DOCS_Q, result("Use a model.", ["https://fastapi.tiangolo.com/async/"]))["failure"] == "cited_wrong_page"
+    )
 
 
 def test_grade_other_question():
     assert grade(OTHER_Q, result(IDK)) == {"said_idk": True, "pass": True, "failure": None}
-    assert grade(OTHER_Q, result("Try upgrading.", ["https://fastapi.tiangolo.com/"]))["failure"] == "answered_unanswerable"
+    assert (
+        grade(OTHER_Q, result("Try upgrading.", ["https://fastapi.tiangolo.com/"]))["failure"]
+        == "answered_unanswerable"
+    )
 
 
 def test_grade_error_always_fails():
-    assert grade(OTHER_Q, {**result(IDK), "error": "URLError: refused"}) == {"said_idk": True, "pass": False, "failure": "error"}
+    assert grade(OTHER_Q, {**result(IDK), "error": "URLError: refused"}) == {
+        "said_idk": True,
+        "pass": False,
+        "failure": "error",
+    }
 
 
 def test_sample_is_fixed_and_balanced():

@@ -26,9 +26,9 @@ def include_code(match):
         picked = []
         for r in ranges.group(1).split(","):
             start, _, end = r.partition(":")
-            picked += lines[int(start) - 1:int(end or start)]
+            picked += lines[int(start) - 1 : int(end or start)]
         lines = picked
-    lines = [l if len(l) <= 200 else l[:80] + " ..." for l in lines]
+    lines = [text if len(text) <= 200 else text[:80] + " ..." for text in lines]
     return ["```python", *lines, "```"]
 
 
@@ -46,7 +46,7 @@ def split_long(text):
         if size + len(line) > MAX_CHARS and cut:
             pieces.append("\n".join(cur[:cut]))
             cur, cut = cur[cut:], 0
-            size = sum(len(l) + 1 for l in cur)
+            size = sum(len(part) + 1 for part in cur)
         if line.lstrip().startswith("```"):
             fence = not fence
         cur.append(line)
@@ -64,14 +64,16 @@ def split_page(page, text):
         body = "\n".join(buf).strip()
         if body and not HEADING.match(body):
             for i, piece in enumerate(split_long(body)):
-                chunks.append({
-                    "id": f"{page}#{len(chunks)}",
-                    "page": page,
-                    "title": title,
-                    "section": section,
-                    "url": page_url(page) + (f"#{anchor}" if anchor else ""),
-                    "text": piece if i == 0 else f"{section}\n\n{piece}",
-                })
+                chunks.append(
+                    {
+                        "id": f"{page}#{len(chunks)}",
+                        "page": page,
+                        "title": title,
+                        "section": section,
+                        "url": page_url(page) + (f"#{anchor}" if anchor else ""),
+                        "text": piece if i == 0 else f"{section}\n\n{piece}",
+                    }
+                )
         buf.clear()
 
     for line in text.splitlines():

@@ -1,5 +1,5 @@
 {
- "run": "baseline_llama3.2.json",
+ "run": "baseline_graded_llama3.2.json",
  "judge": "llama3.2",
  "results": [
   {

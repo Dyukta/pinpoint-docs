@@ -26,6 +26,10 @@ def first_gold(ranking, chunks, gold):
     return next((r for r, i in enumerate(ranking) if chunks[i]["page"] in gold), None)
 
 
+def hit(rank, k):
+    return rank is not None and rank < k
+
+
 def main():
     name = sys.argv[1] if len(sys.argv) > 1 else "dev"
     questions = [q for q in load_split(name) if q["gold_pages"]]
@@ -50,7 +54,6 @@ def main():
 
     out = ROOT / "evals" / f"rerank_{name}.json"
     out.write_text(json.dumps({"split": name, "pool": POOL, "rows": rows}, indent=1), encoding="utf-8")
-    hit = lambda rank, k: rank is not None and rank < k
     print(f"{len(rows)} {name} docs questions, rerank top {POOL} -> {out.name}\n")
     print(f"{'search':<26} hit@1   hit@5   vs hybrid at hit@5          rerank p50")
     print(f"{'hybrid':<26} {sum(hit(r['hybrid'], 1) for r in rows):>3}     {sum(hit(r['hybrid'], 5) for r in rows):>3}")
@@ -58,7 +61,9 @@ def main():
         wins = sum(hit(r[variant], 5) and not hit(r["hybrid"], 5) for r in rows)
         losses = sum(hit(r["hybrid"], 5) and not hit(r[variant], 5) for r in rows)
         label = f"hybrid + rerank, {variant}"
-        print(f"{label:<26} {sum(hit(r[variant], 1) for r in rows):>3}     {sum(hit(r[variant], 5) for r in rows):>3}     +{wins} / -{losses}, p = {sign_test(wins, losses):.2f}      {statistics.median(timings[variant]):.2f} s")
+        print(
+            f"{label:<26} {sum(hit(r[variant], 1) for r in rows):>3}     {sum(hit(r[variant], 5) for r in rows):>3}     +{wins} / -{losses}, p = {sign_test(wins, losses):.2f}      {statistics.median(timings[variant]):.2f} s"
+        )
 
 
 if __name__ == "__main__":

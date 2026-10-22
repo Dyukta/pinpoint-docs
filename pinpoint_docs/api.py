@@ -2,6 +2,7 @@ import json
 from collections import Counter
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from pinpoint_docs.answer import answer
@@ -10,8 +11,11 @@ from pinpoint_docs.stats import load_traces, seconds, summarize
 
 EVAL_RUN = ROOT / "evals" / "eval_test_llama3.2.json"
 NO_CHECK_RUN = ROOT / "evals" / "eval_test_no-check_llama3.2.json"
+DASHBOARD = ROOT / "dashboard" / "dist"
 
-app = FastAPI(title="Pinpoint", summary="Answers FastAPI questions from the FastAPI docs, with links, or says I don't know.")
+app = FastAPI(
+    title="Pinpoint", summary="Answers FastAPI questions from the FastAPI docs, with links, or says I don't know."
+)
 
 
 class Question(BaseModel):
@@ -71,7 +75,13 @@ def summarize_run(path):
         "questions": len(rows),
         "passed": sum(r["pass"] for r in rows),
         "failures": dict(Counter(r["failure"] for r in rows if r["failure"]).most_common()),
-        "by_tag": {tag: {"passed": sum(r["pass"] for r in rows if r["tag"] == tag), "total": sum(r["tag"] == tag for r in rows)} for tag in tags},
+        "by_tag": {
+            tag: {
+                "passed": sum(r["pass"] for r in rows if r["tag"] == tag),
+                "total": sum(r["tag"] == tag for r in rows),
+            }
+            for tag in tags
+        },
         **summarize(rows),
     }
 
@@ -81,3 +91,7 @@ def eval_results():
     if not EVAL_RUN.exists():
         raise HTTPException(status_code=404, detail="No test run yet")
     return {**summarize_run(EVAL_RUN), "without_check": summarize_run(NO_CHECK_RUN) if NO_CHECK_RUN.exists() else None}
+
+
+if DASHBOARD.exists():
+    app.mount("/", StaticFiles(directory=DASHBOARD, html=True), name="dashboard")

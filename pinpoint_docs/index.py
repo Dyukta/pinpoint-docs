@@ -1,4 +1,5 @@
 import json
+import os
 import urllib.request
 from pathlib import Path
 
@@ -10,7 +11,7 @@ CHUNKS = ROOT / "data" / "chunks.jsonl"
 DB = ROOT / "data" / "chroma"
 COLLECTION = "fastapi-0.150.0"
 CACHE = "answer-cache"
-OLLAMA = "http://localhost:11434"
+OLLAMA = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
 EMBED_MODEL = "nomic-embed-text"
 BATCH = 64
 
@@ -18,7 +19,7 @@ BATCH = 64
 def ollama(path, payload):
     req = urllib.request.Request(
         f"{OLLAMA}{path}",
-        json.dumps(payload).encode(),
+        json.dumps({"keep_alive": -1, **payload}).encode(),
         {"Content-Type": "application/json"},
     )
     with urllib.request.urlopen(req) as r:
@@ -49,7 +50,7 @@ def main():
     col = client.create_collection(COLLECTION, configuration={"hnsw": {"space": "cosine"}})
 
     for i in range(0, len(chunks), BATCH):
-        batch = chunks[i:i + BATCH]
+        batch = chunks[i : i + BATCH]
         col.add(
             ids=[c["id"] for c in batch],
             documents=[c["text"] for c in batch],

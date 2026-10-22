@@ -34,7 +34,15 @@ def grade(q, result):
         found = any(i.split("#")[0] in gold for i in result["retrieved"])
         cited = bool({url.split("#")[0] for url in result["sources"]} & {page_url(p) for p in gold})
         ok = cited and not said_idk
-        failure = None if ok else "search_missed_gold" if not found else "refused_with_gold" if said_idk else "cited_wrong_page"
+        failure = (
+            None
+            if ok
+            else "search_missed_gold"
+            if not found
+            else "refused_with_gold"
+            if said_idk
+            else "cited_wrong_page"
+        )
         row = {"said_idk": said_idk, "search_found_gold": found, "cited_gold": cited, "pass": ok, "failure": failure}
     if result.get("error"):
         row |= {"pass": False, "failure": "error"}
@@ -45,9 +53,19 @@ def run(questions, model, name, check=True):
     results = []
     for n, q in enumerate(questions, 1):
         result = answer(query_text(q, full=True), model=model, use_cache=False, check=check)
-        row = {"id": q["id"], "title": q["title"], "tag": q["tag"], "gold_pages": q["gold_pages"], **grade(q, result), **result}
+        row = {
+            "id": q["id"],
+            "title": q["title"],
+            "tag": q["tag"],
+            "gold_pages": q["gold_pages"],
+            **grade(q, result),
+            **result,
+        }
         results.append(row)
-        print(f"{n}/{len(questions)} {'PASS' if row['pass'] else 'FAIL'} {q['tag']:<13} {'YES' if result['answerable'] else 'NO '} {seconds(row):>5.1f}s  #{q['id']} {q['title'][:60]}", flush=True)
+        print(
+            f"{n}/{len(questions)} {'PASS' if row['pass'] else 'FAIL'} {q['tag']:<13} {'YES' if result['answerable'] else 'NO '} {seconds(row):>5.1f}s  #{q['id']} {q['title'][:60]}",
+            flush=True,
+        )
 
     out = ROOT / "evals" / f"{name}_{model.replace(':', '-')}.json"
     out.write_text(json.dumps({"model": model, "results": results}, indent=1, ensure_ascii=False), encoding="utf-8")
@@ -56,14 +74,19 @@ def run(questions, model, name, check=True):
     return results
 
 
+def share(rows, key):
+    return f"{sum(r[key] for r in rows)}/{len(rows)}"
+
+
 def report(results):
     n = len(results)
     docs = [r for r in results if r["gold_pages"]]
     other = [r for r in results if not r["gold_pages"]]
-    share = lambda rows, key: f"{sum(r[key] for r in rows)}/{len(rows)}"
     print()
     if docs:
-        print(f"docs questions:     search found gold {share(docs, 'search_found_gold')}, cited gold {share(docs, 'cited_gold')}, wrongly said I don't know {share(docs, 'said_idk')}")
+        print(
+            f"docs questions:     search found gold {share(docs, 'search_found_gold')}, cited gold {share(docs, 'cited_gold')}, wrongly said I don't know {share(docs, 'said_idk')}"
+        )
     if other:
         print(f"non-docs questions: correctly said I don't know {share(other, 'said_idk')}")
     print(f"passed {share(results, 'pass')}")
@@ -76,8 +99,20 @@ def report(results):
         values = [r[step] for r in ok if r[step] is not None]
         if values:
             print(f"  {step.removesuffix('_seconds')}: p50 {statistics.median(values):.1f}s")
-    print(f"tokens per 1,000 questions: prompt {sum(r['prompt_tokens'] for r in results) / n * 1000:,.0f}, output {sum(r['output_tokens'] for r in results) / n * 1000:,.0f}")
-    print(f"answered {n - sum(r['said_idk'] for r in results)}/{n}, said I don't know {sum(r['said_idk'] for r in results)}/{n}, errors {sum(bool(r.get('error')) for r in results)}/{n}")
+    for step in ("check", "answer"):
+        calls = [c for r in ok for c in r.get("calls", []) if c["step"] == step]
+        if calls:
+            p50 = {key: statistics.median(c[key] for c in calls) for key in calls[0] if key != "step"}
+            print(
+                f"  {step} call: read {p50['read_seconds']:.1f}s for {p50['prompt_tokens']:.0f} tokens, "
+                f"write {p50['write_seconds']:.1f}s for {p50['output_tokens']:.0f} tokens, load {p50['load_seconds']:.1f}s"
+            )
+    print(
+        f"tokens per 1,000 questions: prompt {sum(r['prompt_tokens'] for r in results) / n * 1000:,.0f}, output {sum(r['output_tokens'] for r in results) / n * 1000:,.0f}"
+    )
+    print(
+        f"answered {n - sum(r['said_idk'] for r in results)}/{n}, said I don't know {sum(r['said_idk'] for r in results)}/{n}, errors {sum(bool(r.get('error')) for r in results)}/{n}"
+    )
     for tag in sorted({r["tag"] for r in results}):
         rows = [r for r in ok if r["tag"] == tag]
         print(f"  {tag:<13} passed {share(rows, 'pass')}, p50 {statistics.median(seconds(r) for r in rows):.1f}s")

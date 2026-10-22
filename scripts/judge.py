@@ -32,7 +32,12 @@ def verdict(text):
 
 def judge(row, question, chunks, model):
     hits = [chunks[i] for i in row.get("retrieved", []) if i in chunks]
-    fields = {"question": query_text(question, full=True), "reference": question["answer"], "answer": row["answer"], "excerpts": excerpts(hits)}
+    fields = {
+        "question": query_text(question, full=True),
+        "reference": question["answer"],
+        "answer": row["answer"],
+        "excerpts": excerpts(hits),
+    }
     out = {}
     for metric, (system, user) in ASK.items():
         if metric == "faithful" and not hits:
@@ -75,9 +80,15 @@ def main():
         if values:
             print(f"{metric}: {dict(Counter(values))}")
     print("\nagreement with hand grades:")
-    print(f"  correct:  {agreement([(j['correct'], correct_hand[j['id']]) for j in judged if j['id'] in correct_hand])}")
-    print(f"  faithful: {agreement([(j['faithful'], checks_hand[j['id']]['faithful']) for j in judged if j['id'] in checks_hand and 'faithful' in j])}")
-    print(f"  relevant: {agreement([(j['relevant'], checks_hand[j['id']]['relevant']) for j in judged if j['id'] in checks_hand])}")
+    print(
+        f"  correct:  {agreement([(j['correct'], correct_hand[j['id']]) for j in judged if j['id'] in correct_hand])}"
+    )
+    print(
+        f"  faithful: {agreement([(j['faithful'], checks_hand[j['id']]['faithful']) for j in judged if j['id'] in checks_hand and 'faithful' in j])}"
+    )
+    print(
+        f"  relevant: {agreement([(j['relevant'], checks_hand[j['id']]['relevant']) for j in judged if j['id'] in checks_hand])}"
+    )
 
 
 if __name__ == "__main__":

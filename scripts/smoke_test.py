@@ -8,7 +8,7 @@ IDS = [16297, 14094, 13973, 16139, 14012, 15819]
 
 def main():
     by_id = {q["id"]: q for q in load_questions()}
-    run([by_id[i] for i in IDS], sys.argv[1] if len(sys.argv) > 1 else MODEL, "m2_answers")
+    run([by_id[i] for i in IDS], sys.argv[1] if len(sys.argv) > 1 else MODEL, "smoke")
 
 
 if __name__ == "__main__":

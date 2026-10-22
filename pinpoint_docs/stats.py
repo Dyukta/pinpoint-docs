@@ -36,7 +36,9 @@ def summarize(rows):
     return {
         "requests": n,
         "latency": {"p50": percentile(total, 50), "p95": percentile(total, 95)},
-        "steps_p50": {s.removesuffix("_seconds"): percentile([r[s] for r in ok if r.get(s) is not None], 50) for s in STEPS},
+        "steps_p50": {
+            s.removesuffix("_seconds"): percentile([r[s] for r in ok if r.get(s) is not None], 50) for s in STEPS
+        },
         "refusal_rate": share(rows, lambda r: r["answer"] == "I don't know."),
         "cache_hit_rate": share(rows, lambda r: bool(r.get("cached"))),
         "error_rate": share(rows, lambda r: bool(r.get("error"))),

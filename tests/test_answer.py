@@ -35,7 +35,9 @@ def test_answer_logs_errors_instead_of_crashing(tmp_path, monkeypatch):
 def test_cache_returns_only_near_identical_questions_with_the_same_settings(monkeypatch):
     import chromadb
 
-    col = chromadb.EphemeralClient().get_or_create_collection("test-answer-cache", configuration={"hnsw": {"space": "cosine"}})
+    col = chromadb.EphemeralClient().get_or_create_collection(
+        "test-answer-cache", configuration={"hnsw": {"space": "cosine"}}
+    )
     monkeypatch.setattr(answer_module, "answer_cache", lambda: col)
     key = answer_module.settings_key("llama3.2", 5)
     assert answer_module.cached_answer([1.0, 0.0, 0.0], key) is None
@@ -53,7 +55,9 @@ def test_cache_returns_only_near_identical_questions_with_the_same_settings(monk
 
 def test_no_check_skips_the_yes_no_call(monkeypatch):
     calls = []
-    hits = [{"id": "body#1", "url": "https://a/", "title": "Body", "section": "Body", "text": "Use a model.", "score": 0.03}]
+    hits = [
+        {"id": "body#1", "url": "https://a/", "title": "Body", "section": "Body", "text": "Use a model.", "score": 0.03}
+    ]
     monkeypatch.setattr(answer_module, "embed_question", lambda q: [1.0, 0.0])
     monkeypatch.setattr(answer_module, "search", lambda q, k, vector: hits)
 

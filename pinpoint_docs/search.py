@@ -48,9 +48,11 @@ def rrf(rankings, k=60):
 def mmr(query, vectors, k=5, weight=0.7):
     chosen, left = [], list(range(len(vectors)))
     while left and len(chosen) < k:
+
         def value(i):
             redundancy = max((float(vectors[i] @ vectors[j]) for j in chosen), default=0.0)
             return weight * float(query @ vectors[i]) - (1 - weight) * redundancy
+
         best = max(left, key=value)
         chosen.append(best)
         left.remove(best)

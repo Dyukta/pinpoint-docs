@@ -20,12 +20,23 @@ def main():
         reply = chat(model, SYSTEM, query_text(q, full=True))
         text = reply["message"]["content"].strip()
         said_idk = "don't know" in text.lower()
-        results.append({
-            "id": q["id"], "title": q["title"], "tag": q["tag"], "gold_pages": q["gold_pages"],
-            "answer": text, "said_idk": said_idk, "seconds": round(time.perf_counter() - start, 2),
-            "prompt_tokens": reply.get("prompt_eval_count", 0), "output_tokens": reply.get("eval_count", 0),
-        })
-        print(f"{n}/{len(questions)} {q['tag']:<13} {'IDK' if said_idk else 'answered'} {results[-1]['seconds']:5.1f}s  #{q['id']} {q['title'][:60]}", flush=True)
+        results.append(
+            {
+                "id": q["id"],
+                "title": q["title"],
+                "tag": q["tag"],
+                "gold_pages": q["gold_pages"],
+                "answer": text,
+                "said_idk": said_idk,
+                "seconds": round(time.perf_counter() - start, 2),
+                "prompt_tokens": reply.get("prompt_eval_count", 0),
+                "output_tokens": reply.get("eval_count", 0),
+            }
+        )
+        print(
+            f"{n}/{len(questions)} {q['tag']:<13} {'IDK' if said_idk else 'answered'} {results[-1]['seconds']:5.1f}s  #{q['id']} {q['title'][:60]}",
+            flush=True,
+        )
 
     out = ROOT / "evals" / f"baseline_{name}_{model.replace(':', '-')}.json"
     out.write_text(json.dumps({"model": model, "results": results}, indent=1, ensure_ascii=False), encoding="utf-8")
@@ -33,7 +44,9 @@ def main():
     other = [r for r in results if not r["gold_pages"]]
     print(f"\ndocs questions: said I don't know {sum(r['said_idk'] for r in docs)}/{len(docs)}")
     print(f"non-docs questions: said I don't know {sum(r['said_idk'] for r in other)}/{len(other)}")
-    print(f"median seconds {statistics.median(r['seconds'] for r in results):.1f}, median tokens: prompt {statistics.median(r['prompt_tokens'] for r in results):.0f}, output {statistics.median(r['output_tokens'] for r in results):.0f}")
+    print(
+        f"median seconds {statistics.median(r['seconds'] for r in results):.1f}, median tokens: prompt {statistics.median(r['prompt_tokens'] for r in results):.0f}, output {statistics.median(r['output_tokens'] for r in results):.0f}"
+    )
     print(f"-> {out.name}")
 
 

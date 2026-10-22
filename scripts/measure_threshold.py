@@ -11,14 +11,20 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def main():
-    questions = [q for q in json.loads((ROOT / "evals" / "questions.json").read_text(encoding="utf-8"))["questions"] if q["tag"] != "skip"]
+    questions = [
+        q
+        for q in json.loads((ROOT / "evals" / "questions.json").read_text(encoding="utf-8"))["questions"]
+        if q["tag"] != "skip"
+    ]
     vectors, _ = embed_all([f"search_query: {query_text(q, True)}" for q in questions])
     col = chromadb.PersistentClient(str(DB)).get_collection(COLLECTION)
     nearest = col.query(query_embeddings=vectors.tolist(), n_results=1)["distances"]
     docs = [d[0] for q, d in zip(questions, nearest, strict=True) if q["tag"] == "docs"]
     other = [d[0] for q, d in zip(questions, nearest, strict=True) if q["tag"] != "docs"]
 
-    print(f"closest-chunk distance, median: docs {statistics.median(docs):.3f} ({len(docs)}), not docs {statistics.median(other):.3f} ({len(other)})\n")
+    print(
+        f"closest-chunk distance, median: docs {statistics.median(docs):.3f} ({len(docs)}), not docs {statistics.median(other):.3f} ({len(other)})\n"
+    )
     print("| cutoff | docs questions still answered | non-docs questions stopped |")
     print("|---|---|---|")
     for cut in [x / 100 for x in range(20, 52, 2)]:

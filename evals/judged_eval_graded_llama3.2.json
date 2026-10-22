@@ -1,5 +1,5 @@
 {
- "run": "eval_llama3.2_graded.json",
+ "run": "eval_graded_llama3.2.json",
  "judge": "llama3.2",
  "results": [
   {

@@ -1,0 +1,26 @@
+services:
+  ollama:
+    image: ollama/ollama:0.40.7
+    entrypoint: ["sh", "-c", "ollama serve & sleep 5 && ollama pull llama3.2 && ollama pull nomic-embed-text && wait"]
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ollama show llama3.2 > /dev/null && ollama show nomic-embed-text > /dev/null"]
+      interval: 10s
+      retries: 120
+
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      OLLAMA_URL: http://ollama:11434
+    volumes:
+      - chroma:/app/data/chroma
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+volumes:
+  ollama:
+  chroma:

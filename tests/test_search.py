@@ -20,6 +20,7 @@ def test_rrf_rewards_agreement():
 
 def test_mmr_skips_near_duplicates():
     import numpy as np
+
     query = np.array([1.0, 0.0])
     vectors = np.array([[0.98, 0.2], [0.97, 0.24], [0.6, 0.8]])
     assert mmr(query, vectors, k=2, weight=1.0) == [0, 1]

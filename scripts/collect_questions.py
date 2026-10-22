@@ -62,17 +62,19 @@ def main():
             if d["createdAt"] >= data["collected_on"] or len(questions) >= TARGET:
                 continue
             seen.add(d["number"])
-            questions.append({
-                "id": d["number"],
-                "url": d["url"],
-                "created_at": d["createdAt"],
-                "title": d["title"],
-                "question": d["body"],
-                "answer_url": d["answer"]["url"],
-                "answer": d["answer"]["body"],
-                "docs_links": sorted(set(DOCS_LINK.findall(d["answer"]["body"]))),
-                "tag": "",
-            })
+            questions.append(
+                {
+                    "id": d["number"],
+                    "url": d["url"],
+                    "created_at": d["createdAt"],
+                    "title": d["title"],
+                    "question": d["body"],
+                    "answer_url": d["answer"]["url"],
+                    "answer": d["answer"]["body"],
+                    "docs_links": sorted(set(DOCS_LINK.findall(d["answer"]["body"]))),
+                    "tag": "",
+                }
+            )
         if not page["pageInfo"]["hasNextPage"]:
             break
         cursor = page["pageInfo"]["endCursor"]

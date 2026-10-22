@@ -6,11 +6,23 @@ client = TestClient(api.app)
 
 
 def test_ask_returns_answer_and_sources(monkeypatch):
-    fake = {"trace_id": "abc123", "answer": "Use a model.", "sources": ["https://a/"], "cached": False, "retrieved": ["x#1"], "error": None}
+    fake = {
+        "trace_id": "abc123",
+        "answer": "Use a model.",
+        "sources": ["https://a/"],
+        "cached": False,
+        "retrieved": ["x#1"],
+        "error": None,
+    }
     monkeypatch.setattr(api, "answer", lambda question: fake)
     response = client.post("/ask", json={"question": "How do I declare a body?"})
     assert response.status_code == 200
-    assert response.json() == {"trace_id": "abc123", "answer": "Use a model.", "sources": ["https://a/"], "cached": False}
+    assert response.json() == {
+        "trace_id": "abc123",
+        "answer": "Use a model.",
+        "sources": ["https://a/"],
+        "cached": False,
+    }
 
 
 def test_ask_rejects_empty_question():
@@ -25,9 +37,45 @@ def test_stats_and_traces_read_the_trace_log(tmp_path, monkeypatch):
 
     log = tmp_path / "traces.jsonl"
     rows = [
-        {"trace_id": "a1", "time": "t1", "question": "q1", "answer": "Use a model.", "cached": False, "error": None, "search_seconds": 1.0, "check_seconds": 10.0, "answer_seconds": 9.0, "prompt_tokens": 3000, "output_tokens": 100},
-        {"trace_id": "b2", "time": "t2", "question": "q2", "answer": "I don't know.", "cached": False, "error": None, "search_seconds": 1.0, "check_seconds": 9.0, "answer_seconds": None, "prompt_tokens": 2000, "output_tokens": 1},
-        {"trace_id": "c3", "time": "t3", "question": "q1", "answer": "Use a model.", "cached": True, "error": None, "search_seconds": 0.5, "check_seconds": None, "answer_seconds": None, "prompt_tokens": 0, "output_tokens": 0},
+        {
+            "trace_id": "a1",
+            "time": "t1",
+            "question": "q1",
+            "answer": "Use a model.",
+            "cached": False,
+            "error": None,
+            "search_seconds": 1.0,
+            "check_seconds": 10.0,
+            "answer_seconds": 9.0,
+            "prompt_tokens": 3000,
+            "output_tokens": 100,
+        },
+        {
+            "trace_id": "b2",
+            "time": "t2",
+            "question": "q2",
+            "answer": "I don't know.",
+            "cached": False,
+            "error": None,
+            "search_seconds": 1.0,
+            "check_seconds": 9.0,
+            "answer_seconds": None,
+            "prompt_tokens": 2000,
+            "output_tokens": 1,
+        },
+        {
+            "trace_id": "c3",
+            "time": "t3",
+            "question": "q1",
+            "answer": "Use a model.",
+            "cached": True,
+            "error": None,
+            "search_seconds": 0.5,
+            "check_seconds": None,
+            "answer_seconds": None,
+            "prompt_tokens": 0,
+            "output_tokens": 0,
+        },
     ]
     log.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     monkeypatch.setattr(stats, "TRACES", log)
@@ -51,9 +99,33 @@ def test_eval_summary(tmp_path, monkeypatch):
 
     run = tmp_path / "eval_test.json"
     rows = [
-        {"tag": "docs", "pass": True, "failure": None, "answer": "x", "search_seconds": 1, "check_seconds": 10, "answer_seconds": 9},
-        {"tag": "docs", "pass": False, "failure": "search_missed_gold", "answer": "I don't know.", "search_seconds": 1, "check_seconds": 10, "answer_seconds": None},
-        {"tag": "bug", "pass": True, "failure": None, "answer": "I don't know.", "search_seconds": 1, "check_seconds": 10, "answer_seconds": None},
+        {
+            "tag": "docs",
+            "pass": True,
+            "failure": None,
+            "answer": "x",
+            "search_seconds": 1,
+            "check_seconds": 10,
+            "answer_seconds": 9,
+        },
+        {
+            "tag": "docs",
+            "pass": False,
+            "failure": "search_missed_gold",
+            "answer": "I don't know.",
+            "search_seconds": 1,
+            "check_seconds": 10,
+            "answer_seconds": None,
+        },
+        {
+            "tag": "bug",
+            "pass": True,
+            "failure": None,
+            "answer": "I don't know.",
+            "search_seconds": 1,
+            "check_seconds": 10,
+            "answer_seconds": None,
+        },
     ]
     run.write_text(json.dumps({"results": rows}), encoding="utf-8")
     monkeypatch.setattr(api, "EVAL_RUN", run)

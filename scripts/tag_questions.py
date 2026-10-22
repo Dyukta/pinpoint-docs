@@ -43,8 +43,11 @@ def main():
         todo = [q for q in questions if q["id"] in ids and q.get("tagged_by") not in ("human", "human-reviewed")]
         todo.sort(key=lambda q: q["tag"] != "docs")
     elif review:
-        todo = [q for q in questions if q.get("tagged_by") == "draft"
-                and (q["tag"] == "docs" or "borderline" in q.get("why", "").lower())]
+        todo = [
+            q
+            for q in questions
+            if q.get("tagged_by") == "draft" and (q["tag"] == "docs" or "borderline" in q.get("why", "").lower())
+        ]
     else:
         todo = [q for q in questions if not q["tag"]]
     for n, q in enumerate(todo, 1):

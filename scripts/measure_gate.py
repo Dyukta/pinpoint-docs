@@ -39,7 +39,12 @@ def main():
         start = time.perf_counter()
         votes = {v: says_yes(make(q), context, ask) for v, (ask, make) in VARIANTS.items()}
         rows.append({"id": q["id"], "docs": bool(q["gold_pages"]), "found": found, **votes})
-        print(f"{n}/{len(load_split(name))} {'docs' if q['gold_pages'] else 'other'} found={found!s:<5} " + " ".join(f"{v}={'Y' if y else 'N'}" for v, y in votes.items()) + f" {time.perf_counter() - start:.0f}s", flush=True)
+        print(
+            f"{n}/{len(load_split(name))} {'docs' if q['gold_pages'] else 'other'} found={found!s:<5} "
+            + " ".join(f"{v}={'Y' if y else 'N'}" for v, y in votes.items())
+            + f" {time.perf_counter() - start:.0f}s",
+            flush=True,
+        )
 
     out = ROOT / "evals" / f"gate_{name}.json"
     out.write_text(json.dumps({"split": name, "rows": rows}, indent=1), encoding="utf-8")
@@ -48,7 +53,9 @@ def main():
     other = [r for r in rows if not r["docs"]]
     print(f"\n-> {out.name}\n{'variant':<18} found docs YES   missed docs NO   non-docs NO")
     for v in VARIANTS:
-        print(f"{v:<18} {sum(r[v] for r in found):>3}/{len(found):<11} {sum(not r[v] for r in missed):>3}/{len(missed):<12} {sum(not r[v] for r in other):>3}/{len(other)}")
+        print(
+            f"{v:<18} {sum(r[v] for r in found):>3}/{len(found):<11} {sum(not r[v] for r in missed):>3}/{len(missed):<12} {sum(not r[v] for r in other):>3}/{len(other)}"
+        )
 
 
 if __name__ == "__main__":
