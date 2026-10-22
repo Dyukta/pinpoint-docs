@@ -69,6 +69,12 @@ A docs question passes if the answer cites a gold page. Any other question passe
 
 Per question the check wins 18 and loses 6 (p = 0.02). Without it the model answers all 50, including every question the docs don't cover. The cost is 6 docs answers it now refuses.
 
+### On questions it has never seen
+
+To check the "I don't know" side isn't tuned to dev, `scripts/run_eval.py fresh` draws 40 random questions from the ones no split uses (all of them out of scope for the docs) and prints the seed so the draw can be repeated. With seed 8034 it said "I don't know" to 33 of 40, against 34 of 40 on dev, at the same speed (p50 8.5 s). Of the 7 it answered, I'd call about 4 wrong and 3 partly covered by the docs. Those labels are drafts I haven't reviewed, so a few "out of scope" questions are really answerable.
+
+The check is also repeatable now: across two dev runs, the 63 questions whose top 3 excerpts didn't change got the same YES or NO all 63 times. An older setup flipped 2 of 40.
+
 ### Hand grades, 20 docs questions
 
 | | Model alone | Pinpoint |
@@ -208,7 +214,6 @@ Each of these had a pass mark set before running, on dev only.
 - Small samples: 50 test and 80 dev questions. Apart from the two significant results, most differences are noise.
 - It still answers few docs questions: 9 of 28 on test. Search misses the gold page for 11, and the check refuses 7 where the page was found.
 - Answers aren't always faithful: only 3 of 12 were fully backed by the excerpts.
-- The check isn't fully repeatable: 2 of 40 decisions flipped between runs at temperature 0.
 - 3B model on a 4 GB GPU. Reading speed sets the floor on latency, and a 7-8B model doesn't fit.
 - One grader (me), one library, one docs version, English only.
 - The rate limit lives in one process's memory, and the injection probe is only 5 attacks.
