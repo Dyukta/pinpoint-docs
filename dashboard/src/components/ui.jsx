@@ -70,7 +70,10 @@ export function Steps({ trace, dark = false }) {
   }
   const steps = [
     ["Retrieve", "BM25 + vector search, fused with RRF", trace.search_seconds],
-    ["Check", trace.answerable ? "Excerpts answer it: YES" : "Excerpts answer it: NO", trace.check_seconds],
+    ["Check", trace.agent || !trace.answerable ? "Excerpts answer it: NO" : "Excerpts answer it: YES", trace.check_seconds],
+    ...(trace.agent
+      ? [["Search again", trace.agent.query ? `"${trace.agent.query}"` : "Model chose not to", trace.agent_seconds]]
+      : []),
     ["Answer", trace.answer_seconds == null ? "Skipped" : "Grounded answer with links", trace.answer_seconds],
   ];
   const max = Math.max(...steps.map(([, , s]) => s ?? 0), 0.1);

@@ -1,0 +1,406 @@
+{
+ "split": "dev",
+ "k": 3,
+ "rows": [
+  {
+   "id": 13608,
+   "query": "`fastapi oauth2 password bearer token route swagger`",
+   "before": false,
+   "after": true,
+   "seconds": 0.37,
+   "tool_query": "FastAPI OAuth2 password bearer token route not found in Swagger",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 13449,
+   "query": "`fastapi.Request.state` `mock` `starlette.requests.HTTPConnection` `pytest.fixture`",
+   "before": false,
+   "after": false,
+   "seconds": 0.5,
+   "tool_query": "mocking request.state in FastAPI unit testing",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 16376,
+   "query": "`fastapi openapi_schema vs _openapi_schema`",
+   "before": true,
+   "after": true,
+   "seconds": 0.31,
+   "tool_query": null,
+   "tool_text": "{\"name\": \"app.openapi_schema\", \"parameters\": {\"openapi\": \"3.1.0\", \"info\": {\"title\": \"My API\", \"version\": \"1.0.0\"}, \"paths\": {}}}\"",
+   "tool_after": false
+  },
+  {
+   "id": 14889,
+   "query": "`fastapi docs - complex fields in BaseModel`",
+   "before": true,
+   "after": false,
+   "seconds": 0.33,
+   "tool_query": "complex field in BaseModel not parsed",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 14012,
+   "query": "`fastapi.QueryArgs` validation error",
+   "before": true,
+   "after": false,
+   "seconds": 0.41,
+   "tool_query": "Pydantic model validation when used as query parameter",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 14082,
+   "query": "`Previous Steps before Starting` include `LifeSpan` in docs",
+   "before": false,
+   "after": true,
+   "seconds": 1.34,
+   "tool_query": "LifeSpan in Previous Steps before Starting",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 14311,
+   "query": "`fastapi docs: dataclasses#shape`",
+   "before": false,
+   "after": false,
+   "seconds": 0.33,
+   "tool_query": "FastAPI dataclass query parameter shape assertion error",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 13538,
+   "query": "`fastapi docs: run slow in separate thread`",
+   "before": false,
+   "after": false,
+   "seconds": 0.36,
+   "tool_query": "non-blocking endpoint with awaitable function in FastAPI",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 13245,
+   "query": "`async def async_dependency():` `Depends` `async_dependency` `iscoroutinefunction()`",
+   "before": false,
+   "after": false,
+   "seconds": 0.45,
+   "tool_query": "How does FastAPI Depends know to use AsyncContextManager or SyncContextManager?",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 14698,
+   "query": "`fastapi WebSocketRequestValidationError reason jsonable_encoder`",
+   "before": true,
+   "after": false,
+   "seconds": 0.27,
+   "tool_query": "FastAPI WebSocket validation exception handling close reason",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 14094,
+   "query": "`fastapi run --reload` vs `fastapi dev --host 0.0.0.0`",
+   "before": true,
+   "after": true,
+   "seconds": 0.9,
+   "tool_query": "Difference between fastapi dev and fastapi run --reload",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 14363,
+   "query": "`redoc spec-url` and `redoc.standalone.js` version",
+   "before": true,
+   "after": true,
+   "seconds": 0.34,
+   "tool_query": "redoc latest url",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 13842,
+   "query": "`fastapi docs search: not found endpoint`",
+   "before": false,
+   "after": true,
+   "seconds": 0.28,
+   "tool_query": "FastAPI CORS middleware not displaying endpoints in documentation",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 15084,
+   "query": "`fastapi docs: FastAPI app_root_path`",
+   "before": true,
+   "after": false,
+   "seconds": 1.03,
+   "tool_query": "FastAPI app_root_path and root_path in swagger UI",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 13261,
+   "query": "`response_model=B` and `response_class=JSONResponse`",
+   "before": false,
+   "after": true,
+   "seconds": 0.31,
+   "tool_query": null,
+   "tool_text": "{\"name\":\"response_model\",\"parameters\":{\"loc\":null,\"model\":null,\"media_type\":null,\"instance\":null}}",
+   "tool_after": false
+  },
+  {
+   "id": 15846,
+   "query": "`sqlmodel Session dependency yield behavior after request`",
+   "before": false,
+   "after": false,
+   "seconds": 0.97,
+   "tool_query": "FastAPI resumes dependency after request, so the Session is closed automatically",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 14719,
+   "query": "`fastapi --help`",
+   "before": true,
+   "after": false,
+   "seconds": 0.2,
+   "tool_query": "fastapi 0.112.0 uvicorn not installed",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 13238,
+   "query": "`solve_dependencies` exception in `FastAPI`",
+   "before": true,
+   "after": true,
+   "seconds": 0.31,
+   "tool_query": "FastAPI solve_dependencies generator didn't yield error",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 16085,
+   "query": "`fastapi docs: dict[str, Any] ORJSONResponse performance comparison`",
+   "before": false,
+   "after": false,
+   "seconds": 0.46,
+   "tool_query": "FastAPI Pydantic serialization generic return types",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 13812,
+   "query": "`fastapi docs: Supported JSON formats`",
+   "before": false,
+   "after": false,
+   "seconds": 0.75,
+   "tool_query": "FastAPI JSON response format",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 15639,
+   "query": "`fastapi APIRouter include_router include endpoint duplication`",
+   "before": true,
+   "after": true,
+   "seconds": 0.27,
+   "tool_query": "avoid duplication of endpoints in swagger ui with nested routers",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 13467,
+   "query": "`fastapi UploadFile` and `pydantic Body` together",
+   "before": true,
+   "after": true,
+   "seconds": 0.9,
+   "tool_query": "Cannot use Body (pydantic schemas) and file upload together in an API",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 16139,
+   "query": "`Annotated[Query(default=10, ge=1, le=100, description=\"Maximum number of items\")]`",
+   "before": false,
+   "after": true,
+   "seconds": 0.51,
+   "tool_query": "FastAPI parameter helper functions Query() default value inside Annotated",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 14324,
+   "query": "`caching dependency result in APIRouter avoid double validation on nested routers deps`",
+   "before": false,
+   "after": false,
+   "seconds": 0.39,
+   "tool_query": "caching dependency result in APIRouter avoid double validation on nested routers deps",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 15742,
+   "query": "`starlette.testclient.TestClient` instead of `fastapi.testclient.TestClient`",
+   "before": false,
+   "after": false,
+   "seconds": 1.27,
+   "tool_query": "StarletteDeprecationWarning httpx with starlette.testclient is deprecated",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 13679,
+   "query": "`fastapi.middleware` documentation search query: `middleware execution order`",
+   "before": true,
+   "after": true,
+   "seconds": 0.34,
+   "tool_query": "FastAPI middleware execution order",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 13723,
+   "query": "`asynccontextmanager` and `Depends` compatibility issue in FastAPI docs",
+   "before": true,
+   "after": true,
+   "seconds": 0.39,
+   "tool_query": "FastAPI asynccontextmanager Depends issue",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 13705,
+   "query": "`fastapi FastAPI model_config defer_build`",
+   "before": true,
+   "after": false,
+   "seconds": 0.27,
+   "tool_query": "FastAPI Pydantic defer_build missing data error",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 13868,
+   "query": "`openapi.json: openapi.model.required`",
+   "before": true,
+   "after": false,
+   "seconds": 0.98,
+   "tool_query": "\"openapi\" \"model fields required request statement\"",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 14601,
+   "query": "`fastapi Query` validation not working with `pydantic field_validator`",
+   "before": true,
+   "after": true,
+   "seconds": 0.35,
+   "tool_query": "FastAPI Query Parameters validation",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 15843,
+   "query": "`pip install fastapi --show`",
+   "before": true,
+   "after": true,
+   "seconds": 0.64,
+   "tool_query": "What is the purpose of the SKILL.md file in a pip installed fastapi package",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 13376,
+   "query": "`fastapi Response.headers` documentation",
+   "before": true,
+   "after": true,
+   "seconds": 0.19,
+   "tool_query": "FastAPI Response headers not treated as request body",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 16404,
+   "query": "`migrate-from-pydantic-v1-to-pydantic-v2`",
+   "before": true,
+   "after": true,
+   "seconds": 0.37,
+   "tool_query": "migrate-from-pydantic-v1-to-pydantic-v2 deprecated examples",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 13249,
+   "query": "`docs_url` behavior issue in FastAPI documentation",
+   "before": true,
+   "after": true,
+   "seconds": 0.29,
+   "tool_query": "FastAPI docs_url disable unexpected behavior",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 13490,
+   "query": "`fastapi QueryParameterModels Depends()`",
+   "before": true,
+   "after": false,
+   "seconds": 0.26,
+   "tool_query": "Query Parameter Models, use",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 14151,
+   "query": "`early closing in yield dependencies: session.commit before response`",
+   "before": true,
+   "after": false,
+   "seconds": 1.04,
+   "tool_query": "early closing in yield dependencies session commit before response",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 13660,
+   "query": "`streaming response fastapi streaming`",
+   "before": true,
+   "after": true,
+   "seconds": 0.22,
+   "tool_query": "StreamingResponse and generator in FastAPI",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 13382,
+   "query": "`fastapi ContextVars sync vs async dependencies`",
+   "before": false,
+   "after": true,
+   "seconds": 0.56,
+   "tool_query": "FastAPI ContextVar synchronous dependency issues",
+   "tool_text": "",
+   "tool_after": false
+  },
+  {
+   "id": 16473,
+   "query": "`OTEL_TRACES_EXPORTER=none OTEL_METRICS_EXPORTER=none OTEL_LOGS_EXPORTER=none`",
+   "before": true,
+   "after": true,
+   "seconds": 0.88,
+   "tool_query": "FastAPI telemetry library configure providers and exporters without adding implicit exporters",
+   "tool_text": "",
+   "tool_after": true
+  },
+  {
+   "id": 13973,
+   "query": "`asyncio.run(fastapi deps) or fastapi deps`",
+   "before": true,
+   "after": true,
+   "seconds": 0.94,
+   "tool_query": "FastAPI custom dependency async and sync versions",
+   "tool_text": "",
+   "tool_after": false
+  }
+ ]
+}

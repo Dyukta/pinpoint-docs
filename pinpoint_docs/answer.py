@@ -30,6 +30,8 @@ EMPTY = {
     "prompt_tokens": 0,
     "output_tokens": 0,
     "calls": [],
+    "agent": None,
+    "agent_seconds": None,
 }
 SYSTEM = f"""You answer FastAPI questions using only the numbered documentation excerpts you are given.
 Use only facts and code that appear in the excerpts. Never invent code, parameters or behavior.
@@ -45,6 +47,30 @@ ANSWER: {IDK}"""
 CHECK = "You check whether documentation excerpts answer a question. Reply with only YES or NO."
 CHECK_ASK = "Do these excerpts contain the answer to the question? Reply YES or NO."
 ANSWER_ASK = f"Now answer the question from the excerpts.\n\n{SYSTEM}"
+AGENT = (
+    "The documentation excerpts found for this FastAPI question did not answer it. "
+    "If the FastAPI docs might still cover it, call search_docs once with a better query in the docs' own words. "
+    "If the question is not about a documented FastAPI feature, do not call the tool."
+)
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "search_docs",
+            "description": "Search the FastAPI documentation.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "A short query of at most 12 words, using feature, class and function names",
+                    }
+                },
+                "required": ["query"],
+            },
+        },
+    }
+]
 OPTIONS = {"temperature": 0, "num_ctx": 8192, "num_gpu": 99}
 REPLY = re.compile(r"EXCERPTS:(.*?)\n\s*ANSWER:(.*)", re.S | re.I)
 ANSWER_START = re.compile(r"ANSWER:\s*", re.I)
@@ -90,12 +116,22 @@ def excerpts(hits):
     return "\n\n".join(f"Excerpt {i} ({c['title']} > {c['section']}):\n{c['text']}" for i, c in enumerate(hits, 1))
 
 
-def chat(model, system, user, history=(), stream=False, **options):
+def chat(model, system, user, history=(), stream=False, tools=None, **options):
     messages = [{"role": "system", "content": system}, *history, {"role": "user", "content": user}]
     if hosted.is_hosted(model):
         return hosted.chat(model, messages, stream)
     payload = {"model": model, "messages": messages, "stream": stream, "options": {**OPTIONS, **options}}
+    if tools:
+        payload["tools"] = tools
     return ollama_stream("/api/chat", payload) if stream else ollama("/api/chat", payload)
+
+
+def search_again(question, model):
+    reply = chat(model, AGENT, question, tools=TOOLS)
+    for call in reply["message"].get("tool_calls") or []:
+        if call["function"]["name"] == "search_docs":
+            return str(call["function"]["arguments"].get("query", "")).strip(), reply
+    return None, reply
 
 
 def to_seconds(nanoseconds):
@@ -150,8 +186,10 @@ def answer_cache():
     )
 
 
-def settings_key(model, k, check=True):
+def settings_key(model, k, check=True, agent=False):
     settings = [model, k, check, SYSTEM, CHECK, CHECK_ASK, ANSWER_ASK, OPTIONS, COLLECTION]
+    if agent:
+        settings += [AGENT, TOOLS]
     return hashlib.sha256(json.dumps(settings, sort_keys=True).encode()).hexdigest()[:16]
 
 
@@ -183,7 +221,7 @@ def remember(vector, key, question, result):
     )
 
 
-def answer_events(question, k=3, model=MODEL, use_cache=True, check=True, cancel=None):
+def answer_events(question, k=3, model=MODEL, use_cache=True, check=True, cancel=None, agent=False):
     trace = {
         "trace_id": uuid.uuid4().hex[:12],
         "time": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -191,7 +229,7 @@ def answer_events(question, k=3, model=MODEL, use_cache=True, check=True, cancel
         "question": redact(question),
     }
     try:
-        events = respond(question, k, model, use_cache, check)
+        events = respond(question, k, model, use_cache, check, agent)
         for kind, value in events:
             if cancel and cancel.is_set():
                 events.close()
@@ -210,16 +248,16 @@ def answer_events(question, k=3, model=MODEL, use_cache=True, check=True, cancel
     yield "done", trace
 
 
-def answer(question, k=3, model=MODEL, use_cache=True, check=True):
-    *_, (_, trace) = answer_events(question, k, model, use_cache, check)
+def answer(question, k=3, model=MODEL, use_cache=True, check=True, agent=False):
+    *_, (_, trace) = answer_events(question, k, model, use_cache, check, agent=agent)
     return trace
 
 
-def respond(question, k, model, use_cache, check=True):
+def respond(question, k, model, use_cache, check=True, agent=False):
     start = time.perf_counter()
     yield "status", "search"
     vector = embed_question(question)
-    key = settings_key(model, k, check)
+    key = settings_key(model, k, check, agent)
     hit = cached_answer(vector, key) if use_cache else None
     if hit:
         yield "result", {**EMPTY, **hit, "cached": True, "search_seconds": round(time.perf_counter() - start, 2)}
@@ -232,6 +270,21 @@ def respond(question, k, model, use_cache, check=True):
     ok, verdict = is_answerable(question, context, model) if check else (True, {})
     checked = time.perf_counter()
     calls = [timing("check", verdict)] if check else []
+    first_hits, retry = hits, None
+    if check and agent and not ok:
+        yield "status", "search again"
+        query, call = search_again(question, model)
+        calls.append(timing("agent", call))
+        retry = {"query": query, "retrieved": [], "answerable": False}
+        new_hits = search(query, k) if query else []
+        if {c["page"] for c in new_hits} - {c["page"] for c in hits}:
+            yield "status", "check"
+            again, second = is_answerable(question, excerpts(new_hits), model)
+            calls.append(timing("check", second))
+            retry |= {"retrieved": [c["id"] for c in new_hits], "answerable": again}
+            if again:
+                ok, verdict, hits, context = True, second, new_hits, excerpts(new_hits)
+    retried = time.perf_counter()
     text, urls = IDK, []
     if ok:
         yield "status", "answer"
@@ -241,14 +294,16 @@ def respond(question, k, model, use_cache, check=True):
     result = {
         "answer": text,
         "sources": urls,
-        "retrieved": [c["id"] for c in hits],
-        "scores": [c["score"] for c in hits],
+        "retrieved": [c["id"] for c in first_hits],
+        "scores": [c["score"] for c in first_hits],
         "answerable": ok,
         "check": check,
         "cached": False,
+        "agent": retry,
         "search_seconds": round(searched - start, 2),
         "check_seconds": round(checked - searched, 2),
-        "answer_seconds": round(time.perf_counter() - checked, 2) if ok else None,
+        "agent_seconds": round(retried - checked, 2) if retry else None,
+        "answer_seconds": round(time.perf_counter() - retried, 2) if ok else None,
         "prompt_tokens": sum(c["prompt_tokens"] for c in calls),
         "output_tokens": sum(c["output_tokens"] for c in calls),
         "calls": calls,

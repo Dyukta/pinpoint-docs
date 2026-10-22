@@ -7,7 +7,7 @@ from pathlib import Path
 
 from pinpoint_docs.answer import IDK, MODEL, answer
 from pinpoint_docs.chunk import page_url
-from pinpoint_docs.stats import percentile, seconds
+from pinpoint_docs.stats import STEPS, percentile, seconds
 from scripts.compare_retrieval import query_text
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -49,10 +49,10 @@ def grade(q, result):
     return row
 
 
-def run(questions, model, name, check=True, k=3):
+def run(questions, model, name, check=True, k=3, agent=False):
     results = []
     for n, q in enumerate(questions, 1):
-        result = answer(query_text(q, full=True), k=k, model=model, use_cache=False, check=check)
+        result = answer(query_text(q, full=True), k=k, model=model, use_cache=False, check=check, agent=agent)
         row = {
             "id": q["id"],
             "title": q["title"],
@@ -95,11 +95,11 @@ def report(results):
     ok = [r for r in results if not r.get("error")]
     total = [seconds(r) for r in ok]
     print(f"latency per question: p50 {percentile(total, 50):.1f}s, p95 {percentile(total, 95):.1f}s")
-    for step in ("search_seconds", "check_seconds", "answer_seconds"):
-        values = [r[step] for r in ok if r[step] is not None]
+    for step in STEPS:
+        values = [r[step] for r in ok if r.get(step) is not None]
         if values:
             print(f"  {step.removesuffix('_seconds')}: p50 {statistics.median(values):.1f}s")
-    for step in ("check", "answer"):
+    for step in ("check", "agent", "answer"):
         calls = [c for r in ok for c in r.get("calls", []) if c["step"] == step]
         if calls:
             p50 = {key: statistics.median(c[key] for c in calls) for key in calls[0] if key != "step"}
@@ -150,17 +150,20 @@ def regrade(file_name):
 
 def main():
     if sys.argv[1:2] == ["regrade"]:
-        return regrade(sys.argv[2])
+        regrade(sys.argv[2])
+        return
     if sys.argv[1:2] == ["fresh"]:
         questions, seed = fresh_sample(seed=int(sys.argv[2]) if len(sys.argv) > 2 else None)
         print(f"fresh sample, seed {seed}: {len(questions)} questions not in dev or test\n")
-        return run(questions, MODEL, f"eval_fresh-{seed}")
+        run(questions, MODEL, f"eval_fresh-{seed}")
+        return
     name = sys.argv[1] if len(sys.argv) > 1 else "test"
-    model = next((a for a in sys.argv[2:] if a != "no-check" and not a.startswith("k=")), MODEL)
+    model = next((a for a in sys.argv[2:] if a not in ("no-check", "agent") and not a.startswith("k=")), MODEL)
     k = int(next((a[2:] for a in sys.argv[2:] if a.startswith("k=")), 3))
     check = "no-check" not in sys.argv
-    out = f"eval_{name}" + ("" if check else "_no-check") + ("" if k == 3 else f"_k{k}")
-    run(load_split(name), model, out, check, k)
+    agent = "agent" in sys.argv
+    out = f"eval_{name}" + ("" if check else "_no-check") + ("" if k == 3 else f"_k{k}") + ("_agent" if agent else "")
+    run(load_split(name), model, out, check, k, agent)
 
 
 if __name__ == "__main__":

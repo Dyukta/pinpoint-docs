@@ -17,7 +17,7 @@ Most questions on a library's forum are already answered somewhere in its docs. 
 
 ## Stack
 
-Python 3.14, FastAPI, Ollama (`llama3.2` and `nomic-embed-text`), Gemini Flash as an optional hosted model, ChromaDB, BM25 (my own, about 30 lines), React 19 + Vite + Tailwind for the dashboard, pytest, Docker, GitHub Actions.
+Python 3.14, FastAPI, Ollama (`llama3.2` and `nomic-embed-text`, plus its tool calling), Gemini Flash as an optional hosted model, ChromaDB, BM25 (my own, about 30 lines), React 19 + Vite + Tailwind for the dashboard, pytest, Docker, GitHub Actions.
 
 ## How it works
 
@@ -48,6 +48,7 @@ A few details:
 - The answer cache only matches near-identical questions (cosine distance 0.03 or less). Two different real questions were never closer than 0.087. Cache entries are keyed on a hash of every setting, so changing a prompt invalidates them.
 - Each trace has the retrieved chunks and scores, time per step, and for every model call the tokens plus load, read and write time.
 - Answers stream to the dashboard word by word over Server-Sent Events, and closing the page stops the model (see "Running it as a service").
+- An optional "search again" step lets the model call a `search_docs` tool when the check says NO. It's off by default because it didn't help (see "Search again").
 
 ## Evaluation
 
@@ -155,18 +156,34 @@ The runs are in `evals/eval_dev_before-speed_llama3.2.json`, `eval_dev_shared-pr
 
 **Privacy.** Before a question goes into the traces or the answer cache, emails, values after `password=`, `token=`, `api_key=` and similar, and long random-looking strings are replaced with `[email]` or `[redacted]`. The model still sees the original question.
 
+## Search again: a tool-calling agent (off by default)
+
+When the check says NO, the model can get a second try. It's offered a `search_docs(query)` tool through Ollama's tool calling and decides whether to call it; if it does, Pinpoint searches with its query, checks the new excerpts once more, and answers if the check now says YES. One extra search at most. Every step lands in the trace, and the dashboard shows the model's query.
+
+I tested the pieces before the whole. On the 40 dev docs questions, llama3.2 made a valid `search_docs` call 38 times, and its queries found the gold page for 5 of the 15 questions where the first search missed it. A plain "rewrite this as a search query" prompt did about the same (6 of 15). On one short question I wrote myself, though, it invented a tool called `asyncio.sleep` and wrote it out as text, which is why I measured on the real questions before deciding.
+
+The full dev run didn't pay off:
+
+| Dev, 80 questions | Without | With search again |
+|---|---|---|
+| Docs: cited a gold page | 9 / 40 | 9 / 40 |
+| Not in docs: said "I don't know" | 34 / 40 | 30 / 40 |
+| p50 / p95 | 8.2 s / 18.9 s | 13.5 s / 33.9 s |
+| Prompt tokens per 1,000 questions | 1.95M | 3.49M |
+
+The model called the tool on all but one of the refused questions, so it never chose to stay out of a question the docs don't cover. The second check said YES 5 times, and all 5 were out-of-scope questions; it never rescued a docs question. The new queries did bring back right pages, but the same 3B check judges them, so docs answers didn't move, and the second chance let out-of-scope questions through. So it stays off by default: `answer(..., agent=True)`, `"agent": true` in the API body, a checkbox in the dashboard, or `run_eval.py dev agent`.
+
 ## Trying a hosted model
 
-Docs questions are where Pinpoint is weakest (9 of 40 on dev), so I checked how high it could go. With 3 excerpts the right page is in front of the model for only 26 of the 40 dev docs questions:
+Docs questions are where Pinpoint is weakest (9 of 40 on dev), so I checked how high it could go. With 3 excerpts the right page is in front of the model for only 25 of the 40 dev docs questions (`scripts/search_misses.py`):
 
 | Excerpts sent | Right page among them (40 dev docs questions) |
 |---|---|
-| 3 (current) | 26 |
+| 3 (current) | 25 |
 | 5 | 29 |
 | 10 | 32 |
-| 20 | 37 |
 
-Getting near 30 would mean sending about 10 excerpts and a model that judges them very well. The local 3B model can't do that: 10 excerpts are about 3,000 tokens, roughly 15 s of reading on this GPU, and it already refuses 17 questions where the page was in its 3 excerpts. So I tried Gemini Flash on the free tier.
+Getting near 30 would mean sending about 10 excerpts and a model that judges them very well. The local 3B model can't do that: 10 excerpts are about 3,000 tokens, roughly 15 s of reading on this GPU, and it already refuses 14 questions where the page was in its 3 excerpts. So I tried Gemini Flash on the free tier.
 
 `pinpoint_docs/hosted.py` calls Gemini's OpenAI-compatible endpoint with plain `urllib` and returns replies in the same shape as Ollama's, so the check, streaming, cancelling, traces and eval all work unchanged; any model name starting with `gemini` goes there. What I found:
 
@@ -179,7 +196,7 @@ So the scored numbers stay on the local model, which is free and has no limits. 
 
 ## What didn't work
 
-Each of these had a pass mark set before running, on dev only.
+All of these were measured on dev only, and the bigger ones had a pass mark written down before the run.
 
 | Idea | What happened |
 |---|---|
@@ -210,7 +227,7 @@ Each of these had a pass mark set before running, on dev only.
 
 ## Dashboard
 
-`dashboard/` is a small React app on top of the API: an ask box that shows each step and the answer as it's written, live p50/p95 latency, refusal/cache/error rates, the list of recent traces (click one to see what was retrieved and how long each step took), and the test results.
+`dashboard/` is a small React app on top of the API: an ask box that shows each step and the answer as it's written (with a checkbox to turn on "search again" and see the model's own query), live p50/p95 latency, refusal/cache/error rates, the list of recent traces (click one to see what was retrieved and how long each step took), and the test results.
 
 ## Limitations
 

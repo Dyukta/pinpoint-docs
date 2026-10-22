@@ -7,11 +7,13 @@ import { Steps } from "./ui";
 const STATUS = {
   search: "Searching the docs...",
   check: "Checking whether the excerpts answer it...",
+  "search again": "The first search did not answer it, so the model is searching again...",
   answer: "Writing the answer...",
 };
 
 export default function AskBox() {
   const [question, setQuestion] = useState("");
+  const [agent, setAgent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
   const [draft, setDraft] = useState("");
@@ -32,7 +34,7 @@ export default function AskBox() {
     controller.current = new AbortController();
     const { signal } = controller.current;
     try {
-      for await (const [kind, data] of streamEvents("/ask/stream", { question }, signal)) {
+      for await (const [kind, data] of streamEvents("/ask/stream", { question, agent }, signal)) {
         if (kind === "status") setStatus(data);
         if (kind === "token") setDraft((text) => text + data);
         if (kind === "done") {
@@ -79,6 +81,10 @@ export default function AskBox() {
           </button>
         )}
       </form>
+      <label className="mt-3 flex items-center gap-2 text-sm text-indigo-100">
+        <input type="checkbox" checked={agent} onChange={(e) => setAgent(e.target.checked)} />
+        Search again if the first search does not answer it (experimental, slower)
+      </label>
       {busy && !result && (
         <div className="mt-4 space-y-3">
           <p className="text-sm text-indigo-100">{STATUS[status] ?? "Sending..."}</p>

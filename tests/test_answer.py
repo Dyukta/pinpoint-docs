@@ -107,6 +107,35 @@ def test_only_the_answer_text_is_streamed(monkeypatch):
     assert events[-1][1]["sources"] == ["https://a/"]
 
 
+def test_agent_searches_again_after_a_no(monkeypatch):
+    other = {**HIT, "id": "other#1", "page": "other.md", "url": "https://other/", "text": "Something else."}
+    body = {**HIT, "page": "tutorial/body.md"}
+    monkeypatch.setattr(answer_module, "embed_question", lambda q: [1.0, 0.0])
+    monkeypatch.setattr(
+        answer_module, "search", lambda q, k, vector=None: [body] if q == "request body model" else [other]
+    )
+    verdicts = iter(["NO", "YES"])
+    queries = []
+
+    def fake_chat(model, system, user, history=(), stream=False, tools=None, **options):
+        if tools:
+            queries.append(user)
+            call = {"function": {"name": "search_docs", "arguments": {"query": "request body model"}}}
+            return {"message": {"content": "", "tool_calls": [call]}, "prompt_eval_count": 5, "eval_count": 5}
+        if stream:
+            return streamed("EXCERPTS: 1\nANSWER: Use a model.")
+        return {"message": {"content": next(verdicts)}, "prompt_eval_count": 5, "eval_count": 1}
+
+    monkeypatch.setattr(answer_module, "chat", fake_chat)
+    question = "How do I declare a body?"
+    *_, (_, result) = answer_module.respond(question, 3, "llama3.2", use_cache=False, agent=True)
+    assert queries == [question]
+    assert result["agent"] == {"query": "request body model", "retrieved": ["body#1"], "answerable": True}
+    assert result["answer"] == "Use a model." and result["sources"] == ["https://a/"]
+    assert result["retrieved"] == ["other#1"] and result["agent_seconds"] is not None
+    assert [c["step"] for c in result["calls"]] == ["check", "agent", "check", "answer"]
+
+
 def test_cancel_stops_the_answer_and_logs_it(tmp_path, monkeypatch):
     import threading
 

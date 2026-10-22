@@ -3,7 +3,7 @@ import statistics
 
 from pinpoint_docs.answer import TRACES
 
-STEPS = ("search_seconds", "check_seconds", "answer_seconds")
+STEPS = ("search_seconds", "check_seconds", "agent_seconds", "answer_seconds")
 
 
 def seconds(row):

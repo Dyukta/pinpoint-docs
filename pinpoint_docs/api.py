@@ -28,6 +28,7 @@ app = FastAPI(
 
 class Question(BaseModel):
     question: str = Field(min_length=3, max_length=20000)
+    agent: bool = False
 
 
 class Answer(BaseModel):
@@ -54,7 +55,7 @@ def rate_limit(request: Request):
 
 @app.post("/ask", dependencies=[Depends(rate_limit)])
 def ask(body: Question) -> Answer:
-    return Answer(**answer(body.question))
+    return Answer(**answer(body.question, agent=body.agent))
 
 
 @app.post("/ask/stream", dependencies=[Depends(rate_limit)])
@@ -66,7 +67,7 @@ def ask_stream(body: Question):
         events = asyncio.Queue()
 
         def produce():
-            for event in answer_events(body.question, cancel=cancel):
+            for event in answer_events(body.question, cancel=cancel, agent=body.agent):
                 loop.call_soon_threadsafe(events.put_nowait, event)
 
         threading.Thread(target=produce, daemon=True).start()
