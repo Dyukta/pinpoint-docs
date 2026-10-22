@@ -8,54 +8,67 @@ from pinpoint_docs.search import search
 from scripts.compare_retrieval import query_text
 from scripts.run_eval import ROOT, load_split
 
-PARTIAL_ASK = "Do these excerpts contain information that answers the question, fully or in part? Reply YES or NO."
+K = 3
+NAME_SYSTEM = "You check whether documentation excerpts answer a question. Reply with only an excerpt number or NONE."
+NAME_ASK = "Which excerpt contains the answer to the question? Reply with only the excerpt number, or NONE."
 
 
-def without_code(q):
-    description = re.findall(r"### Description\n(.*?)(?=\n### |\Z)", q["question"], re.S)
-    body = description[0] if description else re.sub(r"```.*?```", "", q["question"], flags=re.S)
-    return q["title"] + "\n\n" + body.strip()
+def says_yes(reply, hits):
+    return reply.strip().upper().startswith("YES")
+
+
+def names_excerpt(reply, hits):
+    number = re.search(r"\d+", reply)
+    return bool(number) and 1 <= int(number[0]) <= len(hits)
 
 
 VARIANTS = {
-    "current": (CHECK_ASK, lambda q: query_text(q, full=True)),
-    "fully or in part": (PARTIAL_ASK, lambda q: query_text(q, full=True)),
-    "no code": (CHECK_ASK, without_code),
+    "llama3.2 yes/no": (MODEL, CHECK, CHECK_ASK, says_yes),
+    "llama3.2 name excerpt": (MODEL, NAME_SYSTEM, NAME_ASK, names_excerpt),
+    "qwen2.5:3b yes/no": ("qwen2.5:3b", CHECK, CHECK_ASK, says_yes),
 }
-
-
-def says_yes(question, context, ask):
-    reply = chat(MODEL, CHECK, f"Question:\n{question}\n\nExcerpts:\n\n{context}\n\n{ask}", num_predict=3)
-    return reply["message"]["content"].strip().upper().startswith("YES")
 
 
 def main():
     name = sys.argv[1] if len(sys.argv) > 1 else "dev"
+    peek = "peek" in sys.argv
+    questions = load_split(name)
     rows = []
-    for n, q in enumerate(load_split(name), 1):
-        hits = search(query_text(q, full=True))
+    for q in questions:
+        text = query_text(q, full=True)
+        hits = search(text, K)
         found = any(c["page"] in q["gold_pages"] for c in hits)
-        context = excerpts(hits)
-        start = time.perf_counter()
-        votes = {v: says_yes(make(q), context, ask) for v, (ask, make) in VARIANTS.items()}
-        rows.append({"id": q["id"], "docs": bool(q["gold_pages"]), "found": found, **votes})
-        print(
-            f"{n}/{len(load_split(name))} {'docs' if q['gold_pages'] else 'other'} found={found!s:<5} "
-            + " ".join(f"{v}={'Y' if y else 'N'}" for v, y in votes.items())
-            + f" {time.perf_counter() - start:.0f}s",
-            flush=True,
-        )
+        rows.append({"id": q["id"], "docs": bool(q["gold_pages"]), "found": found, "text": text, "hits": hits})
+    if peek:
+        rows = [r for r in rows if r["found"]][:4] + [r for r in rows if not r["docs"]][:2]
 
-    out = ROOT / "evals" / f"gate_{name}.json"
-    out.write_text(json.dumps({"split": name, "rows": rows}, indent=1), encoding="utf-8")
+    for variant, (model, system, ask, accepts) in VARIANTS.items():
+        start = time.perf_counter()
+        for n, row in enumerate(rows, 1):
+            prompt = f"Question:\n{row['text']}\n\nExcerpts:\n\n{excerpts(row['hits'])}\n\n{ask}"
+            reply = chat(model, system, prompt, num_predict=10)["message"]["content"]
+            row[variant] = accepts(reply, row["hits"])
+            row[f"{variant} reply"] = reply
+            if peek:
+                print(f"{variant:<24} #{row['id']} {'docs found' if row['docs'] else 'out of scope'}: {reply!r}")
+            else:
+                print(f"\r{variant}: {n}/{len(rows)}", end="", flush=True)
+        print(f"  {time.perf_counter() - start:.0f}s")
+    if peek:
+        return
+
+    out = ROOT / "evals" / f"gate_models_{name}.json"
+    keep = ["id", "docs", "found", *VARIANTS, *(f"{v} reply" for v in VARIANTS)]
+    out.write_text(json.dumps({"split": name, "k": K, "rows": [{k: r[k] for k in keep} for r in rows]}, indent=1))
     found = [r for r in rows if r["docs"] and r["found"]]
     missed = [r for r in rows if r["docs"] and not r["found"]]
     other = [r for r in rows if not r["docs"]]
-    print(f"\n-> {out.name}\n{'variant':<18} found docs YES   missed docs NO   non-docs NO")
+    print(f"\n-> {out.name}\n{'variant':<24} found docs YES   missed docs NO   non-docs NO")
     for v in VARIANTS:
-        print(
-            f"{v:<18} {sum(r[v] for r in found):>3}/{len(found):<11} {sum(not r[v] for r in missed):>3}/{len(missed):<12} {sum(not r[v] for r in other):>3}/{len(other)}"
-        )
+        yes_found = f"{sum(r[v] for r in found)}/{len(found)}"
+        no_missed = f"{sum(not r[v] for r in missed)}/{len(missed)}"
+        no_other = f"{sum(not r[v] for r in other)}/{len(other)}"
+        print(f"{v:<24} {yes_found:<16} {no_missed:<16} {no_other}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,646 @@
+{
+ "split": "dev",
+ "k": 3,
+ "rows": [
+  {
+   "id": 13608,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13449,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 16376,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14889,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14012,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14082,
+   "docs": true,
+   "found": false,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14311,
+   "docs": true,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13538,
+   "docs": true,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13245,
+   "docs": true,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14698,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14094,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14363,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13842,
+   "docs": true,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 15084,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13261,
+   "docs": true,
+   "found": false,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 15846,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14719,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13238,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 16085,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13812,
+   "docs": true,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14742,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13779,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13392,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13651,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 15328,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14380,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 15750,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13346,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 15914,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13447,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14334,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13942,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13724,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14296,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14021,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14377,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13638,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13586,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14967,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13738,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 15639,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13467,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 16139,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14324,
+   "docs": true,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 15742,
+   "docs": true,
+   "found": false,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13679,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13723,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13705,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13868,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14601,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 15843,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13376,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 16404,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13249,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13490,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14151,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13660,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13382,
+   "docs": true,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 16473,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13973,
+   "docs": true,
+   "found": true,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13899,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14462,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14768,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13523,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 15707,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14300,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 16344,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 16413,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 16395,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13349,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13673,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 16486,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14085,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13206,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14811,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13964,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13707,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 14807,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13911,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": true,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  },
+  {
+   "id": 13744,
+   "docs": false,
+   "found": false,
+   "llama3.2 yes/no": false,
+   "llama3.2 name excerpt": false,
+   "qwen2.5:3b yes/no": false
+  }
+ ]
+}

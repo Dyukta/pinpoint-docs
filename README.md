@@ -193,6 +193,9 @@ Each of these had a pass mark set before running, on dev only.
 | `qwen2.5:3b` instead of llama3.2 | Cited nothing on the first 6 questions I tried end to end |
 | One system prompt for check and answer | Passes fell from 44 to 33 (see above) |
 | Skipping release-notes chunks unless the question asks about the changelog | Release notes are 1,185 of the 2,502 chunks and read like bug reports; half of the wrong answers to out-of-scope dev questions had one in the top 3. Out-of-scope "I don't know" went from 34 to 36 of 40, but docs passes fell from 9 to 8 and a fresh unseen sample got 34 of 40 against a bar of 35. Missed both bars by one question, so I dropped it |
+| One chunk per page in the top 3 | The same page often filled 2 or 3 of the 3 slots, so I kept only the best chunk from each page. Search got better: a gold page in the top 3 went from 25 to 30 of 40 dev docs questions (5 fixed, none broken). The full run got worse: 43 to 39 passes. The check refused 18 found pages instead of 14, and with 3 different pages in front of it, it answered 11 out-of-scope questions instead of 6. Parked until the check can use better search |
+| A stricter check: "name the excerpt" or `qwen2.5:3b` | On the 30 dev docs questions with a gold page in the top 3, today's check says YES to 12. Asking for the excerpt number, or using `qwen2.5:3b` for the same YES/NO question, gave 0 of 30, and NO to all 40 out-of-scope ones. The raw replies were almost all `NONE` or `NO`. (The first run cut replies at 3 tokens, which also chopped "Excerpt 3" before the number; the cap is now 10.) A 3B judge here is either too willing or too strict |
+| A quote check for faithfulness | The answer had to include one line copied from the excerpts, and code checked the line was really in a cited excerpt. 11 of 21 answers passed. But a real quote doesn't mean a right answer: 5 of the 8 right answers had one, and so did 6 of the 13 wrong ones, including out-of-scope questions answered with a genuine docs line. Used as a filter it would fix 3 wrong answers and break 3 right ones; shown as a "verified" badge it would make wrong answers look trustworthy. Passes also dipped from 43 to 42, so I dropped it |
 | Gemini free tier for the eval | 20 requests per day per model, a dev run needs 80 to 160 (see "Trying a hosted model") |
 
 ## Other problems I hit
@@ -212,11 +215,12 @@ Each of these had a pass mark set before running, on dev only.
 ## Limitations
 
 - Small samples: 50 test and 80 dev questions. Apart from the two significant results, most differences are noise.
-- It still answers few docs questions: 9 of 28 on test. Search misses the gold page for 11, and the check refuses 7 where the page was found.
+- It still answers few docs questions: 9 of 28 on test. Search misses the gold page for 11, and the check refuses 7 where the page was found. The check is now the main limit: making search better didn't raise the score, because the 3B model can't reliably tell when the excerpts answer the question.
 - Answers aren't always faithful: only 3 of 12 were fully backed by the excerpts.
 - 3B model on a 4 GB GPU. Reading speed sets the floor on latency, and a 7-8B model doesn't fit.
 - One grader (me), one library, one docs version, English only.
 - The rate limit lives in one process's memory, and the injection probe is only 5 attacks.
+- The Docker image builds in CI on every push, but `docker compose up` (app plus Ollama) hasn't been run end to end yet, and Ollama runs on the CPU in it.
 - Streamed words are shown before the link filter runs on the final answer, so a removed link could flash on screen for a moment.
 
 ## Layout
