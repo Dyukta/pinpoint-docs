@@ -48,7 +48,7 @@ def folds(ids, labels, seed=0):
     rng = random.Random(seed)
     out = [[] for _ in range(FOLDS)]
     for label in (1, 0):
-        group = [i for i, y in zip(ids, labels) if y == label]
+        group = [i for i, y in zip(ids, labels, strict=True) if y == label]
         rng.shuffle(group)
         for n, i in enumerate(group):
             out[n % FOLDS].append(i)
@@ -73,7 +73,7 @@ def main():
         held = [row_of[i] for i in part]
         kept = [n for n in range(len(dev)) if n not in held]
         model = train(np.vstack([x_dev[kept], x_extra]), np.r_[y_dev[kept], y_extra])
-        for n, p in zip(held, probability(model, x_dev[held])):
+        for n, p in zip(held, probability(model, x_dev[held]), strict=True):
             chance[dev[n]["id"]] = float(p)
 
     runs = {r["id"]: r for r in json.loads((ROOT / "evals" / name).read_text(encoding="utf-8"))["results"]}
@@ -84,19 +84,37 @@ def main():
         idk = r["said_idk"] or not yes
         passed = r["pass"] if yes else not q["gold_pages"]
         took = seconds(r) if yes else r["search_seconds"]
-        rows.append({"id": q["id"], "docs": bool(q["gold_pages"]), "chance": round(chance[q["id"]], 3), "yes": yes, "said_idk": idk, "pass": passed, "seconds": took})
+        rows.append(
+            {
+                "id": q["id"],
+                "docs": bool(q["gold_pages"]),
+                "chance": round(chance[q["id"]], 3),
+                "yes": yes,
+                "said_idk": idk,
+                "pass": passed,
+                "seconds": took,
+            }
+        )
 
     docs = [r for r in rows if r["docs"]]
     other = [r for r in rows if not r["docs"]]
     passed = sum(r["pass"] for r in rows)
     idk = sum(r["said_idk"] for r in other)
     out = ROOT / "evals" / "gate_trained_dev.json"
-    out.write_text(json.dumps({"no_check_file": name, "folds": FOLDS, "l2": L2, "rows": rows}, indent=1), encoding="utf-8")
+    out.write_text(
+        json.dumps({"no_check_file": name, "folds": FOLDS, "l2": L2, "rows": rows}, indent=1), encoding="utf-8"
+    )
     print(f"training: {len(extra)} extra out-of-scope questions always in, dev in {FOLDS} folds, test untouched")
-    print(f"gate YES on docs {sum(r['yes'] for r in docs)}/{len(docs)}, gate NO on out of scope {sum(not r['yes'] for r in other)}/{len(other)}")
-    print(f"docs cited gold {sum(r['pass'] for r in docs)}/{len(docs)}, out of scope said I don't know {idk}/{len(other)}")
+    print(
+        f"gate YES on docs {sum(r['yes'] for r in docs)}/{len(docs)}, gate NO on out of scope {sum(not r['yes'] for r in other)}/{len(other)}"
+    )
+    print(
+        f"docs cited gold {sum(r['pass'] for r in docs)}/{len(docs)}, out of scope said I don't know {idk}/{len(other)}"
+    )
     print(f"passed {passed}/{len(rows)}, p50 {statistics.median(r['seconds'] for r in rows):.1f}s")
-    print(f"bar: passed > {BAR_PASSED}/80 and I don't know >= {BAR_IDK}/40 -> {'PASS' if passed > BAR_PASSED and idk >= BAR_IDK else 'FAIL'}")
+    print(
+        f"bar: passed > {BAR_PASSED}/80 and I don't know >= {BAR_IDK}/40 -> {'PASS' if passed > BAR_PASSED and idk >= BAR_IDK else 'FAIL'}"
+    )
     print(f"-> {out.name}")
 
 
