@@ -30,7 +30,7 @@ def verdict(text):
     return words[0].lower() if words and words[0] in ("YES", "PARTLY", "NO") else "unclear"
 
 
-def judge(row, question, chunks, model):
+def judge(row, question, chunks, model, metrics=tuple(ASK)):
     hits = [chunks[i] for i in row.get("retrieved", []) if i in chunks]
     fields = {
         "question": query_text(question, full=True),
@@ -39,9 +39,10 @@ def judge(row, question, chunks, model):
         "excerpts": excerpts(hits),
     }
     out = {}
-    for metric, (system, user) in ASK.items():
+    for metric in metrics:
         if metric == "faithful" and not hits:
             continue
+        system, user = ASK[metric]
         reply = chat(model, system, user.format(**fields), num_predict=3)
         out[metric] = verdict(reply["message"]["content"])
     return out
@@ -56,7 +57,9 @@ def agreement(pairs):
 
 
 def main():
-    run, system = sys.argv[1], sys.argv[2]
+    run, system, flags = sys.argv[1], sys.argv[2], sys.argv[3:]
+    model = next((a for a in flags if a not in ("correct", "hand")), MODEL)
+    metrics = ["correct"] if "correct" in flags else list(ASK)
     rows = json.loads((ROOT / "evals" / run).read_text(encoding="utf-8"))["results"]
     questions = {q["id"]: q for q in load_questions()}
     chunks = {c["id"]: c for c in load_chunks()}
@@ -64,31 +67,32 @@ def main():
     correct_hand = {g["id"]: HAND[g[system]] for g in hand["grades"] if g[system] in HAND}
     checks_hand = {g["id"]: g for g in hand.get("answer_checks", [])} if system == "pinpoint" else {}
 
+    out = ROOT / "evals" / (f"judged_{run}" if model == MODEL else f"judged_{model}_{run}")
+    done = {j["id"]: j for j in json.loads(out.read_text(encoding="utf-8"))["results"]} if out.exists() else {}
     judged = []
     for row in rows:
         if row["answer"].strip() == IDK or row.get("said_idk"):
             continue
-        verdicts = judge(row, questions[row["id"]], chunks, MODEL)
+        if "hand" in flags and row["id"] not in correct_hand:
+            continue
+        if row["id"] in done:
+            judged.append(done[row["id"]])
+            continue
+        verdicts = judge(row, questions[row["id"]], chunks, model, metrics)
         judged.append({"id": row["id"], "tag": row["tag"], **verdicts})
+        out.write_text(json.dumps({"run": run, "judge": model, "results": judged}, indent=1), encoding="utf-8")
         print(f"#{row['id']} {row['tag']:<13} " + "  ".join(f"{k} {v}" for k, v in verdicts.items()), flush=True)
 
-    out = ROOT / "evals" / f"judged_{run}"
-    out.write_text(json.dumps({"run": run, "judge": MODEL, "results": judged}, indent=1), encoding="utf-8")
-    print(f"\n{len(judged)} answers judged -> {out.name}")
-    for metric in ASK:
+    print(f"\n{len(judged)} answers judged ({len(done)} from an earlier run) -> {out.name}")
+    for metric in metrics:
         values = [j[metric] for j in judged if metric in j]
         if values:
             print(f"{metric}: {dict(Counter(values))}")
     print("\nagreement with hand grades:")
-    print(
-        f"  correct:  {agreement([(j['correct'], correct_hand[j['id']]) for j in judged if j['id'] in correct_hand])}"
-    )
-    print(
-        f"  faithful: {agreement([(j['faithful'], checks_hand[j['id']]['faithful']) for j in judged if j['id'] in checks_hand and 'faithful' in j])}"
-    )
-    print(
-        f"  relevant: {agreement([(j['relevant'], checks_hand[j['id']]['relevant']) for j in judged if j['id'] in checks_hand])}"
-    )
+    for metric in metrics:
+        hand_grade = correct_hand if metric == "correct" else {i: g[metric] for i, g in checks_hand.items()}
+        pairs = [(j[metric], hand_grade[j["id"]]) for j in judged if j["id"] in hand_grade and metric in j]
+        print(f"  {metric}: {agreement(pairs)}")
 
 
 if __name__ == "__main__":

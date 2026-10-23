@@ -97,7 +97,7 @@ All measured on dev, most against a pass mark written down before the run.
 8. **One chunk per page.** Search hits rose from 25 to 30 of 40, but passes fell from 43 to 39, because the check refused more found pages and answered more out-of-scope ones.
 9. **Quote check for faithfulness.** A real quote didn't mean a right answer: 5 of 8 right answers had one, and so did 6 of 13 wrong ones.
 10. **"Search again" tool-calling agent.** Docs answers stayed at 9 of 40, out-of-scope "I don't know" fell from 34 to 30, and p50 went from 8.2 s to 13.5 s. It's kept as an option, off by default.
-11. **`llama3.2` as an automatic grader.** It agreed with the hand grades on as few as 1 of 8 answers.
+11. **Automatic graders.** `llama3.2` agreed with the hand grades on as few as 1 of 8 answers. `gemini-3.6-flash` gave the same correct / partly / wrong grade on 11 of 22 (2 of 8 for Pinpoint's answers), so it could no longer reach the 80% mark set before the run, and the last 3 weren't judged.
 12. **`qwen2.5:3b` as the answer model.** It cited nothing on the first 6 questions tried.
 13. **Gemini free tier for the eval.** It allows 20 requests per day per model, but one dev run needs 80 to 160.
 14. **Trained YES/NO gate** (logistic regression on the question embedding, trained on 136 extra out-of-scope questions plus dev in 5 folds). Its scores barely separated docs from out-of-scope questions (AUC 0.55, where 0.5 is a coin flip). It said YES to 10 of 40 docs questions, and passes fell from 43 to 39. With no check at all, the model cites the right page for 22 of 40 docs questions, so the hard part is telling the two kinds apart, not answering.

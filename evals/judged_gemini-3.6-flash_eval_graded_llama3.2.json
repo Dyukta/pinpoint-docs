@@ -1,0 +1,46 @@
+{
+ "run": "eval_graded_llama3.2.json",
+ "judge": "gemini-3.6-flash",
+ "results": [
+  {
+   "id": 16376,
+   "tag": "docs",
+   "correct": "no"
+  },
+  {
+   "id": 14082,
+   "tag": "docs",
+   "correct": "yes"
+  },
+  {
+   "id": 13245,
+   "tag": "docs",
+   "correct": "yes"
+  },
+  {
+   "id": 14094,
+   "tag": "docs",
+   "correct": "no"
+  },
+  {
+   "id": 14363,
+   "tag": "docs",
+   "correct": "partly"
+  },
+  {
+   "id": 13261,
+   "tag": "docs",
+   "correct": "no"
+  },
+  {
+   "id": 15846,
+   "tag": "docs",
+   "correct": "yes"
+  },
+  {
+   "id": 16085,
+   "tag": "docs",
+   "correct": "partly"
+  }
+ ]
+}

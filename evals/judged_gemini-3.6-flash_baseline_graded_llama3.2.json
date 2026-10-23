@@ -1,0 +1,76 @@
+{
+ "run": "baseline_graded_llama3.2.json",
+ "judge": "gemini-3.6-flash",
+ "results": [
+  {
+   "id": 13449,
+   "tag": "docs",
+   "correct": "no"
+  },
+  {
+   "id": 16376,
+   "tag": "docs",
+   "correct": "no"
+  },
+  {
+   "id": 14012,
+   "tag": "docs",
+   "correct": "no"
+  },
+  {
+   "id": 14082,
+   "tag": "docs",
+   "correct": "yes"
+  },
+  {
+   "id": 14311,
+   "tag": "docs",
+   "correct": "no"
+  },
+  {
+   "id": 13538,
+   "tag": "docs",
+   "correct": "partly"
+  },
+  {
+   "id": 13245,
+   "tag": "docs",
+   "correct": "yes"
+  },
+  {
+   "id": 14698,
+   "tag": "docs",
+   "correct": "no"
+  },
+  {
+   "id": 14094,
+   "tag": "docs",
+   "correct": "yes"
+  },
+  {
+   "id": 14363,
+   "tag": "docs",
+   "correct": "partly"
+  },
+  {
+   "id": 13842,
+   "tag": "docs",
+   "correct": "no"
+  },
+  {
+   "id": 15084,
+   "tag": "docs",
+   "correct": "no"
+  },
+  {
+   "id": 13261,
+   "tag": "docs",
+   "correct": "no"
+  },
+  {
+   "id": 15846,
+   "tag": "docs",
+   "correct": "no"
+  }
+ ]
+}
