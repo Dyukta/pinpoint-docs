@@ -5,11 +5,11 @@ RAG over the FastAPI docs. You ask a FastAPI question, it answers only from the 
 ## Results
 
 - Model alone vs Pinpoint, 20 docs questions graded by hand: the model alone got 12 of its 17 answers wrong. Pinpoint got 1 of 8 wrong (it said "I don't know" to the rest).
-- On 22 held-out questions the docs don't answer, Pinpoint says "I don't know" 18 times. Without the YES/NO check it never does.
-- The check was picked on dev data, then tested once on 50 held-out questions: 27 pass with it, 15 without (sign test p = 0.02).
-- Latency on 80 dev questions went from 22.8 s to 8.2 s p50 (53.5 s to 18.9 s p95) with 43 passes vs 44 before.
+- On 22 held-out questions the docs don't answer, Pinpoint says "I don't know" 15 times. Without the YES/NO check it never does.
+- The check was picked on dev data, then the final setup was tested once on 50 held-out questions: 21 pass with the check, 14 without. That's not significant (sign test p = 0.21). Before the speed work it was 27 vs 15 (p = 0.02).
+- Latency on 80 dev questions went from 22.8 s to 8.2 s p50 (53.5 s to 18.9 s p95) with 43 passes vs 44 before. On the test set it's 9.6 s p50 (20.4 s p95).
 
-The samples are small, so one question moves a score by 2 to 5 points. Every number here comes from a script and a result file in `evals/`. The held-out numbers are from before the speed work; I'll rerun the test set once with the final setup.
+The samples are small, so one question moves a score by 2 to 5 points. Every number here comes from a script and a result file in `evals/`.
 
 ## Why
 
@@ -61,14 +61,15 @@ A docs question passes if the answer cites a gold page. Any other question passe
 
 ### YES/NO check on the test set
 
-| Test, 50 questions | No check | With check |
-|---|---|---|
-| Passed | 15 | 27 |
-| Docs: cited a gold page | 15 / 28 | 9 / 28 |
-| Not in docs: said "I don't know" | 0 / 22 | 18 / 22 |
-| Answers that cite a gold page | 15 / 50 | 9 / 18 |
+| Test, 50 questions | No check | With check | With check, before the speed work |
+|---|---|---|---|
+| Passed | 14 | 21 | 27 |
+| Docs: cited a gold page | 14 / 28 | 6 / 28 | 9 / 28 |
+| Not in docs: said "I don't know" | 0 / 22 | 15 / 22 | 18 / 22 |
+| Answers that cite a gold page | 14 / 50 | 6 / 15 | 9 / 18 |
+| p50 | 10.4 s | 9.6 s | 19.1 s |
 
-Per question the check wins 18 and loses 6 (p = 0.02). Without it the model answers all 50, including every question the docs don't cover. The cost is 6 docs answers it now refuses.
+The first two columns are the final setup, run once. Per question the check wins 15 and loses 8 (p = 0.21). Without it the model answers all 50, including every question the docs don't cover. With it, out-of-scope questions mostly get "I don't know", but 8 docs answers are lost: the check refuses 8 docs questions whose gold page it was shown. Before the speed work the same comparison was 27 vs 15 (wins 18, loses 6, p = 0.02), so the speed work made the check's win smaller (see "Speeding it up").
 
 ### On questions it has never seen
 
@@ -136,6 +137,8 @@ First I added timing to the traces: for each model call, how long Ollama spent l
 6. **One run was way slower than the rest.** The Ollama log showed another project loading `qwen2.5:3b` on the same 4 GB GPU, so the two models kept evicting each other. I reran it with nothing else on Ollama.
 
 The speed goal was met but I missed the pass goal by one (43 vs 44). Per question, 7 were lost and 6 gained, so that's noise (p = 1.0). Two of the lost ones had their gold page at rank 4, which isn't sent anymore. I kept the change and I'm noting the miss here rather than changing the goal after the fact.
+
+The held-out test run showed a bigger cost than dev: 27 passes before, 21 after. Per question, 8 were lost and 2 gained (p = 0.11, so it could still be noise). 4 of the lost ones were out-of-scope questions that now get an answer, and 4 were docs questions. The gold page was found for 15 of 28 test docs questions with 3 excerpts, against 17 with 5. The decision was made on dev before the test run, so it stands, but the test numbers above are the ones to trust.
 
 The runs are in `evals/eval_dev_before-speed_llama3.2.json`, `eval_dev_shared-prompt_llama3.2.json`, `eval_dev_neutral-k3_llama3.2.json`, and `eval_dev_llama3.2.json` (final).
 
@@ -231,8 +234,8 @@ All of these were measured on dev only, and the bigger ones had a pass mark writ
 
 ## Limitations
 
-- Small samples: 50 test and 80 dev questions. Apart from the two significant results, most differences are noise.
-- It still answers few docs questions: 9 of 28 on test. Search misses the gold page for 11, and the check refuses 7 where the page was found. The check is now the main limit: making search better didn't raise the score, because the 3B model can't reliably tell when the excerpts answer the question.
+- Small samples: 50 test and 80 dev questions. Apart from BM25 alone being worse, most differences are noise. Even the check's win on test (21 vs 14) isn't significant with the final setup.
+- It still answers few docs questions: 6 of 28 on test. Search misses the gold page for 13, the check refuses 8 where the page was found, and 1 cites the wrong page. The check is now the main limit: making search better didn't raise the score, because the 3B model can't reliably tell when the excerpts answer the question.
 - Answers aren't always faithful: only 3 of 12 were fully backed by the excerpts.
 - 3B model on a 4 GB GPU. Reading speed sets the floor on latency, and a 7-8B model doesn't fit.
 - One grader (me), one library, one docs version, English only.
