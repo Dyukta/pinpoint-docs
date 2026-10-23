@@ -100,6 +100,7 @@ All measured on dev, most against a pass mark written down before the run.
 11. **`llama3.2` as an automatic grader.** It agreed with the hand grades on as few as 1 of 8 answers.
 12. **`qwen2.5:3b` as the answer model.** It cited nothing on the first 6 questions tried.
 13. **Gemini free tier for the eval.** It allows 20 requests per day per model, but one dev run needs 80 to 160.
+14. **Trained YES/NO gate** (logistic regression on the question embedding, trained on 136 extra out-of-scope questions plus dev in 5 folds). Its scores barely separated docs from out-of-scope questions (AUC 0.55, where 0.5 is a coin flip). It said YES to 10 of 40 docs questions, and passes fell from 43 to 39. With no check at all, the model cites the right page for 22 of 40 docs questions, so the hard part is telling the two kinds apart, not answering.
 
 ## Limitations
 

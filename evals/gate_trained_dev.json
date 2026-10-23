@@ -1,0 +1,727 @@
+{
+ "no_check_file": "eval_dev_no-check_llama3.2.json",
+ "folds": 5,
+ "l2": 1.0,
+ "rows": [
+  {
+   "id": 13608,
+   "docs": true,
+   "chance": 0.07,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 10.71
+  },
+  {
+   "id": 13449,
+   "docs": true,
+   "chance": 0.001,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 1.32
+  },
+  {
+   "id": 16376,
+   "docs": true,
+   "chance": 0.009,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 1.08
+  },
+  {
+   "id": 14889,
+   "docs": true,
+   "chance": 0.0,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 2.24
+  },
+  {
+   "id": 14012,
+   "docs": true,
+   "chance": 0.295,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 4.64
+  },
+  {
+   "id": 14082,
+   "docs": true,
+   "chance": 0.078,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 0.52
+  },
+  {
+   "id": 14311,
+   "docs": true,
+   "chance": 0.001,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 3.66
+  },
+  {
+   "id": 13538,
+   "docs": true,
+   "chance": 0.0,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 0.66
+  },
+  {
+   "id": 13245,
+   "docs": true,
+   "chance": 0.761,
+   "yes": true,
+   "said_idk": false,
+   "pass": false,
+   "seconds": 8.07
+  },
+  {
+   "id": 14698,
+   "docs": true,
+   "chance": 0.0,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 0.75
+  },
+  {
+   "id": 14094,
+   "docs": true,
+   "chance": 0.996,
+   "yes": true,
+   "said_idk": false,
+   "pass": true,
+   "seconds": 6.83
+  },
+  {
+   "id": 14363,
+   "docs": true,
+   "chance": 0.089,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 1.18
+  },
+  {
+   "id": 13842,
+   "docs": true,
+   "chance": 0.879,
+   "yes": true,
+   "said_idk": false,
+   "pass": false,
+   "seconds": 12.8
+  },
+  {
+   "id": 15084,
+   "docs": true,
+   "chance": 0.767,
+   "yes": true,
+   "said_idk": false,
+   "pass": true,
+   "seconds": 6.5600000000000005
+  },
+  {
+   "id": 13261,
+   "docs": true,
+   "chance": 0.051,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 0.67
+  },
+  {
+   "id": 15846,
+   "docs": true,
+   "chance": 0.679,
+   "yes": true,
+   "said_idk": false,
+   "pass": false,
+   "seconds": 6.6
+  },
+  {
+   "id": 14719,
+   "docs": true,
+   "chance": 0.003,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 1.18
+  },
+  {
+   "id": 13238,
+   "docs": true,
+   "chance": 0.056,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 2.43
+  },
+  {
+   "id": 16085,
+   "docs": true,
+   "chance": 0.493,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 1.7
+  },
+  {
+   "id": 13812,
+   "docs": true,
+   "chance": 0.505,
+   "yes": true,
+   "said_idk": false,
+   "pass": false,
+   "seconds": 6.12
+  },
+  {
+   "id": 14742,
+   "docs": false,
+   "chance": 0.932,
+   "yes": true,
+   "said_idk": false,
+   "pass": false,
+   "seconds": 22.3
+  },
+  {
+   "id": 13779,
+   "docs": false,
+   "chance": 0.004,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.2
+  },
+  {
+   "id": 13392,
+   "docs": false,
+   "chance": 0.004,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 4.39
+  },
+  {
+   "id": 13651,
+   "docs": false,
+   "chance": 0.011,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.76
+  },
+  {
+   "id": 15328,
+   "docs": false,
+   "chance": 0.317,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.64
+  },
+  {
+   "id": 14380,
+   "docs": false,
+   "chance": 0.062,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 1.38
+  },
+  {
+   "id": 15750,
+   "docs": false,
+   "chance": 0.0,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.95
+  },
+  {
+   "id": 13346,
+   "docs": false,
+   "chance": 0.297,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 1.43
+  },
+  {
+   "id": 15914,
+   "docs": false,
+   "chance": 0.003,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 2.85
+  },
+  {
+   "id": 13447,
+   "docs": false,
+   "chance": 0.002,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 2.32
+  },
+  {
+   "id": 14334,
+   "docs": false,
+   "chance": 0.002,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 3.36
+  },
+  {
+   "id": 13942,
+   "docs": false,
+   "chance": 0.004,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 1.81
+  },
+  {
+   "id": 13724,
+   "docs": false,
+   "chance": 0.004,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.98
+  },
+  {
+   "id": 14296,
+   "docs": false,
+   "chance": 0.063,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.62
+  },
+  {
+   "id": 14021,
+   "docs": false,
+   "chance": 0.017,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.73
+  },
+  {
+   "id": 14377,
+   "docs": false,
+   "chance": 0.001,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 4.28
+  },
+  {
+   "id": 13638,
+   "docs": false,
+   "chance": 0.265,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.57
+  },
+  {
+   "id": 13586,
+   "docs": false,
+   "chance": 0.0,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 5.52
+  },
+  {
+   "id": 14967,
+   "docs": false,
+   "chance": 0.002,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.5
+  },
+  {
+   "id": 13738,
+   "docs": false,
+   "chance": 0.601,
+   "yes": true,
+   "said_idk": false,
+   "pass": false,
+   "seconds": 11.22
+  },
+  {
+   "id": 15639,
+   "docs": true,
+   "chance": 0.058,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 0.68
+  },
+  {
+   "id": 13467,
+   "docs": true,
+   "chance": 0.0,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 0.4
+  },
+  {
+   "id": 16139,
+   "docs": true,
+   "chance": 0.006,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 0.7
+  },
+  {
+   "id": 14324,
+   "docs": true,
+   "chance": 0.0,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 1.26
+  },
+  {
+   "id": 15742,
+   "docs": true,
+   "chance": 0.228,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 0.78
+  },
+  {
+   "id": 13679,
+   "docs": true,
+   "chance": 0.0,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 1.62
+  },
+  {
+   "id": 13723,
+   "docs": true,
+   "chance": 0.805,
+   "yes": true,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 42.95
+  },
+  {
+   "id": 13705,
+   "docs": true,
+   "chance": 0.015,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 61.48
+  },
+  {
+   "id": 13868,
+   "docs": true,
+   "chance": 0.159,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 1.59
+  },
+  {
+   "id": 14601,
+   "docs": true,
+   "chance": 0.413,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 0.98
+  },
+  {
+   "id": 15843,
+   "docs": true,
+   "chance": 0.004,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 0.7
+  },
+  {
+   "id": 13376,
+   "docs": true,
+   "chance": 0.001,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 0.84
+  },
+  {
+   "id": 16404,
+   "docs": true,
+   "chance": 0.604,
+   "yes": true,
+   "said_idk": false,
+   "pass": true,
+   "seconds": 12.11
+  },
+  {
+   "id": 13249,
+   "docs": true,
+   "chance": 0.041,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 3.01
+  },
+  {
+   "id": 13490,
+   "docs": true,
+   "chance": 0.939,
+   "yes": true,
+   "said_idk": false,
+   "pass": true,
+   "seconds": 9.49
+  },
+  {
+   "id": 14151,
+   "docs": true,
+   "chance": 0.234,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 0.55
+  },
+  {
+   "id": 13660,
+   "docs": true,
+   "chance": 0.0,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 0.89
+  },
+  {
+   "id": 13382,
+   "docs": true,
+   "chance": 0.004,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 5.72
+  },
+  {
+   "id": 16473,
+   "docs": true,
+   "chance": 0.0,
+   "yes": false,
+   "said_idk": true,
+   "pass": false,
+   "seconds": 2.79
+  },
+  {
+   "id": 13973,
+   "docs": true,
+   "chance": 1.0,
+   "yes": true,
+   "said_idk": false,
+   "pass": false,
+   "seconds": 7.27
+  },
+  {
+   "id": 13899,
+   "docs": false,
+   "chance": 0.0,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 3.34
+  },
+  {
+   "id": 14462,
+   "docs": false,
+   "chance": 0.002,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.54
+  },
+  {
+   "id": 14768,
+   "docs": false,
+   "chance": 0.034,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.27
+  },
+  {
+   "id": 13523,
+   "docs": false,
+   "chance": 0.001,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.42
+  },
+  {
+   "id": 15707,
+   "docs": false,
+   "chance": 0.984,
+   "yes": true,
+   "said_idk": false,
+   "pass": false,
+   "seconds": 12.77
+  },
+  {
+   "id": 14300,
+   "docs": false,
+   "chance": 0.011,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 3.49
+  },
+  {
+   "id": 16344,
+   "docs": false,
+   "chance": 0.176,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 1.82
+  },
+  {
+   "id": 16413,
+   "docs": false,
+   "chance": 0.941,
+   "yes": true,
+   "said_idk": false,
+   "pass": false,
+   "seconds": 7.8500000000000005
+  },
+  {
+   "id": 16395,
+   "docs": false,
+   "chance": 0.0,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 1.95
+  },
+  {
+   "id": 13349,
+   "docs": false,
+   "chance": 0.065,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 3.11
+  },
+  {
+   "id": 13673,
+   "docs": false,
+   "chance": 0.0,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.37
+  },
+  {
+   "id": 16486,
+   "docs": false,
+   "chance": 0.12,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 1.8
+  },
+  {
+   "id": 14085,
+   "docs": false,
+   "chance": 0.21,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.73
+  },
+  {
+   "id": 13206,
+   "docs": false,
+   "chance": 0.295,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.6
+  },
+  {
+   "id": 14811,
+   "docs": false,
+   "chance": 0.0,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 1.13
+  },
+  {
+   "id": 13964,
+   "docs": false,
+   "chance": 0.42,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 1.77
+  },
+  {
+   "id": 13707,
+   "docs": false,
+   "chance": 0.001,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 0.3
+  },
+  {
+   "id": 14807,
+   "docs": false,
+   "chance": 0.629,
+   "yes": true,
+   "said_idk": false,
+   "pass": false,
+   "seconds": 9.34
+  },
+  {
+   "id": 13911,
+   "docs": false,
+   "chance": 0.003,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 1.21
+  },
+  {
+   "id": 13744,
+   "docs": false,
+   "chance": 0.104,
+   "yes": false,
+   "said_idk": true,
+   "pass": true,
+   "seconds": 2.29
+  }
+ ]
+}

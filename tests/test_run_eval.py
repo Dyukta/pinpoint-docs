@@ -67,3 +67,18 @@ def test_fresh_sample_never_uses_dev_or_test_questions():
     assert not {q["id"] for q in questions} & (set(split["dev"]) | set(split["test"]))
     assert {q["tag"] for q in questions} <= {"bug", "other-library"}
     assert fresh_sample(seed=7)[0] == questions
+
+
+def test_trained_gate_separates_and_folds_stay_balanced():
+    import numpy as np
+
+    from scripts.train_gate import folds, probability, train
+
+    rng = np.random.default_rng(0)
+    x = np.vstack([rng.normal(1, 1, (30, 5)), rng.normal(-1, 1, (90, 5))])
+    y = np.r_[np.ones(30), np.zeros(90)]
+    p = probability(train(x, y), x)
+    assert (p[:30] > 0.5).mean() > 0.9 and (p[30:] < 0.5).mean() > 0.9
+    parts = folds(list(range(20)), [1] * 10 + [0] * 10)
+    assert sorted(i for part in parts for i in part) == list(range(20))
+    assert all(sum(i < 10 for i in part) == 2 for part in parts)
