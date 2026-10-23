@@ -1,25 +1,12 @@
 # Pinpoint
 
-RAG over the FastAPI docs. You ask a FastAPI question, it answers only from the docs, links the section it used, and says "I don't know" when the docs don't cover it. Runs locally on a GTX 1650 (4 GB) with Ollama, and I evaluate it on real questions from the FastAPI GitHub Discussions.
+Pinpoint answers FastAPI questions only from the FastAPI docs, links the exact section it used, and says "I don't know" when the docs don't cover it. It runs locally on a 4 GB GPU with Ollama and is evaluated on real questions from FastAPI's GitHub Discussions.
 
-## Results
+Stack: Python, FastAPI, Ollama (`llama3.2` 3B, `nomic-embed-text`), ChromaDB, hand-written BM25, React + Vite + Tailwind dashboard, pytest, Docker, GitHub Actions.
 
-- Model alone vs Pinpoint, 20 docs questions graded by hand: the model alone got 12 of its 17 answers wrong. Pinpoint got 1 of 8 wrong (it said "I don't know" to the rest).
-- On 22 held-out questions the docs don't answer, Pinpoint says "I don't know" 15 times. Without the YES/NO check it never does.
-- The check was picked on dev data, then the final setup was tested once on 50 held-out questions: 21 pass with the check, 14 without. That's not significant (sign test p = 0.21). Before the speed work it was 27 vs 15 (p = 0.02).
-- Latency on 80 dev questions went from 22.8 s to 8.2 s p50 (53.5 s to 18.9 s p95) with 43 passes vs 44 before. On the test set it's 9.6 s p50 (20.4 s p95).
+Every number here comes from a script and a result file in `evals/`.
 
-The samples are small, so one question moves a score by 2 to 5 points. Every number here comes from a script and a result file in `evals/`.
-
-## Why
-
-Most questions on a library's forum are already answered somewhere in its docs. A chatbot answering from memory is risky for this: it makes up flags, settings and install commands that look plausible. So Pinpoint only answers from docs sections it retrieved, cites them, and refuses when they don't contain the answer.
-
-## Stack
-
-Python 3.14, FastAPI, Ollama (`llama3.2` and `nomic-embed-text`, plus its tool calling), Gemini Flash as an optional hosted model, ChromaDB, BM25 (my own, about 30 lines), React 19 + Vite + Tailwind for the dashboard, pytest, Docker, GitHub Actions.
-
-## How it works
+## Architecture
 
 ```
 FastAPI docs 0.150.0 -> split at headings (2,502 chunks, code blocks never split)
@@ -40,44 +27,20 @@ question -> answer cache (same question, same settings) -> cached answer
                              one trace per request -> /stats, /traces -> dashboard
 ```
 
-A few details:
+- The model never writes URLs. It returns excerpt numbers and code turns them into links, so every cited page exists and was actually retrieved.
+- Answers stream to the dashboard over Server-Sent Events, and closing the page stops the model.
+- Each request saves a trace: retrieved chunks, time per step, and tokens and timings for every model call.
+- The eval calls the same `answer()` function as the API, so the scores are for the real pipeline.
 
-- The model never writes URLs. It only returns excerpt numbers, and the code maps them to links, so a cited page always exists and was actually retrieved.
-- The eval calls the same `answer()` function the API uses, so the scores are for the real pipeline.
-- BM25 is hand-written with an inverted index and a tokenizer that keeps `response_model` as one token. At 2,502 chunks a library would just add a dependency.
-- The answer cache only matches near-identical questions (cosine distance 0.03 or less). Two different real questions were never closer than 0.087. Cache entries are keyed on a hash of every setting, so changing a prompt invalidates them.
-- Each trace has the retrieved chunks and scores, time per step, and for every model call the tokens plus load, read and write time.
-- Answers stream to the dashboard word by word over Server-Sent Events, and closing the page stops the model (see "Running it as a service").
-- An optional "search again" step lets the model call a `search_docs` tool when the check says NO. It's off by default because it didn't help (see "Search again").
+## Results
 
-## Evaluation
+The evaluation set is 350 answered questions from GitHub Discussions, each tagged as answered by the docs or not. A frozen split keeps 80 dev questions for all tuning and 50 test questions (28 docs, 22 out of scope) that were run once at the end.
 
-I collected 350 answered questions from GitHub Discussions (2026-10-20) and tagged each one: `docs` (the 0.150.0 docs answer it, with gold pages), `bug` (about FastAPI but not in the docs), `other-library` (really about Pydantic, Starlette, etc.) or `skip`. Then I froze a split:
+1. **Safety:** on the 22 held-out questions the docs don't cover, Pinpoint says "I don't know" to 15. Without the YES/NO check it says it to none.
+2. **Speed:** p50 latency on dev went from 22.8 s to 8.2 s, and p95 from 53.5 s to 18.9 s, with 43 passes vs 44 before.
+3. **Cost of safety:** only 6 of 28 held-out docs questions get the right page cited. The check refuses many answerable questions (see Limitations).
 
-- dev, 80 questions (40 docs, 40 not). All tuning happens here.
-- test, 50 questions (28 docs, 22 not), all reviewed by me. Not used for any decision.
-
-A docs question passes if the answer cites a gold page. Any other question passes only if it says "I don't know". Passing doesn't mean the answer is correct, so I also graded answers by hand.
-
-### YES/NO check on the test set
-
-| Test, 50 questions | No check | With check | With check, before the speed work |
-|---|---|---|---|
-| Passed | 14 | 21 | 27 |
-| Docs: cited a gold page | 14 / 28 | 6 / 28 | 9 / 28 |
-| Not in docs: said "I don't know" | 0 / 22 | 15 / 22 | 18 / 22 |
-| Answers that cite a gold page | 14 / 50 | 6 / 15 | 9 / 18 |
-| p50 | 10.4 s | 9.6 s | 19.1 s |
-
-The first two columns are the final setup, run once. Per question the check wins 15 and loses 8 (p = 0.21). Without it the model answers all 50, including every question the docs don't cover. With it, out-of-scope questions mostly get "I don't know", but 8 docs answers are lost: the check refuses 8 docs questions whose gold page it was shown. Before the speed work the same comparison was 27 vs 15 (wins 18, loses 6, p = 0.02), so the speed work made the check's win smaller (see "Speeding it up").
-
-### On questions it has never seen
-
-To check the "I don't know" side isn't tuned to dev, `scripts/run_eval.py fresh` draws 40 random questions from the ones no split uses (all of them out of scope for the docs) and prints the seed so the draw can be repeated. With seed 8034 it said "I don't know" to 33 of 40, against 34 of 40 on dev, at the same speed (p50 8.5 s). Of the 7 it answered, I'd call about 4 wrong and 3 partly covered by the docs. Those labels are drafts I haven't reviewed, so a few "out of scope" questions are really answerable.
-
-The check is also repeatable now: across two dev runs, the 63 questions whose top 3 excerpts didn't change got the same YES or NO all 63 times. An older setup flipped 2 of 40.
-
-### Hand grades, 20 docs questions
+**Model alone vs Pinpoint**, 20 docs questions graded by hand. These grades come from an earlier setup (5 excerpts, separate check and answer calls) and weren't redone after the speed work:
 
 | | Model alone | Pinpoint |
 |---|---|---|
@@ -86,170 +49,70 @@ The check is also repeatable now: across two dev runs, the 63 questions whose to
 | Wrong | 12 | 1 |
 | "I don't know" | 3 | 12 |
 
-I also checked each of Pinpoint's 12 answers against the excerpts it was given. Only 3 were fully backed by them, 7 partly, 2 not. The links are always real but the text sometimes pulls in things from the question or from the model's memory.
+**With and without the YES/NO check**, 50 held-out test questions:
 
-### Search
-
-I tried 5 ways of chunking the docs with 3 search methods on the 40 dev docs questions.
-
-Chunking:
-- whole page: one chunk per page
-- fixed windows: every 1,200 characters, wherever that lands
-- headings, no cap: one chunk per `#`/`##`/`###` section
-- headings, cap 1,500: long sections split at blank lines or bullets, never inside a code block
-- headings, cap 3,000: same with a bigger cap
-
-Search:
-- BM25: keyword matching
-- vector: `nomic-embed-text` embeddings, closest chunks win
-- hybrid: top 50 from each, merged with RRF (`1 / (60 + rank)`)
-
-hit@5 = share of questions with a gold-page chunk in the top 5. Context = median characters in the top 5, which is what the model has to read.
-
-| Chunking | Chunks | BM25 | Vector | Hybrid | Hybrid context |
-|---|---|---|---|---|---|
-| Whole page | 155 | 0.78 | 0.62 | 0.78 | 64,579 |
-| Fixed 1,200 | 1,737 | 0.60 | 0.62 | 0.72 | 6,000 |
-| Headings, no cap | 2,061 | 0.50 | 0.68 | 0.70 | 7,335 |
-| Headings, cap 1,500 (used) | 2,502 | 0.53 | 0.62 | 0.72 | 5,692 |
-| Headings, cap 3,000 | 2,177 | 0.47 | 0.68 | 0.70 | 7,248 |
-
-BM25 alone was the only significantly worse option (0 better, 8 worse vs the chosen setup, p = 0.01). The rest are within noise. Whole pages don't fit: the top 5 are about 65,000 characters, way past the 8,192-token window. I went with headings + 1,500 cap + hybrid because it ties on accuracy, sends the least text, and links to the exact section.
-
-## Speeding it up
-
-It started at 22.8 s p50 on dev, with some questions taking over 50 s. Before changing anything I wrote down the goal: p50 at most 10 s on dev, and no fewer than the 44 passes it had.
-
-| Dev, 80 questions | Before | After |
+| | No check | With check (final) |
 |---|---|---|
-| p50 / p95 | 22.8 s / 53.5 s | 8.2 s / 18.9 s |
-| search / check / answer (p50) | 3.3 / 13.7 / 15.0 s | 0.9 / 6.7 / 2.2 s |
-| Prompt tokens per 1,000 questions | 2.69M | 1.95M |
-| Passed | 44 | 43 |
+| Passed | 14 | 21 |
+| Docs: cited the right page | 14 / 28 | 6 / 28 |
+| Out of scope: said "I don't know" | 0 / 22 | 15 / 22 |
+| p50 latency | 10.4 s | 9.6 s |
 
-First I added timing to the traces: for each model call, how long Ollama spent loading the model, reading the prompt and writing the reply. Writing was about 1 s. Nearly everything else was reading. Then, one by one:
+The check trades docs answers for safety: it stops most made-up answers but also refuses some answerable questions. Per question it wins 15 and loses 8 (p = 0.21), so on 50 questions the overall gain isn't significant.
 
-1. **2 s lost on every Ollama call.** My timer said 8.2 s for a call Ollama itself timed at 5.8 s. A request to `localhost` took 2.06 s, to `127.0.0.1` 0.01 s. On Windows Python tries IPv6 (`::1`) first and Ollama only listens on IPv4. Switched to `127.0.0.1`: about 6 s saved per question, search went from 3.3 s to 0.9 s.
-2. **Model reloads.** Ollama unloads a model after 5 idle minutes, and the next question paid 4 to 13 s to load it. Now the requests ask Ollama to keep the models loaded.
-3. **The excerpts were read twice.** The check and the answer each read about the same prompt, around 7 s each (this GPU reads about 200 tokens/s). I made the answer a follow-up message in the check's chat. The answer prompt now starts with the check prompt, Ollama reuses what it already read, and reading for the answer dropped to under 1 s.
-4. **My first try at #3 broke the check.** I had given both calls one shared system prompt ("You answer FastAPI questions..."). The check started saying YES to 26 of 40 out-of-scope questions instead of 7, and passes fell to 33. A more neutral wording got 31. The 3B model only stays strict with its original check prompt, so I kept that prompt word for word and shared it by continuing the chat instead.
-5. **Top 3 excerpts instead of 5.** The question is about 400 tokens and the 5 excerpts about 1,460, so this cuts about 600 tokens (around 3 s). The cost: a gold page is in the top 3 for 25 of 40 dev docs questions vs 29 in the top 5.
-6. **One run was way slower than the rest.** The Ollama log showed another project loading `qwen2.5:3b` on the same 4 GB GPU, so the two models kept evicting each other. I reran it with nothing else on Ollama.
+## Problems and fixes
 
-The speed goal was met but I missed the pass goal by one (43 vs 44). Per question, 7 were lost and 6 gained, so that's noise (p = 1.0). Two of the lost ones had their gold page at rank 4, which isn't sent anymore. I kept the change and I'm noting the miss here rather than changing the goal after the fact.
+1. **Answering everything.** With retrieval, the model answered every question, even ones the docs don't cover (0 of 20 "I don't know"). A YES/NO check on the retrieved sections now runs first, and 15 of 22 out-of-scope test questions get "I don't know".
+2. **Unreliable citations.** The model skipped `[2]`-style citations, and JSON output broke on quotes inside code. It now writes an `EXCERPTS: 2, 4` line and code builds the links, so every link is real and was retrieved.
+3. **Silently cut chunks.** The embedder drops text past 2,048 tokens, which hit 18 chunks, 15 of them on answer pages. Sections are now split at 1,500 characters, never inside a code block.
+4. **2 s lost on every Ollama call.** On Windows `localhost` tries IPv6 first. Requests now go to `127.0.0.1`, saving about 6 s per question.
+5. **Model reloads.** Ollama unloaded the model after 5 idle minutes, and reloading took 4 to 13 s. Requests now ask Ollama to keep it loaded.
+6. **The same prompt read twice.** The check and the answer each read the same long prompt. The answer is now a follow-up turn in the check's chat, so Ollama reuses what it read, and answer reading dropped from about 7 s to under 1 s.
+7. **GPU memory.** `llama3.2` and the embedder didn't fit on the GPU together. `llama3.2` is pinned to the GPU and question embeddings run on the CPU, which cut answer time from 25.4 s to 15.0 s.
+8. **Cancelled requests.** Closing the page left Ollama writing and lost the trace. A worker thread now watches a cancel flag, closes the Ollama stream and saves the trace; Ollama stops 1.1 s after the page closes.
+9. **Prompt injection.** Forum posts can carry instructions. Citations are by number only, answer links may only come from the excerpts, and answers render as plain text. 0 of 5 injection attacks got through.
 
-The held-out test run showed a bigger cost than dev: 27 passes before, 21 after. Per question, 8 were lost and 2 gained (p = 0.11, so it could still be noise). 4 of the lost ones were out-of-scope questions that now get an answer, and 4 were docs questions. The gold page was found for 15 of 28 test docs questions with 3 excerpts, against 17 with 5. The decision was made on dev before the test run, so it stands, but the test numbers above are the ones to trust.
+## Trade-offs
 
-The runs are in `evals/eval_dev_before-speed_llama3.2.json`, `eval_dev_shared-prompt_llama3.2.json`, `eval_dev_neutral-k3_llama3.2.json`, and `eval_dev_llama3.2.json` (final).
+| Choice | Gain | Cost | Why it was kept |
+|---|---|---|---|
+| YES/NO check before answering | Out-of-scope "I don't know" 0 → 15 of 22 on test | Docs questions cited 14 → 6 of 28 | A wrong answer with a real-looking docs link is worse than "I don't know" |
+| Top 3 excerpts instead of 5 | About 600 fewer prompt tokens, about 3 s faster per question | Right page in front of the model for 25 instead of 29 of 40 dev docs questions; test passes 27 → 21 (p = 0.11) | Decided on dev (passes 44 → 43, p = 1.0) before the test run; changing it after seeing test results would be tuning on the test set, so revisiting it needs fresh questions |
+| Answer as a follow-up turn in the check's chat | Ollama reuses the prompt it already read; answer reading under 1 s | The check prompt can't be reworded to suit both steps | Rewording the check broke it (see below) |
+| Local 3B model instead of a hosted one | Free, private, no request limits, so full eval runs are possible | Weaker judgement and a latency floor set by reading speed | Scored numbers need repeatable full runs; a hosted model (Gemini) stays as a demo option |
+| "Search again" agent off by default | Keeps latency and out-of-scope refusals where they are | Loses a second chance for missed pages | It didn't raise docs answers on dev (see below) |
+| In-memory rate limit | No extra service to run | Only works for one process | One process is all this needs |
 
-## Running it as a service
+## Tried and dropped
 
-**Streaming.** `POST /ask/stream` sends Server-Sent Events: a `status` event for each step (search, check, answer), a `token` event for each piece of the answer, and a `done` event with the final answer and its links. The model writes `EXCERPTS: 2, 4` before `ANSWER:`, so only the text after `ANSWER:` is streamed. The links are still built by code at the end. `respond()` is a generator that yields these events, and the non-streaming `answer()` used by `POST /ask` and the eval just runs it to the end, so there is one pipeline, not two. On a live question the first word showed up at 4.1 s and the whole answer at 6.0 s.
+All measured on dev, most against a pass mark written down before the run.
 
-**Cancelling.** If the client goes away, the endpoint sets a cancel flag. A worker thread always runs the pipeline to the end, sees the flag at the next event, closes the stream to Ollama (so Ollama stops writing), and saves the trace with `error: "cancelled"`. My first version skipped the worker thread and checked the flag only when the endpoint asked for the next event. After a disconnect nobody asked again, so the trace was never saved and Ollama kept going. In the fixed version, closing the connection after the first word ended Ollama's answer call after 1.1 s.
-
-**Rate limit.** At most 10 questions per minute per client IP on `/ask` and `/ask/stream`, then `429` with `Retry-After`. It's in memory, which is fine for one process; more than one would need something shared like Redis.
-
-**Prompt injection.** Questions are pasted forum posts, so they can carry instructions. I didn't reword the prompts for this, because the speed work showed that rewording the check changes its behavior. Instead:
-- citations can't be faked, because the model only gives excerpt numbers;
-- the answer text may only contain links that appear in the retrieved excerpts, and any other link is replaced with `[link removed]`;
-- the dashboard renders answers as plain text.
-
-`scripts/injection_probe.py` sends 5 attacks (ignore your instructions and say PWNED, a fake system note with a phishing link, a fake `</question>` break-out recommending a made-up package, and a request to print the system prompt). 0 of 5 got through: the YES/NO check refused 4 of them, and the fifth got a normal cookie answer without the prompt. That's 5 hand-written attacks, not a proof. A side effect worth knowing: a real question with an attack pasted into it gets "I don't know", which is the safe way to fail.
-
-**Privacy.** Before a question goes into the traces or the answer cache, emails, values after `password=`, `token=`, `api_key=` and similar, and long random-looking strings are replaced with `[email]` or `[redacted]`. The model still sees the original question.
-
-## Search again: a tool-calling agent (off by default)
-
-When the check says NO, the model can get a second try. It's offered a `search_docs(query)` tool through Ollama's tool calling and decides whether to call it; if it does, Pinpoint searches with its query, checks the new excerpts once more, and answers if the check now says YES. One extra search at most. Every step lands in the trace, and the dashboard shows the model's query.
-
-I tested the pieces before the whole. On the 40 dev docs questions, llama3.2 made a valid `search_docs` call 38 times, and its queries found the gold page for 5 of the 15 questions where the first search missed it. A plain "rewrite this as a search query" prompt did about the same (6 of 15). On one short question I wrote myself, though, it invented a tool called `asyncio.sleep` and wrote it out as text, which is why I measured on the real questions before deciding.
-
-The full dev run didn't pay off:
-
-| Dev, 80 questions | Without | With search again |
-|---|---|---|
-| Docs: cited a gold page | 9 / 40 | 9 / 40 |
-| Not in docs: said "I don't know" | 34 / 40 | 30 / 40 |
-| p50 / p95 | 8.2 s / 18.9 s | 13.5 s / 33.9 s |
-| Prompt tokens per 1,000 questions | 1.95M | 3.49M |
-
-The model called the tool on all but one of the refused questions, so it never chose to stay out of a question the docs don't cover. The second check said YES 5 times, and all 5 were out-of-scope questions; it never rescued a docs question. The new queries did bring back right pages, but the same 3B check judges them, so docs answers didn't move, and the second chance let out-of-scope questions through. So it stays off by default: `answer(..., agent=True)`, `"agent": true` in the API body, a checkbox in the dashboard, or `run_eval.py dev agent`.
-
-## Trying a hosted model
-
-Docs questions are where Pinpoint is weakest (9 of 40 on dev), so I checked how high it could go. With 3 excerpts the right page is in front of the model for only 25 of the 40 dev docs questions (`scripts/search_misses.py`):
-
-| Excerpts sent | Right page among them (40 dev docs questions) |
-|---|---|
-| 3 (current) | 25 |
-| 5 | 29 |
-| 10 | 32 |
-
-Getting near 30 would mean sending about 10 excerpts and a model that judges them very well. The local 3B model can't do that: 10 excerpts are about 3,000 tokens, roughly 15 s of reading on this GPU, and it already refuses 14 questions where the page was in its 3 excerpts. So I tried Gemini Flash on the free tier.
-
-`pinpoint_docs/hosted.py` calls Gemini's OpenAI-compatible endpoint with plain `urllib` and returns replies in the same shape as Ollama's, so the check, streaming, cancelling, traces and eval all work unchanged; any model name starting with `gemini` goes there. What I found:
-
-- The free tier allows 20 requests per day per model. One dev run needs 80 to 160 requests, so the eval can't run on it. Switching between Gemini models to get around the limit would mix models in one score, so I didn't.
-- The newest model (`gemini-3.8-flash`) took a median 27.7 s for a one-word reply because of "high demand" 503 errors; `gemini-3.6-flash` took 1.3 s. The client now retries 429 and 5xx errors with backoff.
-- With a 3-token cap on the YES/NO check, Gemini returned no text at all, so hosted calls don't send a cap. Turning its "thinking" off cut a one-word reply from 99 tokens to 12.
-- One question end to end gave a correct answer with the right two links. But on the 9 dev docs questions it reached with 10 excerpts before the quota ran out, the check said NO to all 9. I couldn't look into why without more requests.
-
-So the scored numbers stay on the local model, which is free and has no limits. Gemini stays as an option for a live demo, where 20 questions a day is enough.
-
-## What didn't work
-
-All of these were measured on dev only, and the bigger ones had a pass mark written down before the run.
-
-| Idea | What happened |
-|---|---|
-| Distance cutoff for "I don't know" | Closest-chunk distance was 0.201 (median) for docs questions and 0.210 for the rest. It tells you whether a question is about FastAPI, not whether the docs answer it |
-| Cross-encoder reranker (`ms-marco-MiniLM-L6-v2`) | Top-5 hits went from 29 to 25 of 40 (28 without the asker's code) and added about 2.7 s. It's trained on short web queries, not long forum posts with code |
-| Looser check wording ("fully or in part") | The model said YES to two thirds of the out-of-scope questions |
-| Check without the asker's code | 3 more correct YES answers, the bar was 5 |
-| MMR for more varied results | hit@5 0.72 to 0.78 but 5 better / 3 worse, p = 0.73 |
-| llama3.2 as an automatic grader | Agreed with my grades on as few as 1 of 8 answers, and called all 12 Pinpoint answers unfaithful |
-| JSON output for citations | Broke on the first `"` inside code, replaced with plain `EXCERPTS:` / `ANSWER:` lines |
-| `qwen2.5:3b` instead of llama3.2 | Cited nothing on the first 6 questions I tried end to end |
-| One system prompt for check and answer | Passes fell from 44 to 33 (see above) |
-| Skipping release-notes chunks unless the question asks about the changelog | Release notes are 1,185 of the 2,502 chunks and read like bug reports; half of the wrong answers to out-of-scope dev questions had one in the top 3. Out-of-scope "I don't know" went from 34 to 36 of 40, but docs passes fell from 9 to 8 and a fresh unseen sample got 34 of 40 against a bar of 35. Missed both bars by one question, so I dropped it |
-| One chunk per page in the top 3 | The same page often filled 2 or 3 of the 3 slots, so I kept only the best chunk from each page. Search got better: a gold page in the top 3 went from 25 to 30 of 40 dev docs questions (5 fixed, none broken). The full run got worse: 43 to 39 passes. The check refused 18 found pages instead of 14, and with 3 different pages in front of it, it answered 11 out-of-scope questions instead of 6. Parked until the check can use better search |
-| A stricter check: "name the excerpt" or `qwen2.5:3b` | On the 30 dev docs questions with a gold page in the top 3, today's check says YES to 12. Asking for the excerpt number, or using `qwen2.5:3b` for the same YES/NO question, gave 0 of 30, and NO to all 40 out-of-scope ones. The raw replies were almost all `NONE` or `NO`. (The first run cut replies at 3 tokens, which also chopped "Excerpt 3" before the number; the cap is now 10.) A 3B judge here is either too willing or too strict |
-| A quote check for faithfulness | The answer had to include one line copied from the excerpts, and code checked the line was really in a cited excerpt. 11 of 21 answers passed. But a real quote doesn't mean a right answer: 5 of the 8 right answers had one, and so did 6 of the 13 wrong ones, including out-of-scope questions answered with a genuine docs line. Used as a filter it would fix 3 wrong answers and break 3 right ones; shown as a "verified" badge it would make wrong answers look trustworthy. Passes also dipped from 43 to 42, so I dropped it |
-| Gemini free tier for the eval | 20 requests per day per model, a dev run needs 80 to 160 (see "Trying a hosted model") |
-
-## Other problems I hit
-
-- `nomic-embed-text` in Ollama reads at most 2,048 tokens and silently drops the rest. 18 chunks were longer, 15 of them on gold pages. That's where the 1,500-character cap comes from.
-- One example file has a 4,269-character base64 image on a single line. Code lines over 200 characters get shortened.
-- Only 27 of the 350 accepted answers link to the docs, so I found most gold pages by searching the docs myself.
-- Forum questions come with a long checkbox template. Queries keep only the title, the code and the description.
-- With "cite like [2]" in the prompt the 3B model skipped citations. Asking for an `EXCERPTS:` line fixed that.
-- llama3.2 sometimes pasted the question's code back as its answer. The prompt now says not to.
-- llama3.2 and the embedder didn't fit on the GPU together, so part of llama3.2 ran on the CPU. I pinned llama3.2 to the GPU and run question embeddings on the CPU. Answer time went from 25.4 s to 15.0 s.
-
-## Dashboard
-
-`dashboard/` is a small React app on top of the API: an ask box that shows each step and the answer as it's written (with a checkbox to turn on "search again" and see the model's own query), live p50/p95 latency, refusal/cache/error rates, the list of recent traces (click one to see what was retrieved and how long each step took), and the test results.
+1. **Distance cutoff for "I don't know".** The median closest-chunk distance was 0.201 for docs questions and 0.210 for the rest, so a cutoff can't separate them.
+2. **Cross-encoder reranker** (`ms-marco-MiniLM-L6-v2`). Top-5 hits fell from 29 to 25 of 40, and it added about 2.7 s. It's trained on short web queries, not long forum posts with code.
+3. **MMR for more varied results.** hit@5 went from 0.72 to 0.78, but with 5 better and 3 worse (p = 0.73) that's no real gain.
+4. **Looser check wording** ("fully or in part"). The check said YES to two thirds of the out-of-scope questions.
+5. **One system prompt for check and answer.** Passes fell from 44 to 33, because the check stopped refusing out-of-scope questions.
+6. **Stricter check** ("name the excerpt", or `qwen2.5:3b` as judge). It said YES to 0 of 30 docs questions that had the right page, so it was far too strict.
+7. **Skipping release-notes chunks.** Out-of-scope "I don't know" rose from 34 to 36, but docs passes fell from 9 to 8, and a fresh sample missed its bar by one.
+8. **One chunk per page.** Search hits rose from 25 to 30 of 40, but passes fell from 43 to 39, because the check refused more found pages and answered more out-of-scope ones.
+9. **Quote check for faithfulness.** A real quote didn't mean a right answer: 5 of 8 right answers had one, and so did 6 of 13 wrong ones.
+10. **"Search again" tool-calling agent.** Docs answers stayed at 9 of 40, out-of-scope "I don't know" fell from 34 to 30, and p50 went from 8.2 s to 13.5 s. It's kept as an option, off by default.
+11. **`llama3.2` as an automatic grader.** It agreed with the hand grades on as few as 1 of 8 answers.
+12. **`qwen2.5:3b` as the answer model.** It cited nothing on the first 6 questions tried.
+13. **Gemini free tier for the eval.** It allows 20 requests per day per model, but one dev run needs 80 to 160.
 
 ## Limitations
 
-- Small samples: 50 test and 80 dev questions. Apart from BM25 alone being worse, most differences are noise. Even the check's win on test (21 vs 14) isn't significant with the final setup.
-- It still answers few docs questions: 6 of 28 on test. Search misses the gold page for 13, the check refuses 8 where the page was found, and 1 cites the wrong page. The check is now the main limit: making search better didn't raise the score, because the 3B model can't reliably tell when the excerpts answer the question.
-- Answers aren't always faithful: only 3 of 12 were fully backed by the excerpts.
-- 3B model on a 4 GB GPU. Reading speed sets the floor on latency, and a 7-8B model doesn't fit.
-- One grader (me), one library, one docs version, English only.
-- The rate limit lives in one process's memory, and the injection probe is only 5 attacks.
-- The Docker image builds in CI on every push, but `docker compose up` (app plus Ollama) hasn't been run end to end yet, and Ollama runs on the CPU in it.
-- Streamed words are shown before the link filter runs on the final answer, so a removed link could flash on screen for a moment.
+- It answers few docs questions: 6 of 28 on test. Search misses the right page for 13, and the check refuses 8 where the right page was shown. The 3B check is the main limit.
+- Small samples (50 test, 80 dev) and a single human grader, so most differences are noise.
+- Answers aren't always faithful: only 3 of 12 hand-checked answers were fully backed by the excerpts.
+- A 3B model on a 4 GB GPU. Reading speed sets the floor on latency.
+- The rate limit lives in one process's memory, the injection probe is only 5 attacks, and `docker compose up` hasn't been run end to end.
 
-## Layout
+## Future scope
 
-```
-pinpoint_docs/   chunking, indexing, search, answering, stats, FastAPI app
-dashboard/       React + Vite + Tailwind dashboard
-scripts/         question collection, tagging, eval, baseline, experiments
-evals/           questions, dev/test split, hand grades, all result files
-tests/           pytest
-Dockerfile, docker-compose.yml, .github/workflows/
-```
+- A better judge for the check. The right page is in the top 10 for 32 of 40 dev docs questions, but only 9 get cited, so a bigger model or a trained classifier has the most room to help.
+- After that, send more excerpts and one chunk per page. That raised search hits from 25 to 30 of 40 on dev, but the current check couldn't use them.
+- Run the eval on a hosted model. The Gemini client already works, but the free tier is too small for an eval run.
+- More questions and a second grader, so differences can become significant.
+- Run `docker compose` end to end, and move the rate limit to shared storage such as Redis to support more than one process.
