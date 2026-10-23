@@ -18,8 +18,12 @@ NO_CHECK_RUN = ROOT / "evals" / "eval_test_no-check_llama3.2.json"
 DASHBOARD = ROOT / "dashboard" / "dist"
 LIMIT = 10
 WINDOW_SECONDS = 60
+RUNNING = 1
+WAITING = 4
 recent = defaultdict(list)
 recent_lock = threading.Lock()
+running = threading.Semaphore(RUNNING)
+slots = threading.BoundedSemaphore(RUNNING + WAITING)
 
 app = FastAPI(
     title="Pinpoint", summary="Answers FastAPI questions from the FastAPI docs, with links, or says I don't know."
@@ -53,24 +57,43 @@ def rate_limit(request: Request):
         recent[ip] = [*times, now]
 
 
+def admit():
+    if not slots.acquire(blocking=False):
+        raise HTTPException(
+            status_code=503,
+            detail=f"Busy: {RUNNING} answering and {WAITING} waiting",
+            headers={"Retry-After": "30"},
+        )
+
+
 @app.post("/ask", dependencies=[Depends(rate_limit)])
 def ask(body: Question) -> Answer:
-    return Answer(**answer(body.question, agent=body.agent))
+    admit()
+    try:
+        with running:
+            return Answer(**answer(body.question, agent=body.agent))
+    finally:
+        slots.release()
 
 
 @app.post("/ask/stream", dependencies=[Depends(rate_limit)])
-def ask_stream(body: Question):
+async def ask_stream(body: Question):
+    admit()
     cancel = threading.Event()
+    loop = asyncio.get_running_loop()
+    events = asyncio.Queue()
+
+    def produce():
+        try:
+            with running:
+                for event in answer_events(body.question, cancel=cancel, agent=body.agent):
+                    loop.call_soon_threadsafe(events.put_nowait, event)
+        finally:
+            slots.release()
+
+    threading.Thread(target=produce, daemon=True).start()
 
     async def sse():
-        loop = asyncio.get_running_loop()
-        events = asyncio.Queue()
-
-        def produce():
-            for event in answer_events(body.question, cancel=cancel, agent=body.agent):
-                loop.call_soon_threadsafe(events.put_nowait, event)
-
-        threading.Thread(target=produce, daemon=True).start()
         try:
             kind = None
             while kind != "done":

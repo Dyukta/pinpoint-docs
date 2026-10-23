@@ -166,3 +166,39 @@ def test_eval_summary(tmp_path, monkeypatch):
     assert body["failures"] == {"search_missed_gold": 1}
     assert body["by_tag"] == {"bug": {"passed": 1, "total": 1}, "docs": {"passed": 1, "total": 2}}
     assert body["without_check"] is None
+
+
+def test_ask_answers_one_at_a_time_and_returns_503_when_the_queue_is_full(monkeypatch):
+    import threading
+    import time
+    from collections import defaultdict
+    from concurrent.futures import ThreadPoolExecutor
+
+    release, lock = threading.Event(), threading.Lock()
+    now = {"count": 0, "most": 0}
+
+    def slow(question, agent):
+        with lock:
+            now["count"] += 1
+            now["most"] = max(now["most"], now["count"])
+        release.wait(5)
+        with lock:
+            now["count"] -= 1
+        return {"trace_id": "a", "answer": "x", "sources": [], "cached": False}
+
+    monkeypatch.setattr(api, "recent", defaultdict(list))
+    monkeypatch.setattr(api, "answer", slow)
+    full = api.RUNNING + api.WAITING
+    body = {"question": "How do I declare a body?"}
+    with ThreadPoolExecutor(full) as pool:
+        pending = [pool.submit(client.post, "/ask", json=body) for _ in range(full)]
+        deadline = time.monotonic() + 5
+        while api.slots._value and time.monotonic() < deadline:
+            time.sleep(0.01)
+        busy = client.post("/ask", json=body)
+        release.set()
+        codes = [p.result().status_code for p in pending]
+    assert busy.status_code == 503 and busy.headers["retry-after"] == "30"
+    assert codes == [200] * full
+    assert now["most"] == api.RUNNING
+    assert api.slots._value == full

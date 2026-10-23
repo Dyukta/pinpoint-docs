@@ -60,6 +60,22 @@ The evaluation set is 350 answered questions from GitHub Discussions, each tagge
 
 The check trades docs answers for safety: it stops most made-up answers but also refuses some answerable questions. Per question it wins 15 and loses 8 (p = 0.21), so on 50 questions the overall gain isn't significant.
 
+## Load
+
+`scripts/load_test.py` calls `answer()` from 1, 2 or 4 clients at once, with the answer cache off and 12 different dev questions per round. Results are in `evals/load_*.json`.
+
+| Clients at once | Answers/min (Ollama 1 / 2 at a time) | p50 | p95 |
+|---|---|---|---|
+| 1 | 6.6 / 5.1 | 7.4 s / 9.7 s | 16.6 s / 20.9 s |
+| 2 | 6.6 / 5.1 | 13.1 s / 15.5 s | 41.2 s / 63.2 s |
+| 4 | 5.6 / 4.5 | 38.6 s / 47.7 s | 59.6 s / 77.2 s |
+
+1. One 4 GB GPU gives about 6.6 answers a minute however many clients ask. More clients only wait longer. There were 0 errors in 72 requests.
+2. Ollama running 2 requests at once still fits on the GPU, but it was about 20% slower at every load, so Ollama runs 1 at a time (`OLLAMA_NUM_PARALLEL=1`).
+3. The API runs 1 answer at a time with 4 more waiting. A 6th request at the same moment gets `503` with `Retry-After: 30`, so overload gives a clear "busy" instead of every user slowing down. The last one in a full queue waits about 45 s.
+4. A load test must never repeat questions. Ollama keeps a prompt cache, and a prompt it has seen before is read in 0.02 s instead of about 6 s. A first run that reused questions showed over 50 answers a minute.
+5. 10 or 11 of the 12 questions in each round ended in "I don't know", which skips the answer step, so traffic with more answerable questions will be a little slower.
+
 ## Problems and fixes
 
 1. **Answering everything.** With retrieval, the model answered every question, even ones the docs don't cover (0 of 20 "I don't know"). A YES/NO check on the retrieved sections now runs first, and 15 of 22 out-of-scope test questions get "I don't know".
@@ -82,6 +98,7 @@ The check trades docs answers for safety: it stops most made-up answers but also
 | Local 3B model instead of a hosted one | Free, private, no request limits, so full eval runs are possible | Weaker judgement and a latency floor set by reading speed | Scored numbers need repeatable full runs; a hosted model (Gemini) stays as a demo option |
 | "Search again" agent off by default | Keeps latency and out-of-scope refusals where they are | Loses a second chance for missed pages | It didn't raise docs answers on dev (see below) |
 | In-memory rate limit | No extra service to run | Only works for one process | One process is all this needs |
+| 1 answer at a time, 4 waiting, then 503 | Steady speed; overload gets a clear "busy" | About 6.6 answers a minute; a 6th user at once is turned away | The GPU can't do more, and 2 at once was slower |
 
 ## Tried and dropped
 
@@ -108,7 +125,7 @@ All measured on dev, most against a pass mark written down before the run.
 - Small samples (50 test, 80 dev) and a single human grader, so most differences are noise.
 - Answers aren't always faithful: only 3 of 12 hand-checked answers were fully backed by the excerpts.
 - A 3B model on a 4 GB GPU. Reading speed sets the floor on latency.
-- The rate limit lives in one process's memory, the injection probe is only 5 attacks, and `docker compose up` hasn't been run end to end.
+- The rate limit and the answer queue live in one process's memory, the injection probe is only 5 attacks, and `docker compose up` hasn't been run end to end.
 
 ## Future scope
 

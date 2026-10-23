@@ -1,0 +1,30 @@
+{
+ "label": "parallel-1",
+ "questions": 12,
+ "rows": [
+  {
+   "clients": 1,
+   "answers_per_minute": 6.6,
+   "p50": 7.38,
+   "p95": 16.58,
+   "errors": 0,
+   "answered": 2
+  },
+  {
+   "clients": 2,
+   "answers_per_minute": 6.6,
+   "p50": 13.05,
+   "p95": 41.24,
+   "errors": 0,
+   "answered": 1
+  },
+  {
+   "clients": 4,
+   "answers_per_minute": 5.6,
+   "p50": 38.61,
+   "p95": 59.64,
+   "errors": 0,
+   "answered": 1
+  }
+ ]
+}

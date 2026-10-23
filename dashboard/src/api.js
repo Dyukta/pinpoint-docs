@@ -9,7 +9,10 @@ export async function* streamEvents(url, body, signal) {
     body: JSON.stringify(body),
     signal,
   });
-  if (!response.ok) throw new Error(response.status >= 500 ? "the API is not running" : `HTTP ${response.status}`);
+  if (!response.ok) {
+    if (response.status === 503) throw new Error("the server is busy, try again in a minute");
+    throw new Error(response.status >= 500 ? "the API is not running" : `HTTP ${response.status}`);
+  }
   const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
   let buffer = "";
   for (;;) {
