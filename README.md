@@ -27,10 +27,11 @@ question -> answer cache (same question, same settings) -> cached answer
                              one trace per request -> /stats, /traces -> dashboard
 ```
 
-- The model never writes URLs. It returns excerpt numbers and code turns them into links, so every cited page exists and was actually retrieved.
-- Answers stream to the dashboard over Server-Sent Events, and closing the page stops the model.
-- Each request saves a trace: retrieved chunks, time per step, and tokens and timings for every model call.
-- The eval calls the same `answer()` function as the API, so the scores are for the real pipeline.
+1. The model never writes URLs. It returns excerpt numbers and code turns them into links, so every cited page exists and was actually retrieved.
+2. Answers stream to the dashboard over Server-Sent Events, and closing the page stops the model.
+3. Each request saves a trace: retrieved chunks, time per step, and tokens and timings for every model call.
+4. The eval calls the same `answer()` function as the API, so the scores are for the real pipeline.
+5. CI runs on every push: ruff, pytest, a Docker build, and a retrieval check that needs no model. It rebuilds the chunks and fails if BM25 finds the right page in the top 3 for fewer than 17 of 40 dev docs questions (18 today). A manual workflow runs 20 dev questions through Ollama on a CPU runner and fails below 9 passes. The first run passed 11 of 20, the same as on the GPU, at a p50 of 32.3 s per question, and took 33 minutes including 18 minutes to build the index.
 
 ## Results
 
@@ -121,16 +122,16 @@ All measured on dev, most against a pass mark written down before the run.
 
 ## Limitations
 
-- It answers few docs questions: 6 of 28 on test. Search misses the right page for 13, and the check refuses 8 where the right page was shown. The 3B check is the main limit.
-- Small samples (50 test, 80 dev) and a single human grader, so most differences are noise.
-- Answers aren't always faithful: only 3 of 12 hand-checked answers were fully backed by the excerpts.
-- A 3B model on a 4 GB GPU. Reading speed sets the floor on latency.
-- The rate limit and the answer queue live in one process's memory, the injection probe is only 5 attacks, and `docker compose up` hasn't been run end to end.
+1. It answers few docs questions: 6 of 28 on test. Search misses the right page for 13, and the check refuses 8 where the right page was shown. The 3B check is the main limit.
+2. Small samples (50 test, 80 dev) and a single human grader, so most differences are noise.
+3. Answers aren't always faithful: only 3 of 12 hand-checked answers were fully backed by the excerpts.
+4. A 3B model on a 4 GB GPU. Reading speed sets the floor on latency.
+5. The rate limit and the answer queue live in one process's memory, the injection probe is only 5 attacks, and `docker compose up` hasn't been run end to end.
 
 ## Future scope
 
-- A better judge for the check. The right page is in the top 10 for 32 of 40 dev docs questions, but only 9 get cited, so a bigger model or a trained classifier has the most room to help.
-- After that, send more excerpts and one chunk per page. That raised search hits from 25 to 30 of 40 on dev, but the current check couldn't use them.
-- Run the eval on a hosted model. The Gemini client already works, but the free tier is too small for an eval run.
-- More questions and a second grader, so differences can become significant.
-- Run `docker compose` end to end, and move the rate limit to shared storage such as Redis to support more than one process.
+1. A bigger model for the check. The right page is in the top 10 for 32 of 40 dev docs questions, but only 9 get cited. A trained gate on the question alone couldn't tell docs from out-of-scope questions (AUC 0.55), so the check needs a model that reads the excerpts, such as a 7B+ model on a larger GPU or a paid hosted one.
+2. After that, send more excerpts and one chunk per page. That raised search hits from 25 to 30 of 40 on dev, but the current check couldn't use them.
+3. Run the eval on a hosted model. The Gemini client already works, but the free tier is too small for an eval run.
+4. More questions and a second grader, so differences can become significant.
+5. Run `docker compose` end to end, and move the rate limit to shared storage such as Redis to support more than one process.
