@@ -12,6 +12,7 @@ from scripts.compare_retrieval import query_text
 
 ROOT = Path(__file__).resolve().parent.parent
 PER_GROUP = 20
+CI_BAR = 9
 
 
 def load_questions():
@@ -157,6 +158,9 @@ def main():
         print(f"fresh sample, seed {seed}: {len(questions)} questions not in dev or test\n")
         run(questions, MODEL, f"eval_fresh-{seed}")
         return
+    if sys.argv[1:2] == ["ci"]:
+        results = run(sample(load_split("dev"), n=10), MODEL, "eval_ci")
+        sys.exit(sum(r["pass"] for r in results) < CI_BAR)
     name = sys.argv[1] if len(sys.argv) > 1 else "test"
     model = next((a for a in sys.argv[2:] if a not in ("no-check", "agent") and not a.startswith("k=")), MODEL)
     k = int(next((a[2:] for a in sys.argv[2:] if a.startswith("k=")), 3))

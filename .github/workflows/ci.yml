@@ -16,6 +16,21 @@ jobs:
       - run: ruff format --check .
       - run: pytest
 
+  retrieval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: |
+          git clone --depth 1 --branch 0.150.0 --filter=blob:none --sparse https://github.com/fastapi/fastapi data/fastapi-0.150.0
+          git -C data/fastapi-0.150.0 sparse-checkout set docs/en/docs docs_src
+      - run: python -m pinpoint_docs.chunk
+      - run: python -m scripts.check_retrieval
+
   docker:
     runs-on: ubuntu-latest
     steps:

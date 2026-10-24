@@ -1,0 +1,29 @@
+name: eval
+
+on: workflow_dispatch
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: |
+          git clone --depth 1 --branch 0.150.0 --filter=blob:none --sparse https://github.com/fastapi/fastapi data/fastapi-0.150.0
+          git -C data/fastapi-0.150.0 sparse-checkout set docs/en/docs docs_src
+      - run: python -m pinpoint_docs.chunk
+      - run: curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION=0.40.7 sh
+      - run: timeout 60 sh -c 'until curl -s http://127.0.0.1:11434 > /dev/null; do sleep 1; done'
+      - run: ollama pull llama3.2 && ollama pull nomic-embed-text
+      - run: python -m pinpoint_docs.index
+      - run: python -m scripts.run_eval ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-ci
+          path: evals/eval_ci_llama3.2.json
