@@ -11,6 +11,7 @@ const STATUS = {
 
 function Reply({ reply, now }) {
   const waited = Math.max(0, Math.round((now - reply.start) / 1000));
+  const links = reply.sources?.filter((url) => !url.includes("/release-notes/"));
   if (reply.error) return <p className="text-red-400">Sorry, something went wrong: {reply.error}.</p>;
   if (reply.answer === IDK)
     return (
@@ -36,7 +37,7 @@ function Reply({ reply, now }) {
     <>
       <p className="whitespace-pre-wrap leading-relaxed">{reply.answer}</p>
       <ul className="mt-3 space-y-1 border-t border-zinc-700 pt-2 text-xs">
-        {reply.sources.map((url) => (
+        {(links.length ? links : reply.sources).map((url) => (
           <li key={url}>
             <span className="text-zinc-300">{topic(url)}:</span>{" "}
             <a href={url} target="_blank" rel="noreferrer" className="break-all text-red-400 hover:underline">
