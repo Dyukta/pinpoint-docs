@@ -37,7 +37,7 @@ function Reply({ reply, now }) {
     <>
       <p className="whitespace-pre-wrap leading-relaxed">{reply.answer}</p>
       <ul className="mt-3 space-y-1 border-t border-zinc-700 pt-2 text-xs">
-        {(links.length ? links : reply.sources).map((url) => (
+        {links.map((url) => (
           <li key={url}>
             <span className="text-zinc-300">{topic(url)}:</span>{" "}
             <a href={url} target="_blank" rel="noreferrer" className="break-all text-red-400 hover:underline">
@@ -45,6 +45,7 @@ function Reply({ reply, now }) {
             </a>
           </li>
         ))}
+        {links.length === 0 && <li className="text-zinc-400">Only release notes were cited, so check this answer in the docs.</li>}
       </ul>
     </>
   );

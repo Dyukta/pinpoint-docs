@@ -89,7 +89,7 @@ The check trades docs answers for safety: it stops most made-up answers but also
 8. **Cancelled requests.** Closing the page left Ollama writing and lost the trace. A worker thread now watches a cancel flag, closes the Ollama stream and saves the trace; Ollama stops 1.1 s after the page closes.
 9. **Prompt injection.** Forum posts can carry instructions. Citations are by number only, answer links may only come from the excerpts, and answers render as plain text. 0 of 5 injection attacks got through.
 10. **Excerpt numbers in answers.** The model wrote phrases like "as shown in Excerpt 4", which mean nothing to a reader. Code now removes them. Answers saved before the fix kept coming back from the answer cache, so the cleanup rule is now part of the cache key.
-11. **Weak links.** Release-notes chunks match many questions and showed up as sources. The chat hides release-notes links when an answer has other links; the trace still lists every section found.
+11. **Weak links.** Release-notes chunks match many questions, and the model sometimes cites them instead of the tutorial page the answer came from. The chat never shows release-notes links, and when they were the only citation it says to check the answer in the docs; the trace still lists every section found.
 
 ## Trade-offs
 
