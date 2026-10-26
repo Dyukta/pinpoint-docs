@@ -14,7 +14,7 @@ def test_ask_returns_answer_and_sources(monkeypatch):
         "retrieved": ["x#1"],
         "error": None,
     }
-    monkeypatch.setattr(api, "answer", lambda question, agent: fake)
+    monkeypatch.setattr(api, "answer", lambda question, k, agent: fake)
     response = client.post("/ask", json={"question": "How do I declare a body?"})
     assert response.status_code == 200
     assert response.json() == {
@@ -28,7 +28,7 @@ def test_ask_returns_answer_and_sources(monkeypatch):
 def test_ask_stream_sends_server_sent_events(monkeypatch):
     done = {"trace_id": "abc123", "answer": "Use a model.", "sources": ["https://a/"], "cached": False, "error": None}
 
-    def fake_events(question, cancel, agent):
+    def fake_events(question, k, cancel, agent):
         yield "status", "search"
         yield "token", "Use a model."
         yield "done", done
@@ -48,7 +48,7 @@ def test_ask_is_rate_limited_per_client(monkeypatch):
 
     monkeypatch.setattr(api, "recent", defaultdict(list))
     monkeypatch.setattr(
-        api, "answer", lambda question, agent: {"trace_id": "a", "answer": "x", "sources": [], "cached": False}
+        api, "answer", lambda question, k, agent: {"trace_id": "a", "answer": "x", "sources": [], "cached": False}
     )
     codes = [
         client.post("/ask", json={"question": "How do I declare a body?"}).status_code for _ in range(api.LIMIT + 1)
@@ -177,7 +177,7 @@ def test_ask_answers_one_at_a_time_and_returns_503_when_the_queue_is_full(monkey
     release, lock = threading.Event(), threading.Lock()
     now = {"count": 0, "most": 0}
 
-    def slow(question, agent):
+    def slow(question, k, agent):
         with lock:
             now["count"] += 1
             now["most"] = max(now["most"], now["count"])

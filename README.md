@@ -30,7 +30,7 @@ question -> answer cache (same question, same settings) -> cached answer
 1. The model never writes URLs. It returns excerpt numbers and code turns them into links, so every cited page exists and was actually retrieved.
 2. Answers stream to the dashboard over Server-Sent Events, and closing the page stops the model.
 3. Each request saves a trace: retrieved chunks, time per step, and tokens and timings for every model call.
-4. The eval calls the same `answer()` function as the API, so the scores are for the real pipeline.
+4. The eval calls the same `answer()` function as the API. The scored runs use the top 3 excerpts; the chat uses 5, which puts the right page in front of the model for 29 instead of 25 of 40 dev docs questions at about 3 s more per answer.
 5. CI runs on every push: ruff, pytest, a Docker build, and a retrieval check that needs no model. It rebuilds the chunks and fails if BM25 finds the right page in the top 3 for fewer than 17 of 40 dev docs questions (18 today). A manual workflow runs 20 dev questions through Ollama on a CPU runner and fails below 9 passes. The first run passed 11 of 20, the same as on the GPU, at a p50 of 32.3 s per question, and took 33 minutes including 18 minutes to build the index.
 
 ## Results

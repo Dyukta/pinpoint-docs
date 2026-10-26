@@ -71,7 +71,7 @@ def ask(body: Question) -> Answer:
     admit()
     try:
         with running:
-            return Answer(**answer(body.question, agent=body.agent))
+            return Answer(**answer(body.question, k=5, agent=body.agent))
     finally:
         slots.release()
 
@@ -86,7 +86,7 @@ async def ask_stream(body: Question):
     def produce():
         try:
             with running:
-                for event in answer_events(body.question, cancel=cancel, agent=body.agent):
+                for event in answer_events(body.question, k=5, cancel=cancel, agent=body.agent):
                     loop.call_soon_threadsafe(events.put_nowait, event)
         finally:
             slots.release()
