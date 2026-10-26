@@ -7,7 +7,7 @@ A wrong answer with a real-looking docs link costs a developer more time than "I
 1. **Grounded links:** the model never writes URLs. It names excerpt numbers and code builds the links, so every link points to a section that was actually retrieved.
 2. **Honest refusals:** on 22 held-out questions the docs don't cover, it says "I don't know" to 15. Without its YES/NO check it says it to none.
 3. **The price, stated openly:** only 6 of 28 held-out docs questions get the right page cited. Every failure is counted and explained below.
-4. **Measured, not tuned to the test:** 350 real GitHub Discussions questions, a frozen dev/test split, and the 50 test questions run once at the end.
+4. **Measured, not tuned to the test:** 350 real GitHub Discussions questions, a frozen dev/test split, all tuning on dev, and the 50 test questions scored only twice: before the speed work and on the final setup.
 5. **Built like a service:** streaming with cancel, a trace per request, a queue that answers "busy" instead of slowing everyone down, a rate limit, an injection guard (0 of 5 attacks got through), and CI that fails if retrieval gets worse.
 6. **Fast on small hardware:** p50 latency on dev went from 22.8 s to 8.2 s on a 4 GB GPU, with 43 passes vs 44 before.
 
@@ -55,7 +55,7 @@ flowchart TD
 
 ## Results
 
-The evaluation set is 350 answered questions from GitHub Discussions, each tagged as answered by the docs or not. A frozen split keeps 80 dev questions for all tuning and 50 test questions (28 docs, 22 out of scope) that were run once at the end.
+The evaluation set is 350 answered questions from GitHub Discussions, each tagged as answered by the docs or not. A frozen split keeps 80 dev questions for all tuning and 50 test questions (28 docs, 22 out of scope). The test set was scored twice: before the speed work (27 passes) and on the final setup (21 passes). The speed changes were decided on dev before the second test run and kept after it, so the test numbers below are the final setup's and weren't tuned on.
 
 1. **Safety:** on the 22 held-out questions the docs don't cover, Pinpoint says "I don't know" to 15. Without the YES/NO check it says it to none.
 2. **Speed:** p50 latency on dev went from 22.8 s to 8.2 s, and p95 from 53.5 s to 18.9 s, with 43 passes vs 44 before.
@@ -147,7 +147,7 @@ All measured on dev, most against a pass mark written down before the run. Each 
 
 ## Limitations
 
-1. It answers few docs questions: 6 of 28 on test. Search misses the right page for 13, and the check refuses 8 where the right page was shown. The 3B check is the main limit.
+1. It answers few docs questions: 6 of 28 on test. Search misses the right page for 13, the check refuses 8 where the right page was shown, and 1 cites the wrong page. The 3B check is the main limit.
 2. Small samples (50 test, 80 dev) and a single human grader, so most differences are noise.
 3. Answers aren't always faithful: only 3 of 12 hand-checked answers were fully backed by the excerpts.
 4. A 3B model on a 4 GB GPU. Reading speed sets the floor on latency.
