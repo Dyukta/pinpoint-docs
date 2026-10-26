@@ -49,6 +49,54 @@ function Reply({ reply, now }) {
   );
 }
 
+function TraceLine({ reply }) {
+  const t = reply.trace;
+  if (!t) return <p className="mt-2 text-xs text-zinc-500">{secs(reply.seconds)}</p>;
+  const check = t.agent || !t.answerable ? "NO" : "YES";
+  const steps = [
+    ["Search", "BM25 + vector search", t.search_seconds],
+    ["Check", `Do the sections answer it? ${check}`, t.check_seconds],
+    ...(t.agent ? [["Search again", t.agent.query ? `"${t.agent.query}"` : "Model chose not to", t.agent_seconds]] : []),
+    ["Answer", t.answer_seconds == null ? "Skipped" : "Written from the sections", t.answer_seconds],
+  ];
+  return (
+    <details className="mt-2 text-xs text-zinc-500">
+      <summary className="cursor-pointer hover:text-zinc-300">
+        {secs(reply.seconds)}
+      </summary>
+      <div className="mt-2 space-y-3 border-t border-zinc-700 pt-2">
+        {t.cached ? (
+          <p>Served from the answer cache: the same question was answered before with the same settings.</p>
+        ) : (
+          <ol className="space-y-1">
+            {steps.map(([name, detail, s]) => (
+              <li key={name} className="flex justify-between gap-3">
+                <span>
+                  <span className="text-zinc-300">{name}</span> · {detail}
+                </span>
+                <span className="shrink-0 font-mono">{s == null ? "–" : secs(s)}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+        <div>
+          <p className="mb-1 text-zinc-300">Sections found</p>
+          <ol className="space-y-1 font-mono">
+            {t.retrieved.map((id, i) => (
+              <li key={id} className="flex justify-between gap-3">
+                <span className="break-all">
+                  {i + 1}. {id}
+                </span>
+                <span className="shrink-0">{t.scores[i]?.toFixed(4)}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </details>
+  );
+}
+
 export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [question, setQuestion] = useState("");
@@ -84,7 +132,11 @@ export default function Chat() {
       for await (const [kind, data] of streamEvents("/ask/stream", { question: text, agent }, controller.current.signal)) {
         if (kind === "status") patch({ status: data });
         if (kind === "token") setMessages((list) => [...list.slice(0, -1), { ...list.at(-1), draft: list.at(-1).draft + data }]);
-        if (kind === "done") patch({ ...data, seconds: (Date.now() - start) / 1000 });
+        if (kind === "done") {
+          patch({ ...data, seconds: (Date.now() - start) / 1000 });
+          const detail = await fetch(`/traces/${data.trace_id}`, { signal: controller.current.signal });
+          if (detail.ok) patch({ trace: await detail.json() });
+        }
       }
     } catch (err) {
       patch(err.name === "AbortError" ? { cancelled: true } : { error: err.message });
@@ -102,7 +154,7 @@ export default function Chat() {
             <p className="ml-auto w-fit max-w-[85%] rounded-lg bg-red-600 px-3 py-2 text-white">{m.question}</p>
             <div className="w-fit max-w-[85%] rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2">
               <Reply reply={m} now={now} />
-              {m.seconds && <p className="mt-2 text-xs text-zinc-500">Answered in {secs(m.seconds)}</p>}
+              {m.seconds && <TraceLine reply={m} />}
             </div>
           </div>
         ))}
