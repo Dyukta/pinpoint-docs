@@ -74,6 +74,9 @@ TOOLS = [
 OPTIONS = {"temperature": 0, "num_ctx": 8192, "num_gpu": 99}
 REPLY = re.compile(r"EXCERPTS:(.*?)\n\s*ANSWER:(.*)", re.S | re.I)
 ANSWER_START = re.compile(r"ANSWER:\s*", re.I)
+EXCERPT_REF = re.compile(
+    r",?\s*\(?\b(?:as (?:shown|seen|described) )?(?:in |from |see )?excerpts? \d+(?:\s*(?:,|and)\s*\d+)*\)?", re.I
+)
 LINK = re.compile(r"https?://[^\s)\]>\"'`]*[^\s)\]>\"'`.,;:!?]")
 SECRETS = [
     (re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+"), "[email]"),
@@ -106,7 +109,7 @@ def parse(reply, hits):
     if not match:
         return IDK, []
     urls = sources([int(n) for n in re.findall(r"\d+", match.group(1))], hits)
-    text = strip_links(match.group(2).strip(), hits)
+    text = EXCERPT_REF.sub("", strip_links(match.group(2).strip(), hits))
     if not urls or "don't know" in text.lower():
         return IDK, []
     return text, urls
@@ -187,7 +190,7 @@ def answer_cache():
 
 
 def settings_key(model, k, check=True, agent=False):
-    settings = [model, k, check, SYSTEM, CHECK, CHECK_ASK, ANSWER_ASK, OPTIONS, COLLECTION]
+    settings = [model, k, check, SYSTEM, CHECK, CHECK_ASK, ANSWER_ASK, OPTIONS, COLLECTION, EXCERPT_REF.pattern]
     if agent:
         settings += [AGENT, TOOLS]
     return hashlib.sha256(json.dumps(settings, sort_keys=True).encode()).hexdigest()[:16]

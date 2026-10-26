@@ -19,6 +19,12 @@ def test_parse():
     assert parse("Sure! Here is the answer.", HITS) == (IDK, [])
 
 
+def test_parse_drops_excerpt_numbers_from_the_answer():
+    hits = [{"url": "https://a/"}]
+    reply = "EXCERPTS: 1\nANSWER: Use a model, as shown in Excerpt 4. Mix both (see Excerpts 4 and 5)."
+    assert parse(reply, hits) == ("Use a model. Mix both.", ["https://a/"])
+
+
 def test_answer_keeps_only_links_found_in_the_excerpts():
     hits = [{"url": "https://fastapi.tiangolo.com/tutorial/body/", "text": "See https://docs.pydantic.dev/latest/."}]
     reply = "EXCERPTS: 1\nANSWER: Read https://docs.pydantic.dev/latest/ and http://evil.example/login now."
