@@ -160,7 +160,7 @@ export default function Chat() {
             </div>
           </div>
         ))}
-        <div ref={end} />
+        {messages.length > 0 && <div ref={end} />}
       </div>
       <form onSubmit={ask} className="border-t border-zinc-800 px-5 py-3">
         <div className="flex gap-2">
@@ -174,7 +174,12 @@ export default function Chat() {
               Cancel
             </button>
           ) : (
-            <button key="send" className="rounded-lg bg-red-600 px-4 text-sm text-white hover:bg-red-500">
+            <button
+              key="send"
+              disabled={question.trim().length < 3}
+              title="Type at least 3 characters"
+              className="rounded-lg bg-red-600 px-4 text-sm text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-red-600"
+            >
               Send
             </button>
           )}
