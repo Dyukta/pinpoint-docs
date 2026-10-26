@@ -6,10 +6,6 @@
 }
 
 body {
-  background: #f4f3fb;
-}
-
-.scroll-theme {
-  scrollbar-width: thin;
-  scrollbar-color: #c4b5fd transparent;
+  background: #27272a;
+  color-scheme: dark;
 }
