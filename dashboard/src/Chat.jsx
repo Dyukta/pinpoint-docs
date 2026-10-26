@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { streamEvents } from "./api";
-import { IDK, topic } from "./format";
+import { IDK, secs, topic } from "./format";
 
 const STATUS = {
   search: "Looking through the docs for you...",
@@ -76,14 +76,15 @@ export default function Chat() {
     if (text.length < 3 || busy) return;
     setQuestion("");
     setBusy(true);
-    setNow(Date.now());
-    setMessages((list) => [...list, { question: text, draft: "", start: Date.now() }]);
+    const start = Date.now();
+    setNow(start);
+    setMessages((list) => [...list, { question: text, draft: "", start }]);
     controller.current = new AbortController();
     try {
       for await (const [kind, data] of streamEvents("/ask/stream", { question: text, agent }, controller.current.signal)) {
         if (kind === "status") patch({ status: data });
         if (kind === "token") setMessages((list) => [...list.slice(0, -1), { ...list.at(-1), draft: list.at(-1).draft + data }]);
-        if (kind === "done") patch(data);
+        if (kind === "done") patch({ ...data, seconds: (Date.now() - start) / 1000 });
       }
     } catch (err) {
       patch(err.name === "AbortError" ? { cancelled: true } : { error: err.message });
@@ -101,6 +102,7 @@ export default function Chat() {
             <p className="ml-auto w-fit max-w-[85%] rounded-lg bg-red-600 px-3 py-2 text-white">{m.question}</p>
             <div className="w-fit max-w-[85%] rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2">
               <Reply reply={m} now={now} />
+              {m.seconds && <p className="mt-2 text-xs text-zinc-500">Answered in {secs(m.seconds)}</p>}
             </div>
           </div>
         ))}
