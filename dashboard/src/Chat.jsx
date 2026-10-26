@@ -150,7 +150,7 @@ export default function Chat() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex-1 space-y-6 overflow-y-auto px-5 py-6 text-sm">
-        {messages.length === 0 && <p className="text-center text-zinc-400">Hi! Ask me anything about the FastAPI docs.</p>}
+        {messages.length === 0 && <p className="grid h-full place-items-center text-zinc-400">Hi! Ask me anything about the FastAPI docs.</p>}
         {messages.map((m, i) => (
           <div key={i} className="space-y-2">
             <p className="ml-auto w-fit max-w-[85%] rounded-lg bg-red-600 px-3 py-2 text-white">{m.question}</p>
