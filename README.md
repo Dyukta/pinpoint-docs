@@ -2,7 +2,7 @@
 
 Pinpoint answers FastAPI questions only from the FastAPI docs, links the exact section it used, and says "I don't know" when the docs don't cover it. It runs locally on a 4 GB GPU with Ollama and is evaluated on real questions from FastAPI's GitHub Discussions.
 
-Stack: Python, FastAPI, Ollama (`llama3.2` 3B, `nomic-embed-text`), ChromaDB, hand-written BM25, React + Vite + Tailwind dashboard, pytest, Docker, GitHub Actions.
+Stack: Python, FastAPI, Ollama (`llama3.2` 3B, `nomic-embed-text`), ChromaDB, hand-written BM25, React + Vite + Tailwind chat, pytest, Docker, GitHub Actions.
 
 Every number here comes from a script and a result file in `evals/`.
 
@@ -24,11 +24,11 @@ question -> answer cache (same question, same settings) -> cached answer
                                       -> code turns those into docs links
                                                            |
                                                            v
-                             one trace per request -> /stats, /traces -> dashboard
+                             one trace per request -> /stats, /traces -> chat
 ```
 
 1. The model never writes URLs. It returns excerpt numbers and code turns them into links, so every cited page exists and was actually retrieved.
-2. Answers stream to the dashboard over Server-Sent Events, and closing the page stops the model.
+2. Answers stream to the chat over Server-Sent Events, and closing the page stops the model.
 3. Each request saves a trace: retrieved chunks, time per step, and tokens and timings for every model call.
 4. The eval calls the same `answer()` function as the API. The scored runs use the top 3 excerpts; the chat uses 5, which puts the right page in front of the model for 29 instead of 25 of 40 dev docs questions at about 3 s more per answer.
 5. CI runs on every push: ruff, pytest, a Docker build, and a retrieval check that needs no model. It rebuilds the chunks and fails if BM25 finds the right page in the top 3 for fewer than 17 of 40 dev docs questions (18 today). A manual workflow runs 20 dev questions through Ollama on a CPU runner and fails below 9 passes. The first run passed 11 of 20, the same as on the GPU, at a p50 of 32.3 s per question, and took 33 minutes including 18 minutes to build the index.
@@ -135,3 +135,4 @@ All measured on dev, most against a pass mark written down before the run.
 3. Run the eval on a hosted model. The Gemini client already works, but the free tier is too small for an eval run.
 4. More questions and a second grader, so differences can become significant.
 5. Run `docker compose` end to end, and move the rate limit to shared storage such as Redis to support more than one process.
+6. A GitHub Discussions helper that drafts an answer with docs links for each new question, for a maintainer to review before posting.
