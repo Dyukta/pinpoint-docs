@@ -14,7 +14,7 @@ FastAPI docs 0.150.0 -> split at headings (2,502 chunks, code blocks never split
 
 question -> answer cache (same question, same settings) -> cached answer
          -> BM25 top 50   -+
-                           +-> Reciprocal Rank Fusion -> top 3 sections
+                           +-> Reciprocal Rank Fusion -> top 5 sections (3 in the eval)
          -> vector top 50 -+                               |
                                                            v
                              YES/NO check: do these sections answer it?
@@ -29,7 +29,7 @@ question -> answer cache (same question, same settings) -> cached answer
 
 1. The model never writes URLs. It returns excerpt numbers and code turns them into links, so every cited page exists and was actually retrieved.
 2. Answers stream to the chat over Server-Sent Events, and closing the page stops the model.
-3. Each request saves a trace: retrieved chunks, time per step, and tokens and timings for every model call.
+3. Each request saves a trace: retrieved chunks, time per step, and tokens and timings for every model call. The chat shows the answer time under each reply, which opens that trace's steps and found sections, and a side panel shows the test results from `/eval` and live numbers from `/stats`.
 4. The eval calls the same `answer()` function as the API. The scored runs use the top 3 excerpts; the chat uses 5, which puts the right page in front of the model for 29 instead of 25 of 40 dev docs questions at about 3 s more per answer.
 5. CI runs on every push: ruff, pytest, a Docker build, and a retrieval check that needs no model. It rebuilds the chunks and fails if BM25 finds the right page in the top 3 for fewer than 17 of 40 dev docs questions (18 today). A manual workflow runs 20 dev questions through Ollama on a CPU runner and fails below 9 passes. The first run passed 11 of 20, the same as on the GPU, at a p50 of 32.3 s per question, and took 33 minutes including 18 minutes to build the index.
 
@@ -88,13 +88,15 @@ The check trades docs answers for safety: it stops most made-up answers but also
 7. **GPU memory.** `llama3.2` and the embedder didn't fit on the GPU together. `llama3.2` is pinned to the GPU and question embeddings run on the CPU, which cut answer time from 25.4 s to 15.0 s.
 8. **Cancelled requests.** Closing the page left Ollama writing and lost the trace. A worker thread now watches a cancel flag, closes the Ollama stream and saves the trace; Ollama stops 1.1 s after the page closes.
 9. **Prompt injection.** Forum posts can carry instructions. Citations are by number only, answer links may only come from the excerpts, and answers render as plain text. 0 of 5 injection attacks got through.
+10. **Excerpt numbers in answers.** The model wrote phrases like "as shown in Excerpt 4", which mean nothing to a reader. Code now removes them. Answers saved before the fix kept coming back from the answer cache, so the cleanup rule is now part of the cache key.
+11. **Weak links.** Release-notes chunks match many questions and showed up as sources. The chat hides release-notes links when an answer has other links; the trace still lists every section found.
 
 ## Trade-offs
 
 | Choice | Gain | Cost | Why it was kept |
 |---|---|---|---|
 | YES/NO check before answering | Out-of-scope "I don't know" 0 → 15 of 22 on test | Docs questions cited 14 → 6 of 28 | A wrong answer with a real-looking docs link is worse than "I don't know" |
-| Top 3 excerpts instead of 5 | About 600 fewer prompt tokens, about 3 s faster per question | Right page in front of the model for 25 instead of 29 of 40 dev docs questions; test passes 27 → 21 (p = 0.11) | Decided on dev (passes 44 → 43, p = 1.0) before the test run; changing it after seeing test results would be tuning on the test set, so revisiting it needs fresh questions |
+| Top 3 excerpts instead of 5 | About 600 fewer prompt tokens, about 3 s faster per question | Right page in front of the model for 25 instead of 29 of 40 dev docs questions; test passes 27 → 21 (p = 0.11) | Kept for the scored runs: decided on dev (passes 44 → 43, p = 1.0) before the test run, and changing it after seeing test results would be tuning on the test set. The chat uses 5, trading about 3 s for more first-try answers |
 | Answer as a follow-up turn in the check's chat | Ollama reuses the prompt it already read; answer reading under 1 s | The check prompt can't be reworded to suit both steps | Rewording the check broke it (see below) |
 | Local 3B model instead of a hosted one | Free, private, no request limits, so full eval runs are possible | Weaker judgement and a latency floor set by reading speed | Scored numbers need repeatable full runs; a hosted model (Gemini) stays as a demo option |
 | "Search again" agent off by default | Keeps latency and out-of-scope refusals where they are | Loses a second chance for missed pages | It didn't raise docs answers on dev (see below) |
@@ -127,6 +129,7 @@ All measured on dev, most against a pass mark written down before the run.
 3. Answers aren't always faithful: only 3 of 12 hand-checked answers were fully backed by the excerpts.
 4. A 3B model on a 4 GB GPU. Reading speed sets the floor on latency.
 5. The rate limit and the answer queue live in one process's memory, the injection probe is only 5 attacks, and `docker compose up` hasn't been run end to end.
+6. The chat has no memory between messages. Each question is searched on its own, so a follow-up like "how do I use it?" gets "I don't know".
 
 ## Future scope
 
