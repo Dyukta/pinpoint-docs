@@ -2,29 +2,49 @@
 
 Pinpoint answers FastAPI questions only from the FastAPI docs, links the exact section it used, and says "I don't know" when the docs don't cover it. It runs locally on a 4 GB GPU with Ollama and is evaluated on real questions from FastAPI's GitHub Discussions.
 
+A wrong answer with a real-looking docs link costs a developer more time than "I don't know", so every design choice here favors being right or silent over being helpful-sounding, and every claim is measured.
+
+1. **Grounded links:** the model never writes URLs. It names excerpt numbers and code builds the links, so every link points to a section that was actually retrieved.
+2. **Honest refusals:** on 22 held-out questions the docs don't cover, it says "I don't know" to 15. Without its YES/NO check it says it to none.
+3. **The price, stated openly:** only 6 of 28 held-out docs questions get the right page cited. Every failure is counted and explained below.
+4. **Measured, not tuned to the test:** 350 real GitHub Discussions questions, a frozen dev/test split, and the 50 test questions run once at the end.
+5. **Built like a service:** streaming with cancel, a trace per request, a queue that answers "busy" instead of slowing everyone down, a rate limit, an injection guard (0 of 5 attacks got through), and CI that fails if retrieval gets worse.
+6. **Fast on small hardware:** p50 latency on dev went from 22.8 s to 8.2 s on a 4 GB GPU, with 43 passes vs 44 before.
+
 Stack: Python, FastAPI, Ollama (`llama3.2` 3B, `nomic-embed-text`), ChromaDB, hand-written BM25, React + Vite + Tailwind chat, pytest, Docker, GitHub Actions.
 
 Every number here comes from a script and a result file in `evals/`.
 
 ## Architecture
 
-```
-FastAPI docs 0.150.0 -> split at headings (2,502 chunks, code blocks never split)
-                     -> nomic-embed-text -> ChromaDB
+```mermaid
+flowchart TD
+    subgraph index["Built once"]
+        docs["FastAPI docs 0.150.0"] --> split["Split at headings<br/>2,502 chunks, code blocks never split"]
+        split --> embed["nomic-embed-text"] --> chroma[("ChromaDB")]
+        split --> bm25[("BM25 index")]
+    end
 
-question -> answer cache (same question, same settings) -> cached answer
-         -> BM25 top 50   -+
-                           +-> Reciprocal Rank Fusion -> top 5 sections (3 in the eval)
-         -> vector top 50 -+                               |
-                                                           v
-                             YES/NO check: do these sections answer it?
-                               NO  -> "I don't know."
-                               YES -> same chat continues, llama3.2 answers
-                                      and lists the excerpt numbers it used
-                                      -> code turns those into docs links
-                                                           |
-                                                           v
-                             one trace per request -> /stats, /traces -> chat
+    question["Question from the chat"] --> gate{"Rate limit 10/min<br/>queue: 1 answering, 4 waiting"}
+    gate -->|"over the limit or full"| busy["429 over the limit,<br/>or 503 busy, retry in 30 s"]
+    gate -->|"ok"| cache{"Answer cache<br/>same question, same settings?"}
+    cache -->|"hit"| stream
+    cache -->|"miss"| lexical["BM25 top 50"]
+    cache -->|"miss"| semantic["Vector top 50"]
+    bm25 -.-> lexical
+    chroma -.-> semantic
+    lexical --> fuse["Reciprocal Rank Fusion<br/>top 5 sections (3 in the eval)"]
+    semantic --> fuse
+    fuse --> check{"YES/NO check by llama3.2<br/>do these sections answer it?"}
+    check -->|"NO"| idk["I don't know."]
+    check -.->|"NO, search again on"| again["Model writes a better query,<br/>one more search"]
+    again -.-> check
+    check -->|"YES"| answer["Same chat continues:<br/>llama3.2 answers and names excerpt numbers"]
+    answer --> links["Code builds docs links from the numbers,<br/>removes links not in the sections"]
+    links --> stream["Stream to the chat over SSE"]
+    idk --> stream
+    stream --> trace[("Trace per request")]
+    trace --> api["/stats, /traces, /eval"] --> ui["Chat: answer time, steps, sections,<br/>analytics panel"]
 ```
 
 1. The model never writes URLs. It returns excerpt numbers and code turns them into links, so every cited page exists and was actually retrieved.
@@ -91,7 +111,9 @@ The check trades docs answers for safety: it stops most made-up answers but also
 10. **Excerpt numbers in answers.** The model wrote phrases like "as shown in Excerpt 4", which mean nothing to a reader. Code now removes them. Answers saved before the fix kept coming back from the answer cache, so the cleanup rule is now part of the cache key.
 11. **Weak links.** Release-notes chunks match many questions, and the model sometimes cites them instead of the tutorial page the answer came from. The chat never shows release-notes links, and when they were the only citation it says to check the answer in the docs; the trace still lists every section found.
 
-## Trade-offs
+## Decisions and trade-offs
+
+Each row is a choice, what it bought, what it cost, and why it stayed. What was tried and not kept is in the next section.
 
 | Choice | Gain | Cost | Why it was kept |
 |---|---|---|---|
@@ -101,11 +123,12 @@ The check trades docs answers for safety: it stops most made-up answers but also
 | Local 3B model instead of a hosted one | Free, private, no request limits, so full eval runs are possible | Weaker judgement and a latency floor set by reading speed | Scored numbers need repeatable full runs; a hosted model (Gemini) stays as a demo option |
 | "Search again" agent off by default | Keeps latency and out-of-scope refusals where they are | Loses a second chance for missed pages | It didn't raise docs answers on dev (see below) |
 | In-memory rate limit | No extra service to run | Only works for one process | One process is all this needs |
+| Questions of 3 to 20,000 characters | Junk like "hi" never takes a queue slot or a ~4 s check; huge pastes can't push the 5 sections out of the model's 8,192-token context | A greeting can't be sent, and the chat greys out Send until 3 characters | With 1 answer at a time and 4 waiting, a few junk messages could make real users wait or get "busy" |
 | 1 answer at a time, 4 waiting, then 503 | Steady speed; overload gets a clear "busy" | About 6.6 answers a minute; a 6th user at once is turned away | The GPU can't do more, and 2 at once was slower |
 
 ## Tried and dropped
 
-All measured on dev, most against a pass mark written down before the run.
+All measured on dev, most against a pass mark written down before the run. Each one looked like an obvious improvement and the numbers said no.
 
 1. **Distance cutoff for "I don't know".** The median closest-chunk distance was 0.201 for docs questions and 0.210 for the rest, so a cutoff can't separate them.
 2. **Cross-encoder reranker** (`ms-marco-MiniLM-L6-v2`). Top-5 hits fell from 29 to 25 of 40, and it added about 2.7 s. It's trained on short web queries, not long forum posts with code.
