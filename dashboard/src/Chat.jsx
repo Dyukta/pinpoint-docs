@@ -130,7 +130,9 @@ export default function Chat() {
     setMessages((list) => [...list, { question: text, start }]);
     controller.current = new AbortController();
     try {
+      let last;
       for await (const [kind, data] of streamEvents("/ask/stream", { question: text, agent }, controller.current.signal)) {
+        last = kind;
         if (kind === "status") patch({ status: data });
         if (kind === "error") patch({ error: data });
         if (kind === "done") {
@@ -139,6 +141,7 @@ export default function Chat() {
           if (detail.ok) patch({ trace: await detail.json() });
         }
       }
+      if (last !== "done" && last !== "error") patch({ error: "the connection closed before the answer finished" });
     } catch (err) {
       patch(err.name === "AbortError" ? { cancelled: true } : { error: err.message });
     } finally {

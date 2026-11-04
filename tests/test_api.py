@@ -70,6 +70,39 @@ def test_outage_is_reported_as_an_error_not_a_refusal(tmp_path, monkeypatch):
     assert numbers["error_rate"] == 1.0 and numbers["refusal_rate"] is None
 
 
+def test_answer_still_arrives_when_the_trace_cannot_be_saved(tmp_path, monkeypatch, caplog):
+    from collections import defaultdict
+
+    from pinpoint_docs import answer as answer_module
+
+    def fake_respond(*args):
+        yield "result", {"answer": "Use a model.", "sources": ["https://a/"], "cached": False}
+
+    monkeypatch.setattr(api, "recent", defaultdict(list))
+    monkeypatch.setattr(answer_module, "respond", fake_respond)
+    monkeypatch.setattr(answer_module, "TRACES", tmp_path / "missing" / "traces.jsonl")
+    body = {"question": "How do I declare a body?"}
+
+    response = client.post("/ask", json=body)
+    assert response.status_code == 200 and response.json()["answer"] == "Use a model."
+
+    stream = client.post("/ask/stream", json=body)
+    assert stream.text.startswith("event: done") and "Use a model." in stream.text
+    assert "Could not save trace" in caplog.text
+
+
+def test_stream_ends_with_an_error_when_the_worker_crashes(monkeypatch):
+    from collections import defaultdict
+
+    def crash(*args, **kwargs):
+        raise RuntimeError("secret detail")
+
+    monkeypatch.setattr(api, "recent", defaultdict(list))
+    monkeypatch.setattr(api, "answer_events", crash)
+    stream = client.post("/ask/stream", json={"question": "How do I declare a body?"})
+    assert stream.text == f'event: error\ndata: "{api.UNAVAILABLE}"\n\n'
+
+
 def test_refusal_rate_leaves_out_failed_requests():
     from pinpoint_docs.stats import summarize
 

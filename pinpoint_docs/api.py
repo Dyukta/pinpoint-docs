@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import threading
 import time
 from collections import Counter, defaultdict
@@ -92,6 +93,9 @@ async def ask_stream(body: Question):
             with running:
                 for event in answer_events(body.question, k=5, cancel=cancel, agent=body.agent):
                     loop.call_soon_threadsafe(events.put_nowait, event)
+        except Exception:
+            logging.exception("Answer worker crashed")
+            loop.call_soon_threadsafe(events.put_nowait, ("done", {"error": "worker crashed"}))
         finally:
             slots.release()
 

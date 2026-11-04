@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import re
 import sys
 import time
@@ -257,8 +258,11 @@ def answer_events(question, k=3, model=MODEL, use_cache=True, check=True, cancel
         trace |= {**EMPTY, "error": "cancelled"}
     except Exception as e:
         trace |= {**EMPTY, "error": f"{type(e).__name__}: {e}"}
-    with TRACES.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(trace, ensure_ascii=False) + "\n")
+    try:
+        with TRACES.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(trace, ensure_ascii=False) + "\n")
+    except OSError:
+        logging.exception("Could not save trace %s", trace["trace_id"])
     yield "done", trace
 
 

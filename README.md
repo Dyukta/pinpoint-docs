@@ -112,6 +112,7 @@ The check trades docs answers for safety: it stops most made-up answers but also
 11. **Weak links.** Release-notes chunks match many questions, and the model sometimes cites them instead of the tutorial page the answer came from. The chat never shows release-notes links, and when they were the only citation it says to check the answer in the docs; the trace still lists every section found.
 12. **Hung model calls.** Model calls had no timeout, so a hung Ollama held every answer slot and all requests got `503` until a restart. Calls now give up after 180 s of silence and streamed answers after 300 s in total, well above the slowest real step of 81 s, so the slot is freed.
 13. **Outages that looked like refusals.** With the model down, the API returned `200` with "I don't know", and failures raised the refusal rate. `/ask` now returns `503`, the chat shows an error, and failed requests no longer count as refusals.
+14. **Chat stuck on its status text.** When a trace couldn't be saved, the worker thread died and the chat waited forever, losing a finished answer. The failed write is now logged and the answer still arrives. A worker crash sends an error, and the chat shows one if the connection closes early.
 
 ## Decisions and trade-offs
 
