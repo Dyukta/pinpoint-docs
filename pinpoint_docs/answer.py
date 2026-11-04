@@ -2,7 +2,6 @@ import hashlib
 import json
 import logging
 import re
-import sys
 import time
 import uuid
 from datetime import UTC, datetime
@@ -329,18 +328,3 @@ def respond(question, k, model, use_cache, check=True, agent=False):
     if use_cache:
         remember(vector, key, question, result)
     yield "result", result
-
-
-def main():
-    result = answer(" ".join(sys.argv[1:]))
-    print(result["answer"])
-    if result["sources"]:
-        print("\nSources:")
-        for url in result["sources"]:
-            print(f"  {url}")
-    seconds = sum(result[k] or 0 for k in ("search_seconds", "check_seconds", "answer_seconds"))
-    print(f"\n{'from cache, ' if result['cached'] else ''}{seconds:.1f}s")
-
-
-if __name__ == "__main__":
-    main()
