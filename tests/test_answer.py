@@ -1,7 +1,8 @@
 import json
+import re
 
 from pinpoint_docs import answer as answer_module
-from pinpoint_docs.answer import IDK, answer, parse, sources
+from pinpoint_docs.answer import IDK, answer, parse, sources, strip_links
 
 HITS = [{"url": "https://a/"}, {"url": "https://b/"}, {"url": "https://a/"}]
 
@@ -31,6 +32,49 @@ def test_answer_keeps_only_links_found_in_the_excerpts():
     text, urls = parse(reply, hits)
     assert text == "Read https://docs.pydantic.dev/latest/ and [link removed] now."
     assert urls == ["https://fastapi.tiangolo.com/tutorial/body/"]
+
+
+def test_every_form_of_unapproved_link_is_removed():
+    hits = [{"url": "https://fastapi.tiangolo.com/tutorial/body/", "text": ""}]
+    for link in (
+        "http://evil.example/a",
+        "HTTP://EVIL.EXAMPLE",
+        "Https://evil.example/a",
+        "ftp://evil.example/a",
+        "www.evil.example",
+        "WWW.EVIL.EXAMPLE/a",
+        "//evil.example/a",
+        "evil.example/login",
+        "evil.example/",
+        "evil.example:8080/login",
+    ):
+        assert strip_links(f"Go to {link}, now.", hits) == "Go to [link removed], now.", link
+
+
+def test_links_from_the_excerpts_stay_in_any_form():
+    for link in ("www.pydantic.dev/latest", "sqlite:///./test.db", "pydantic.dev/latest"):
+        hits = [{"url": "https://a/", "text": f"See {link}."}]
+        assert strip_links(f"Read {link}.", hits) == f"Read {link}."
+
+
+def test_code_is_not_mistaken_for_a_link():
+    for code in (
+        'app.get("/items")',
+        "response.json()",
+        "a//b.c",
+        "x // y.z",
+        "tutorial/body.md",
+        "from fastapi.responses import JSONResponse",
+        "uvicorn main:app --reload",
+        "1.0/2",
+    ):
+        assert strip_links(code, [{"url": "https://a/", "text": ""}]) == code
+
+
+def test_changing_the_link_filter_invalidates_cached_answers(monkeypatch):
+    key = answer_module.settings_key("llama3.2", 5)
+    monkeypatch.setattr(answer_module, "LINK", re.compile("other"))
+    assert answer_module.settings_key("llama3.2", 5) != key
 
 
 def test_redact_hides_secrets_but_keeps_code():

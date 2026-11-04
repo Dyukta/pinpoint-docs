@@ -77,7 +77,10 @@ ANSWER_START = re.compile(r"ANSWER:\s*", re.I)
 EXCERPT_REF = re.compile(
     r",?\s*\(?\b(?:as (?:shown|seen|described) )?(?:in |from |see )?excerpts? \d+(?:\s*(?:,|and)\s*\d+)*\)?", re.I
 )
-LINK = re.compile(r"https?://[^\s)\]>\"'`]*[^\s)\]>\"'`.,;:!?]")
+LINK = re.compile(
+    r"(?i)(?:\b[a-z][a-z0-9+.-]*://|(?<![\w/:])//(?=[\w-]+\.)|\bwww\.|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(?::\d+)?(?=/))"
+    r"[^\s)\]>\"'`]*[^\s)\]>\"'`.,;:!?]"
+)
 SECRETS = [
     (re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+"), "[email]"),
     (re.compile(r"(?i)\b(password|passwd|secret|token|api[_-]?key)(\s*[=:]\s*)\S+"), r"\1\2[redacted]"),
@@ -190,7 +193,19 @@ def answer_cache():
 
 
 def settings_key(model, k, check=True, agent=False):
-    settings = [model, k, check, SYSTEM, CHECK, CHECK_ASK, ANSWER_ASK, OPTIONS, COLLECTION, EXCERPT_REF.pattern]
+    settings = [
+        model,
+        k,
+        check,
+        SYSTEM,
+        CHECK,
+        CHECK_ASK,
+        ANSWER_ASK,
+        OPTIONS,
+        COLLECTION,
+        EXCERPT_REF.pattern,
+        LINK.pattern,
+    ]
     if agent:
         settings += [AGENT, TOOLS]
     return hashlib.sha256(json.dumps(settings, sort_keys=True).encode()).hexdigest()[:16]
