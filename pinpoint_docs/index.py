@@ -1,5 +1,6 @@
 import json
 import os
+import time
 import urllib.request
 from pathlib import Path
 
@@ -14,6 +15,8 @@ CACHE = "answer-cache"
 OLLAMA = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
 EMBED_MODEL = "nomic-embed-text"
 BATCH = 64
+TIMEOUT = 180
+STREAM_LIMIT = 300
 
 
 def request(path, payload):
@@ -25,13 +28,16 @@ def request(path, payload):
 
 
 def ollama(path, payload):
-    with urllib.request.urlopen(request(path, payload)) as r:
+    with urllib.request.urlopen(request(path, payload), timeout=TIMEOUT) as r:
         return json.load(r)
 
 
 def ollama_stream(path, payload):
-    with urllib.request.urlopen(request(path, payload)) as r:
+    deadline = time.monotonic() + STREAM_LIMIT
+    with urllib.request.urlopen(request(path, payload), timeout=TIMEOUT) as r:
         for line in r:
+            if time.monotonic() > deadline:
+                raise TimeoutError(f"Ollama stream ran past {STREAM_LIMIT} s")
             yield json.loads(line)
 
 

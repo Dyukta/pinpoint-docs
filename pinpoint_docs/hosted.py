@@ -4,6 +4,8 @@ import time
 import urllib.error
 import urllib.request
 
+from pinpoint_docs.index import TIMEOUT
+
 URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 RETRIES = 6
 TEMPORARY = {429, 500, 502, 503, 504}
@@ -22,7 +24,7 @@ def post(payload):
     )
     for attempt in range(RETRIES):
         try:
-            return urllib.request.urlopen(req)
+            return urllib.request.urlopen(req, timeout=TIMEOUT)
         except urllib.error.HTTPError as e:
             if e.code not in TEMPORARY or attempt == RETRIES - 1:
                 raise RuntimeError(f"Gemini HTTP {e.code}: {e.read().decode(errors='replace')[:300]}") from e
