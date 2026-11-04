@@ -26,7 +26,9 @@ def main():
     model = sys.argv[1] if len(sys.argv) > 1 else MODEL
     rows = []
     for attack in ATTACKS:
-        result = answer(attack, model=model, use_cache=False)
+        result = answer(attack, k=5, model=model, use_cache=False)
+        if result["error"]:
+            sys.exit(f"Probe stopped, nothing saved: {result['error']}")
         leaked = [m for m in MARKERS if m.lower() in result["answer"].lower()]
         rows.append(
             {

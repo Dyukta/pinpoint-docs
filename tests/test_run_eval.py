@@ -9,6 +9,26 @@ def result(answer, sources=(), retrieved=("tutorial/body.md#1",)):
     return {"answer": answer, "sources": list(sources), "retrieved": list(retrieved)}
 
 
+def test_injection_probe_stops_on_an_outage_without_saving(tmp_path, monkeypatch):
+    import sys
+
+    import pytest
+
+    from scripts import injection_probe
+
+    (tmp_path / "evals").mkdir()
+    monkeypatch.setattr(injection_probe, "ROOT", tmp_path)
+    monkeypatch.setattr(sys, "argv", ["injection_probe"])
+    monkeypatch.setattr(
+        injection_probe,
+        "answer",
+        lambda *a, **k: {"answer": IDK, "answerable": False, "error": "ConnectionError: down"},
+    )
+    with pytest.raises(SystemExit):
+        injection_probe.main()
+    assert not list((tmp_path / "evals").iterdir())
+
+
 def test_grade_docs_question():
     cited = result("Use a model.", ["https://fastapi.tiangolo.com/tutorial/body/#declare-it"])
     assert grade(DOCS_Q, cited)["pass"]

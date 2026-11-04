@@ -8,7 +8,7 @@ A wrong answer with a real-looking docs link costs a developer more time than "I
 2. **Honest refusals:** on 22 held-out questions the docs don't cover, it says "I don't know" to 15. Without its YES/NO check it says it to none.
 3. **The price, stated openly:** only 6 of 28 held-out docs questions get the right page cited. Every failure is counted and explained below.
 4. **Measured, not tuned to the test:** 350 real GitHub Discussions questions, a frozen dev/test split, all tuning on dev except one early prompt check (see Results), and the 50 test questions scored only twice: before the speed work and on the final setup.
-5. **Built like a service:** live status with cancel, a trace per request, a queue that answers "busy" instead of slowing everyone down, a rate limit, an injection guard (0 of 5 attacks got through), and CI that fails if retrieval gets worse.
+5. **Built like a service:** live status with cancel, a trace per request, a queue that answers "busy" instead of slowing everyone down, a rate limit, an injection guard (0 of 10 attacks got through), and CI that fails if retrieval gets worse.
 6. **Fast on small hardware:** p50 latency on dev went from 22.8 s to 8.2 s on a 4 GB GPU, with 43 passes vs 44 before.
 
 Stack: Python, FastAPI, Ollama (`llama3.2` 3B, `nomic-embed-text`), ChromaDB, hand-written BM25, React + Vite + Tailwind chat, pytest, Docker, GitHub Actions.
@@ -107,7 +107,7 @@ The check trades docs answers for safety: it stops most made-up answers but also
 6. **The same prompt read twice.** The check and the answer each read the same long prompt. The answer is now a follow-up turn in the check's chat, so Ollama reuses what it read, and answer reading dropped from about 7 s to under 1 s.
 7. **GPU memory.** `llama3.2` and the embedder didn't fit on the GPU together. `llama3.2` is pinned to the GPU and question embeddings run on the CPU, which cut answer time from 25.4 s to 15.0 s.
 8. **Cancelled requests.** Closing the page left Ollama writing and lost the trace. A worker thread now watches a cancel flag, closes the Ollama stream and saves the trace; Ollama stops 1.1 s after the page closes.
-9. **Prompt injection.** Forum posts can carry instructions. Citations are by number only, answer links may only come from the excerpts, and answers render as plain text. 0 of 5 injection attacks got through.
+9. **Prompt injection.** Forum posts can carry instructions. Citations are by number only, answer links may only come from the excerpts, answers are checked before they are shown, and they render as plain text. 0 of 10 injection attacks got through: the YES/NO check refused 3, and 7 reached the answer step, where the model ignored the injected instruction.
 10. **Excerpt numbers in answers.** The model wrote phrases like "as shown in Excerpt 4", which mean nothing to a reader. Code now removes them. Answers saved before the fix kept coming back from the answer cache, so the cleanup rule is now part of the cache key.
 11. **Weak links.** Release-notes chunks match many questions, and the model sometimes cites them instead of the tutorial page the answer came from. The chat never shows release-notes links, and when they were the only citation it says to check the answer in the docs; the trace still lists every section found.
 12. **Hung model calls.** Model calls had no timeout, so a hung Ollama held every answer slot and all requests got `503` until a restart. Calls now give up after 180 s of silence and streamed answers after 300 s in total, well above the slowest real step of 81 s, so the slot is freed.
@@ -155,7 +155,7 @@ All measured on dev, most against a pass mark written down before the run. Each 
 2. Small samples (50 test, 80 dev) and a single human grader, so most differences are noise.
 3. Answers aren't always faithful: only 3 of 12 hand-checked answers were fully backed by the excerpts.
 4. A 3B model on a 4 GB GPU. Reading speed sets the floor on latency.
-5. The rate limit and the answer queue live in one process's memory, the injection probe is only 5 attacks, and `docker compose up` hasn't been run end to end.
+5. The rate limit and the answer queue live in one process's memory, the injection probe is only 10 attacks, and `docker compose up` hasn't been run end to end.
 6. The chat has no memory between messages. Each question is searched on its own, so a follow-up like "how do I use it?" gets "I don't know".
 
 ## Future scope
