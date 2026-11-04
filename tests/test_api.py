@@ -41,6 +41,44 @@ def test_ask_stream_sends_server_sent_events(monkeypatch):
     ]
 
 
+def test_outage_is_reported_as_an_error_not_a_refusal(tmp_path, monkeypatch):
+    from collections import defaultdict
+
+    from pinpoint_docs import answer as answer_module
+    from pinpoint_docs import stats
+
+    def down(*args):
+        raise ConnectionError("http://10.0.0.5:11434 refused")
+
+    log = tmp_path / "traces.jsonl"
+    monkeypatch.setattr(api, "recent", defaultdict(list))
+    monkeypatch.setattr(answer_module, "respond", down)
+    monkeypatch.setattr(answer_module, "TRACES", log)
+    monkeypatch.setattr(stats, "TRACES", log)
+    body = {"question": "How do I declare a body?"}
+
+    response = client.post("/ask", json=body)
+    assert response.status_code == 503 and response.headers["retry-after"] == "30"
+    assert response.json()["detail"] == api.UNAVAILABLE
+
+    stream = client.post("/ask/stream", json=body)
+    assert stream.text == f'event: error\ndata: "{api.UNAVAILABLE}"\n\n'
+
+    assert "10.0.0.5" not in response.text + stream.text
+    assert "10.0.0.5" in log.read_text(encoding="utf-8")
+    numbers = client.get("/stats").json()
+    assert numbers["error_rate"] == 1.0 and numbers["refusal_rate"] is None
+
+
+def test_refusal_rate_leaves_out_failed_requests():
+    from pinpoint_docs.stats import summarize
+
+    idk = {"answer": "I don't know.", "error": None}
+    failed = {"answer": "I don't know.", "error": "ConnectionError: down"}
+    answered = {"answer": "Use a model.", "error": None}
+    assert summarize([idk, failed, answered])["refusal_rate"] == 0.5
+
+
 def test_ask_is_rate_limited_per_client(monkeypatch):
     from collections import defaultdict
 

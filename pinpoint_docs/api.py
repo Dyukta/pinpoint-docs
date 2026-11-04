@@ -20,6 +20,7 @@ LIMIT = 10
 WINDOW_SECONDS = 60
 RUNNING = 1
 WAITING = 4
+UNAVAILABLE = "the model is unavailable, try again soon"
 recent = defaultdict(list)
 recent_lock = threading.Lock()
 running = threading.Semaphore(RUNNING)
@@ -71,9 +72,12 @@ def ask(body: Question) -> Answer:
     admit()
     try:
         with running:
-            return Answer(**answer(body.question, k=5, agent=body.agent))
+            result = answer(body.question, k=5, agent=body.agent)
     finally:
         slots.release()
+    if result.get("error"):
+        raise HTTPException(status_code=503, detail=UNAVAILABLE, headers={"Retry-After": "30"})
+    return Answer(**result)
 
 
 @app.post("/ask/stream", dependencies=[Depends(rate_limit)])
@@ -98,6 +102,9 @@ async def ask_stream(body: Question):
             kind = None
             while kind != "done":
                 kind, value = await events.get()
+                if kind == "done" and value.get("error"):
+                    yield f"event: error\ndata: {json.dumps(UNAVAILABLE)}\n\n"
+                    return
                 data = Answer(**value).model_dump() if kind == "done" else value
                 yield f"event: {kind}\ndata: {json.dumps(data)}\n\n"
         finally:

@@ -39,7 +39,7 @@ def summarize(rows):
         "steps_p50": {
             s.removesuffix("_seconds"): percentile([r[s] for r in ok if r.get(s) is not None], 50) for s in STEPS
         },
-        "refusal_rate": share(rows, lambda r: r["answer"] == "I don't know."),
+        "refusal_rate": share(ok, lambda r: r["answer"] == "I don't know."),
         "cache_hit_rate": share(rows, lambda r: bool(r.get("cached"))),
         "error_rate": share(rows, lambda r: bool(r.get("error"))),
         "tokens_per_1000": {

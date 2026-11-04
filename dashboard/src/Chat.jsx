@@ -132,6 +132,7 @@ export default function Chat() {
     try {
       for await (const [kind, data] of streamEvents("/ask/stream", { question: text, agent }, controller.current.signal)) {
         if (kind === "status") patch({ status: data });
+        if (kind === "error") patch({ error: data });
         if (kind === "done") {
           patch({ ...data, seconds: (Date.now() - start) / 1000 });
           const detail = await fetch(`/traces/${data.trace_id}`, { signal: controller.current.signal });
