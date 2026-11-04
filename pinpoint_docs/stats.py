@@ -21,8 +21,14 @@ def percentile(values, q):
 def load_traces():
     if not TRACES.exists():
         return []
-    with TRACES.open(encoding="utf-8") as f:
-        return [json.loads(line) for line in f if line.strip()]
+    rows = []
+    with TRACES.open(encoding="utf-8", errors="replace") as f:
+        for line in f:
+            try:
+                rows.append(json.loads(line))
+            except ValueError:
+                continue
+    return rows
 
 
 def share(rows, test):

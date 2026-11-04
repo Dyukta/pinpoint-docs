@@ -103,6 +103,25 @@ def test_stream_ends_with_an_error_when_the_worker_crashes(monkeypatch):
     assert stream.text == f'event: error\ndata: "{api.UNAVAILABLE}"\n\n'
 
 
+def test_corrupt_trace_lines_are_skipped(tmp_path, monkeypatch):
+    import json
+
+    from pinpoint_docs import stats
+
+    good = {"trace_id": "a1", "time": "t", "question": "q", "answer": "x", "error": None}
+    line = (json.dumps(good) + "\n").encode()
+    cut_mid_character = '{"trace_id": "b2", "question": "café'.encode()[:-1]
+    log = tmp_path / "traces.jsonl"
+    log.write_bytes(line + b'{"trace_id": "half\n' + b"\n" + line + cut_mid_character)
+    monkeypatch.setattr(stats, "TRACES", log)
+
+    numbers = client.get("/stats")
+    assert numbers.status_code == 200 and numbers.json()["requests"] == 2
+    traces = client.get("/traces")
+    assert traces.status_code == 200 and traces.json()["total"] == 2
+    assert client.get("/traces/a1").status_code == 200
+
+
 def test_refusal_rate_leaves_out_failed_requests():
     from pinpoint_docs.stats import summarize
 
