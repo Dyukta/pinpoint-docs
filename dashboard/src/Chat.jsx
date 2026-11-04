@@ -22,8 +22,7 @@ function Reply({ reply, now }) {
   if (!reply.answer)
     return (
       <>
-        {reply.draft && <p className="whitespace-pre-wrap leading-relaxed">{reply.draft}</p>}
-        <p className={`mt-1 text-zinc-400 ${reply.cancelled ? "" : "animate-pulse"}`}>
+        <p className={`text-zinc-400 ${reply.cancelled ? "" : "animate-pulse"}`}>
           {reply.cancelled ? "Okay, stopped. Ask me something else anytime." : (STATUS[reply.status] ?? "On it...")}
         </p>
         {!reply.cancelled && (
@@ -128,12 +127,11 @@ export default function Chat() {
     setBusy(true);
     const start = Date.now();
     setNow(start);
-    setMessages((list) => [...list, { question: text, draft: "", start }]);
+    setMessages((list) => [...list, { question: text, start }]);
     controller.current = new AbortController();
     try {
       for await (const [kind, data] of streamEvents("/ask/stream", { question: text, agent }, controller.current.signal)) {
         if (kind === "status") patch({ status: data });
-        if (kind === "token") setMessages((list) => [...list.slice(0, -1), { ...list.at(-1), draft: list.at(-1).draft + data }]);
         if (kind === "done") {
           patch({ ...data, seconds: (Date.now() - start) / 1000 });
           const detail = await fetch(`/traces/${data.trace_id}`, { signal: controller.current.signal });

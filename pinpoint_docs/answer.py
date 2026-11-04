@@ -73,7 +73,6 @@ TOOLS = [
 ]
 OPTIONS = {"temperature": 0, "num_ctx": 8192, "num_gpu": 99}
 REPLY = re.compile(r"EXCERPTS:(.*?)\n\s*ANSWER:(.*)", re.S | re.I)
-ANSWER_START = re.compile(r"ANSWER:\s*", re.I)
 EXCERPT_REF = re.compile(
     r",?\s*\(?\b(?:as (?:shown|seen|described) )?(?:in |from |see )?excerpts? \d+(?:\s*(?:,|and)\s*\d+)*\)?", re.I
 )
@@ -173,13 +172,10 @@ def stream_answer(question, context, model, verdict=None):
         parts = chat(model, CHECK, ANSWER_ASK, history=history, stream=True)
     else:
         parts = chat(model, SYSTEM, prompt(question, context), stream=True)
-    text, sent = "", 0
+    text = ""
     for part in parts:
         text += part["message"]["content"]
-        start = ANSWER_START.search(text)
-        if start and len(text) - start.end() > sent:
-            yield "token", text[start.end() + sent :]
-            sent = len(text) - start.end()
+        yield "writing", None
         if part["done"]:
             return {**part, "message": {"role": "assistant", "content": text}}
     raise ConnectionError("Ollama stream ended before the answer was done")
@@ -254,7 +250,7 @@ def answer_events(question, k=3, model=MODEL, use_cache=True, check=True, cancel
                 raise Cancelled
             if kind == "result":
                 trace |= value
-            else:
+            elif kind != "writing":
                 yield kind, value
         trace["error"] = None
     except Cancelled:

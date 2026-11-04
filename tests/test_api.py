@@ -30,15 +30,13 @@ def test_ask_stream_sends_server_sent_events(monkeypatch):
 
     def fake_events(question, k, cancel, agent):
         yield "status", "search"
-        yield "token", "Use a model."
         yield "done", done
 
     monkeypatch.setattr(api, "answer_events", fake_events)
     response = client.post("/ask/stream", json={"question": "How do I declare a body?"})
     assert response.headers["content-type"].startswith("text/event-stream")
-    assert response.text.split("\n\n")[:3] == [
+    assert response.text.split("\n\n")[:2] == [
         'event: status\ndata: "search"',
-        'event: token\ndata: "Use a model."',
         'event: done\ndata: {"trace_id": "abc123", "answer": "Use a model.", "sources": ["https://a/"], "cached": false}',
     ]
 

@@ -8,7 +8,7 @@ A wrong answer with a real-looking docs link costs a developer more time than "I
 2. **Honest refusals:** on 22 held-out questions the docs don't cover, it says "I don't know" to 15. Without its YES/NO check it says it to none.
 3. **The price, stated openly:** only 6 of 28 held-out docs questions get the right page cited. Every failure is counted and explained below.
 4. **Measured, not tuned to the test:** 350 real GitHub Discussions questions, a frozen dev/test split, all tuning on dev except one early prompt check (see Results), and the 50 test questions scored only twice: before the speed work and on the final setup.
-5. **Built like a service:** streaming with cancel, a trace per request, a queue that answers "busy" instead of slowing everyone down, a rate limit, an injection guard (0 of 5 attacks got through), and CI that fails if retrieval gets worse.
+5. **Built like a service:** live status with cancel, a trace per request, a queue that answers "busy" instead of slowing everyone down, a rate limit, an injection guard (0 of 5 attacks got through), and CI that fails if retrieval gets worse.
 6. **Fast on small hardware:** p50 latency on dev went from 22.8 s to 8.2 s on a 4 GB GPU, with 43 passes vs 44 before.
 
 Stack: Python, FastAPI, Ollama (`llama3.2` 3B, `nomic-embed-text`), ChromaDB, hand-written BM25, React + Vite + Tailwind chat, pytest, Docker, GitHub Actions.
@@ -41,14 +41,14 @@ flowchart TD
     again -.-> check
     check -->|"YES"| answer["Same chat continues:<br/>llama3.2 answers and names excerpt numbers"]
     answer --> links["Code builds docs links from the numbers,<br/>removes links not in the sections"]
-    links --> stream["Stream to the chat over SSE"]
+    links --> stream["Send the checked answer<br/>to the chat over SSE"]
     idk --> stream
     stream --> trace[("Trace per request")]
     trace --> api["/stats, /traces, /eval"] --> ui["Chat: answer time, steps, sections,<br/>analytics panel"]
 ```
 
 1. The model never writes URLs. It returns excerpt numbers and code turns them into links, so every cited page exists and was actually retrieved.
-2. Answers stream to the chat over Server-Sent Events, and closing the page stops the model.
+2. The chat gets status updates over Server-Sent Events, then the answer in one piece once it has been checked, so unchecked text never appears. Closing the page stops the model.
 3. Each request saves a trace: retrieved chunks, time per step, and tokens and timings for every model call. The chat shows the answer time under each reply, which opens that trace's steps and found sections, and a side panel shows the test results from `/eval` and live numbers from `/stats`.
 4. The eval calls the same `answer()` function as the API. The scored runs use the top 3 excerpts; the chat uses 5, which puts the right page in front of the model for 29 instead of 25 of 40 dev docs questions at about 3 s more per answer.
 5. CI runs on every push: ruff, pytest, a Docker build, and a retrieval check that needs no model. It rebuilds the chunks and fails if BM25 finds the right page in the top 3 for fewer than 17 of 40 dev docs questions (18 today). A manual workflow runs 20 dev questions through Ollama on a CPU runner and fails below 9 passes. The first run passed 11 of 20, the same as on the GPU, at a p50 of 32.3 s per question, and took 33 minutes including 18 minutes to build the index.

@@ -149,12 +149,16 @@ def test_no_check_skips_the_yes_no_call(monkeypatch):
     assert answer_module.settings_key("llama3.2", 5, check=False) != answer_module.settings_key("llama3.2", 5)
 
 
-def test_only_the_answer_text_is_streamed(monkeypatch):
-    fake_pipeline(monkeypatch, [], "EXCER", "PTS: 1\nANS", "WER: Use ", "a mod", "el.")
-    events = list(answer_module.respond("How do I declare a body?", 5, "llama3.2", use_cache=False, check=False))
-    tokens = [value for kind, value in events if kind == "token"]
-    assert "".join(tokens) == "Use a model."
-    assert events[-1][1]["sources"] == ["https://a/"]
+def test_unchecked_text_never_reaches_the_chat(tmp_path, monkeypatch):
+    monkeypatch.setattr(answer_module, "TRACES", tmp_path / "traces.jsonl")
+    for pieces, final in (
+        (("EXCER", "PTS: 1\nANS", "WER: See http://evil.", "example/a now."), "See [link removed] now."),
+        (("EXCERPTS: none\nANSWER: Made ", "up."), IDK),
+    ):
+        fake_pipeline(monkeypatch, [], *pieces)
+        events = list(answer_module.answer_events("How do I declare a body?", use_cache=False, check=False))
+        assert events[:-1] == [("status", "search"), ("status", "answer")]
+        assert events[-1][0] == "done" and events[-1][1]["answer"] == final
 
 
 def test_agent_searches_again_after_a_no(monkeypatch):
@@ -189,14 +193,22 @@ def test_agent_searches_again_after_a_no(monkeypatch):
 def test_cancel_stops_the_answer_and_logs_it(tmp_path, monkeypatch):
     import threading
 
-    fake_pipeline(monkeypatch, [], "EXCERPTS: 1\nANSWER: Use ", "a ", "model.")
+    pulled = []
+
+    def fake_chat(model, system, user, history=(), stream=False, **options):
+        for piece in ("EXCERPTS: 1\nANSWER: Use ", "a ", "model."):
+            pulled.append(piece)
+            yield {"message": {"content": piece}, "done": False}
+
+    fake_pipeline(monkeypatch, [])
+    monkeypatch.setattr(answer_module, "chat", fake_chat)
     monkeypatch.setattr(answer_module, "TRACES", tmp_path / "traces.jsonl")
     cancel = threading.Event()
     seen = []
     for event in answer_module.answer_events("How do I declare a body?", use_cache=False, check=False, cancel=cancel):
         seen.append(event)
-        if event[0] == "token":
+        if event == ("status", "answer"):
             cancel.set()
-    assert [kind for kind, _ in seen].count("token") == 1
+    assert len(pulled) == 1
     assert seen[-1][0] == "done" and seen[-1][1]["error"] == "cancelled"
     assert json.loads((tmp_path / "traces.jsonl").read_text(encoding="utf-8"))["error"] == "cancelled"
